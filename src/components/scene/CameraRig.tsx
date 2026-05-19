@@ -23,18 +23,15 @@ export function CameraRig() {
 
   useFrame(() => {
     const floatIndex = virtualIndexRef.current;
-    // Continuous angle — never modulo, or the camera snaps ~360° each lap
     const angle = getContinuousOrbitAngle(floatIndex);
     const y = floatIndex * STAIR_HEIGHT_STEP;
 
-    // Fixed radius from central axis — only angle and height change while scrolling
     desiredPosition.set(
       Math.cos(angle) * CAMERA_ORBIT_RADIUS,
       y + CAMERA_Y_OFFSET,
       Math.sin(angle) * CAMERA_ORBIT_RADIUS,
     );
 
-    // Look at the spiral void center (axis), not the inner stair edge — avoids in/out sway
     desiredLookAt.set(0, y + CAMERA_LOOK_AT_Y_OFFSET, 0);
 
     camera.position.lerp(desiredPosition, CAMERA_LERP);
@@ -45,7 +42,7 @@ export function CameraRig() {
   return null;
 }
 
-/** Small fixed pages — travel is driven by accumulated scroll delta. */
+/** Small fixed pages — travel is driven by accumulated scroll offset. */
 export function getScrollPages(): number {
   return 3;
 }
