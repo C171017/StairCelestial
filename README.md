@@ -14,8 +14,8 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Controls
 
 - **Scroll** — ascend the spiral (seamless infinite scroll)
-- **Click door once** — open + preview
-- **Click door again** — open project URL
+- **Click door** — open or close preview
+- **Double-click door** — open project URL
 
 ## Project data
 

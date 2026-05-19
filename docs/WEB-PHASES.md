@@ -84,6 +84,24 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 3. Restrain emissive door strips if too bright
 4. Optional: light post-processing bloom only
 
+### Saturn (ringed planet) — in-code pass done
+
+**Implemented in web (no Blender re-export):**
+
+- Screen-fixed NDC anchor in `CelestialBackground.tsx` (no horizontal swing on scroll)
+- Cinematic textures in `public/textures/saturn/` + `applySaturnMaterials` in `saturnMaterials.ts`
+- Rim Fresnel + backside atmosphere shell + dedicated planet lights
+
+**Evaluate in browser; use Blender only if still lacking:**
+
+| Issue | Blender follow-up |
+|-------|-------------------|
+| Ring looks flat / pancake | Rebuild ring (torus or multi-plane) |
+| Texture stretching on poles or ring | Re-unwrap UVs |
+| Silhouette / tilt wrong for composition | Adjust mesh pose in Blender |
+| Needs close-up surface detail | Bake normal/roughness maps into GLB |
+| Jupiter should match Saturn quality | Same texture pipeline for `jupiter_planet.glb` |
+
 ---
 
 ## W6 — Infinite illusion, mobile, deploy
