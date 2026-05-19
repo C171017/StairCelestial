@@ -11,26 +11,26 @@ src/app/
   globals.css           — Full-viewport, dark background
 
 src/components/scene/
-  StairwayScene.tsx     — <Canvas>, ScrollControls, Suspense
+  StairwayScene.tsx     — <Canvas>, ScrollControls infinite, Suspense
   SpiralStaircase.tsx   — Pooled stairs + door/platform groups (useFrame)
   StairSegment.tsx      — Renders one pre-cloned stair Object3D
   PlatformLanding.tsx   — Renders one pre-cloned platform Object3D
   ProjectDoor.tsx       — Door + preview screen + GSAP + clicks (pooled)
-  CameraRig.tsx         — virtual scroll index → camera lerp on helix
+  CameraRig.tsx         — virtualStairIndex → camera lerp on helix
   CelestialBackground.tsx — Jupiter + ringed planet GLBs
   Atmosphere.tsx        — fog, Stars, Milky Way plane
   Lights.tsx            — ambient + directional + point
   cloneScene.ts         — findChildByNamePart() helper
 
 src/hooks/
-  useVirtualScrollIndex.ts — delta → unbounded virtualStairIndex + scroll wrap
+  useVirtualScrollIndex.ts — wrap-aware scroll.offset → virtualStairIndex
 
 src/components/ui/
   ProjectOverlay.tsx    — HTML overlay, scroll %, open project card
   LoadingScreen.tsx     — Canvas loading fallback
 
 src/lib/
-  spiral.ts             — LOOP_LENGTH, placements, door step helpers
+  spiral.ts             — LOOP_LENGTH, placements, camera orbit, door helpers
   spiralPool.ts         — assignPoolSlots, assignDoorPoolSlots
   models.ts             — MODEL_PATHS for all GLBs
   projects.ts           — Project[] (data-only growth)
@@ -59,16 +59,20 @@ Paths: `src/lib/models.ts` → `public/models/`
 | `LOOP_LENGTH` | 28 | One full XZ turn; angle uses `index % LOOP_LENGTH` |
 | `STAIR_POOL_SIZE` | 14 | Active stair instances around camera |
 | `DOOR_POOL_SIZE` | 4 | Active door+platform groups in view |
-| `SPIRAL_RADIUS` | 11 | Helix radius |
+| `SPIRAL_RADIUS` | 11 | Helix radius for stair/platform placement |
 | `STAIR_HEIGHT_STEP` | 0.52 | Vertical rise per stair (Y is unbounded) |
 | `STAIR_ANGLE_STEP` | 2π/28 | Rotation per loop step |
+| `CAMERA_ORBIT_RADIUS` | 25 | Fixed camera distance from central axis (`SPIRAL_RADIUS + 14`) |
+| `CAMERA_Y_OFFSET` | 3 | Camera height above current stair index |
+| `CAMERA_LOOK_AT_Y_OFFSET` | 1.2 | Look-at on void center `(0, y + offset, 0)` |
 
-Door spacing: `DOOR_STEP = max(6, floor(LOOP_LENGTH / projects.length))`. Doors at indices 0, 7, 14, 21… for 4 projects.
+Door spacing: `DOOR_STEP = max(6, floor(LOOP_LENGTH / projects.length))`. For 4 projects, doors at virtual indices 0, 7, 14, 21…
 
 Functions:
 
 - `getStairPlacement(virtualIndex)` — XZ from loop modulo; Y from full index
 - `getPlatformPlacement` / `getDoorPlacement` — outward offsets
+- `getContinuousOrbitAngle(virtualIndex)` — unbounded angle for camera (no modulo)
 - `isDoorStairIndex` / `getDoorSlotIndex` / `getProjectForStairIndex`
 
 **When stairs/doors float or clip:** tune constants here first, not in Blender, unless scale is fundamentally wrong.
@@ -76,22 +80,32 @@ Functions:
 ## Infinite illusion (pool + fog)
 
 ```txt
-scroll.offset → wrap-aware unbounded offset → virtualStairIndex
-Camera + 14 stairs follow virtualStairIndex
-4 door slots show nearest door steps in range
+Drei ScrollControls infinite
+scroll.offset → armed lap detection → unboundedOffset → virtualStairIndex
+14 pooled stairs + 4 pooled door slots reposition each frame
 XZ repeats every LOOP_LENGTH; Y keeps climbing
-Fog (near 14, far 85) hides recycled segments
-Drei ScrollControls infinite (no manual scrollTop reset)
+Fog (#030508, near 14, far 85) hides recycled segments
 ```
 
-**Add a project (no Blender):** append to `projects` in `src/lib/projects.ts` + preview image. `DOOR_STEP` shrinks as the set grows (min 6 steps apart).
+**Add a project (no Blender):** append to `projects` in `src/lib/projects.ts` + preview under `public/previews/`. `DOOR_STEP` auto-adjusts from project count (min 6 steps apart).
+
+## Scroll integration (`useVirtualScrollIndex.ts`)
+
+Do **not** drive climb from raw `scroll.delta` — it spikes when Drei resets offset.
+
+Current behavior:
+
+1. Integrate `scroll.offset` with capped normal diffs (`±0.1` per frame).
+2. On true forward lap cross (`offset` was high, then `< 0.15`): add `1 - last + offset`.
+3. On true backward lap cross (`offset` was low, then `> 0.85` and `≤ 1.02`): add `-last + offset`.
+4. If `|diff| > 0.15` without a valid lap cross (e.g. damp overshoot past 1.0): **resync only** — skip that frame.
+5. `virtualStairIndex = unboundedOffset × CLIMB_SCALE` (28 steps per full scroll range).
 
 ## Scroll camera
 
 - `StairwayScene`: `<ScrollControls pages={3} damping={0.18} infinite>`
-- `useVirtualScrollIndex`: wrap-aware integration of `scroll.offset` × `CLIMB_SCALE` (28); per-frame index clamp 2.5 — do not use raw `scroll.delta` (spikes on wrap)
-- `CameraRig`: fixed `CAMERA_ORBIT_RADIUS`; `getContinuousOrbitAngle(index)` (no modulo — avoids ~360° snap each lap); looks at void center `(0, y, 0)`
-- `scrollProgress` in UI = position within current loop (0–1), not total height
+- `CameraRig`: `getContinuousOrbitAngle` + fixed `CAMERA_ORBIT_RADIUS`; looks at void center
+- Canvas FOV `58`; `scrollProgress` in UI = position within current loop (0–1)
 
 ## Door state machine
 
@@ -110,7 +124,9 @@ Drei ScrollControls infinite (no manual scrollTop reset)
 
 1. First pointer down → open + preview from `getProjectForStairIndex(virtualIndex)`
 2. Second pointer down → `window.open(project.url)`
-3. Recycling to a new virtual index closes the door and reloads preview texture
+3. When a pool slot’s virtual index changes, door closes and preview texture reloads
+
+`projects.ts` `doorIndex` is legacy for static mapping; pooled doors use `getProjectForStairIndex` from virtual stair index.
 
 ## What lives in code vs Blender
 
@@ -134,6 +150,8 @@ npm run build  # must pass before PR
 
 - Merging all stairs into one mesh export
 - Center pivot on door panel
+- Using `scroll.delta` directly for climb index (causes lap-boundary jumps)
+- Applying modulo to camera orbit angle (360° snap each lap)
 - Thousands of star meshes instead of `Stars` or instanced points
 - Putting infinite loop logic inside GLB instead of recycling transforms
 - Breaking `ScrollControls` by moving `CameraRig` outside its provider

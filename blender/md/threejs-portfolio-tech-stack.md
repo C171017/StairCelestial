@@ -238,14 +238,23 @@ public/
 
 The stairway should not actually be infinite. Instead, create a limited set of stair and door segments, then loop or recycle them as the user scrolls.
 
-Recommended illusion strategy:
+**Implemented in this repo (see `docs/ARCHITECTURE.md`):**
 
 ```txt
-Create 12-20 stair segments
-Create 6-10 reusable door positions
-Move or recycle segments based on scroll progress
-Keep the camera moving in a controlled path
-Use fog, clouds, lighting, or distance fade to hide repetition
+14 pooled stairs + 4 pooled door/platform slots (spiralPool.ts)
+Drei ScrollControls infinite
+virtualStairIndex from wrap-aware scroll.offset (useVirtualScrollIndex.ts) — not raw scroll.delta
+Camera: fixed CAMERA_ORBIT_RADIUS, continuous orbit angle, void-center look-at
+Fog near 14 / far 85
+Projects: data-only in projects.ts (repeating set each lap)
+```
+
+General illusion strategy:
+
+```txt
+Move or recycle segments based on virtualStairIndex
+Keep the camera on a controlled path
+Use fog to hide repetition
 ```
 
 For the first version, project previews should be static images rather than live iframes. Static previews are faster, easier to optimize, and more reliable on mobile.

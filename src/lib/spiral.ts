@@ -14,6 +14,14 @@ export const SPIRAL_RADIUS = 11;
 export const STAIR_HEIGHT_STEP = 0.52;
 export const STAIR_ANGLE_STEP = (Math.PI * 2) / LOOP_LENGTH;
 
+/** Local Y of platform_landing.glb top surface (from mesh bounds). */
+const PLATFORM_MESH_TOP_Y = 0.265;
+/** Local Y of project_door_portal.glb bottom (from mesh bounds). */
+const DOOR_MESH_BOTTOM_Y = -1.46;
+/** Raise door root so mesh bottom sits on platform top (+ small gap). */
+export const DOOR_Y_OFFSET_ABOVE_PLATFORM =
+  PLATFORM_MESH_TOP_Y - DOOR_MESH_BOTTOM_Y + 0.02;
+
 /** Fixed orbit radius — camera stays this far from the central axis at all times */
 export const CAMERA_ORBIT_RADIUS = SPIRAL_RADIUS + 14;
 
@@ -120,7 +128,7 @@ export function getDoorPlacement(stairIndex: number): SpiralPlacement {
     index: stairIndex,
     position: [
       platform.position[0] + outwardX * 0.55,
-      platform.position[1] + 0.12,
+      platform.position[1] + DOOR_Y_OFFSET_ABOVE_PLATFORM,
       platform.position[2] + outwardZ * 0.55,
     ],
     rotation: platform.rotation,

@@ -1,6 +1,6 @@
 # Celestial Stairway Portfolio
 
-Interactive 3D portfolio homepage: scroll up a celestial spiral staircase and interact with project doors.
+Interactive 3D portfolio homepage: scroll up an endless-feeling celestial spiral staircase and interact with project doors.
 
 ## Quick start
 
@@ -13,13 +13,13 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Controls
 
-- **Scroll** — move camera up the spiral
+- **Scroll** — ascend the spiral (seamless infinite scroll)
 - **Click door once** — open + preview
 - **Click door again** — open project URL
 
 ## Project data
 
-Edit `src/lib/projects.ts` and add preview images under `public/previews/`.
+Edit `src/lib/projects.ts` and add preview images under `public/previews/`. No new Blender export needed per project — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Documentation (for agents & contributors)
 
@@ -28,7 +28,7 @@ Edit `src/lib/projects.ts` and add preview images under `public/previews/`.
 | Doc | Purpose |
 |-----|---------|
 | [`docs/PROJECT.md`](docs/PROJECT.md) | Vision, rules, status, current focus |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Code map, GLBs, spiral, doors, state |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Code map, pool, scroll, camera, doors |
 | [`docs/WEB-PHASES.md`](docs/WEB-PHASES.md) | Web implementation phases W1–W6 |
 | [`blender/md/`](blender/md/) | Blender MCP prompts (complete) |
 

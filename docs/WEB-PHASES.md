@@ -10,12 +10,6 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 
 **Goal:** App runs; each GLB loads once without errors.
 
-**Done when:**
-
-- `npm run dev` serves `/`
-- No GLTF load errors in console
-- At least one instance of each model visible
-
 **Key files:** `StairwayScene.tsx`, `StairSegment.tsx`, `public/models/`
 
 ---
@@ -26,14 +20,13 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 
 **Tasks:**
 
-1. Run dev server; scroll full height; inspect gaps, overlaps, floating doors
-2. Tune `src/lib/spiral.ts`: `SPIRAL_RADIUS`, `STAIR_HEIGHT_STEP`, `STAIR_ANGLE_STEP`, platform/door offsets
+1. Run dev server; scroll through several laps; inspect gaps, overlaps, floating doors
+2. Tune `src/lib/spiral.ts`: `SPIRAL_RADIUS`, `STAIR_HEIGHT_STEP`, platform/door offsets
 3. Adjust `CelestialBackground.tsx` planet positions if they break composition
-4. Document final constants in a one-line comment in `spiral.ts` if non-obvious
 
 **Done when:**
 
-- Spiral reads clearly from default scroll positions
+- Spiral reads clearly while scrolling
 - Doors sit on platforms, not inside stairs or void
 - No z-fighting between platform and door
 
@@ -41,21 +34,21 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 
 ---
 
-## W3 — Camera & scroll feel
+## W3 — Camera & scroll feel ✅ Mostly done
 
-**Goal:** Scroll feels like ascending the outer edge; nearby stair + one door readable; far stairs fade in fog.
+**Goal:** Smooth ascent; stable camera; far geometry fades in fog.
 
-**Tasks:**
+**Implemented:**
 
-1. Tune `ScrollControls` `pages` and `damping` in `StairwayScene.tsx`
-2. Tune `CameraRig` lerp factor, radius offset (`SPIRAL_RADIUS + 7.5`), lookAt height
-3. Tune fog in `Atmosphere.tsx` (`near`, `far`) to hide far repetition
+- `ScrollControls` with `infinite`, `pages={3}`, `damping={0.18}`
+- `useVirtualScrollIndex` — wrap-aware offset integration (see [ARCHITECTURE.md](./ARCHITECTURE.md))
+- `CameraRig` — `CAMERA_ORBIT_RADIUS`, void-center look-at, `getContinuousOrbitAngle`
+- Fog in `Atmosphere.tsx` — `near: 14`, `far: 85`
 
-**Done when:**
+**Optional tuning:**
 
-- Smooth scroll on desktop trackpad
-- Camera never clips through stairs
-- At least one door prominent in first third of scroll
+- `CameraRig` `CAMERA_LERP`, FOV in `StairwayScene.tsx`
+- `MAX_DIFF_PER_FRAME` in `useVirtualScrollIndex.ts` if scroll feels slow/fast
 
 ---
 
@@ -68,15 +61,15 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 1. Replace placeholder entries in `src/lib/projects.ts` (real titles, URLs, descriptions)
 2. Add real preview images to `public/previews/` (PNG/WebP; update paths)
 3. Verify hinge: panel opens on hinge side; fix axis in `ProjectDoor.tsx` if needed
-4. Optional: keyboard accessible focus, `cursor` states, close door on scroll away
+4. Optional: keyboard accessible focus, close door on scroll away
 
 **Done when:**
 
-- All 4 doors map to real projects
+- Projects repeat correctly each lap via `getProjectForStairIndex`
 - First click opens preview texture; second opens URL
 - Only one door open at a time
 
-**Door IDs:** `door-0` … `door-3` ↔ `doorIndex` 0–3 in `projects.ts`
+**Door IDs in store:** `pool-door-0` … `pool-door-3` (not `door-0`)
 
 ---
 
@@ -87,37 +80,24 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 **Tasks:**
 
 1. Tune `Lights.tsx` intensities and colors
-2. Refine `Atmosphere.tsx`: star count, Milky Way opacity, background color
-3. Restrain emissive door strips (material emissiveIntensity if too bright)
-4. Optional: `@react-three/postprocessing` bloom — **light touch only**
-
-**Done when:**
-
-- Stairs readable against space background
-- Planets visible but secondary
-- Emissive cyan accents visible but not neon
-
-**Avoid:** Heavy bloom, harsh contrast, dense star clutter
+2. Refine `Atmosphere.tsx`: star count, Milky Way opacity
+3. Restrain emissive door strips if too bright
+4. Optional: light post-processing bloom only
 
 ---
 
 ## W6 — Infinite illusion, mobile, deploy
 
-**Goal:** Performance-safe “infinite” stair + shipped site.
+**Goal:** Performance-safe endless stair + shipped site.
 
-**Tasks:**
+| Task | Status |
+|------|--------|
+| Segment pool (14 stairs, 4 doors) + `spiralPool.ts` | **Done** |
+| Seamless scroll / lap wraps (`useVirtualScrollIndex`) | **Done** |
+| Mobile: DPR cap, star count, touch door taps | **Todo** |
+| `npm run build` + Vercel deploy | **Todo** |
 
-1. **Segment recycling:** pool of 14 stairs + 4 doors; `virtualStairIndex` from scroll delta (see `src/lib/spiralPool.ts`, `useVirtualScrollIndex.ts`)
-2. Mobile: lower `dpr` cap, reduce star count, test touch door taps
-3. `npm run build` clean; deploy Vercel; verify GLB paths on production URL
-
-**Done when:**
-
-- Scrolling feels endless without adding mesh count
-- Acceptable FPS on mid-range phone
-- Live URL loads all assets
-
-**Do not:** Add true infinite geometry or physics engine for MVP
+**Do not:** Add true infinite geometry, raw `scroll.delta` climb, or a physics engine for MVP
 
 ---
 
@@ -127,9 +107,9 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 |----------------|-------------|
 | “doors broken / won’t open” | W4 |
 | “stairs floating / wrong layout” | W2 |
-| “scroll feels bad” | W3 |
+| “scroll jumps / stutter at lap” | W3 — read `useVirtualScrollIndex.ts` |
 | “looks flat / lighting” | W5 |
-| “make it infinite / slow on phone / deploy” | W6 |
+| “slow on phone / deploy” | W6 |
 | “new GLB from Blender” | W2 after re-export |
 
 Always read [ARCHITECTURE.md](./ARCHITECTURE.md) before editing scene code.
