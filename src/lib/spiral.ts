@@ -69,6 +69,11 @@ export function getProjectForStairIndex(
   return projects[slot];
 }
 
+/** Smooth orbit angle for camera (unbounded; no lap snap). */
+export function getContinuousOrbitAngle(virtualIndex: number): number {
+  return virtualIndex * STAIR_ANGLE_STEP;
+}
+
 export function getStairPlacement(virtualIndex: number): SpiralPlacement {
   const loopIndex =
     ((virtualIndex % LOOP_LENGTH) + LOOP_LENGTH) % LOOP_LENGTH;

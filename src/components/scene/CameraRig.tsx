@@ -8,8 +8,7 @@ import {
   CAMERA_LOOK_AT_Y_OFFSET,
   CAMERA_ORBIT_RADIUS,
   CAMERA_Y_OFFSET,
-  LOOP_LENGTH,
-  STAIR_ANGLE_STEP,
+  getContinuousOrbitAngle,
   STAIR_HEIGHT_STEP,
 } from "@/lib/spiral";
 
@@ -24,8 +23,8 @@ export function CameraRig() {
 
   useFrame(() => {
     const floatIndex = virtualIndexRef.current;
-    const loopIndex = ((floatIndex % LOOP_LENGTH) + LOOP_LENGTH) % LOOP_LENGTH;
-    const angle = loopIndex * STAIR_ANGLE_STEP;
+    // Continuous angle — never modulo, or the camera snaps ~360° each lap
+    const angle = getContinuousOrbitAngle(floatIndex);
     const y = floatIndex * STAIR_HEIGHT_STEP;
 
     // Fixed radius from central axis — only angle and height change while scrolling

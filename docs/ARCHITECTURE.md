@@ -76,21 +76,21 @@ Functions:
 ## Infinite illusion (pool + fog)
 
 ```txt
-Scroll delta → virtualStairIndex (unbounded)
+scroll.offset → wrap-aware unbounded offset → virtualStairIndex
 Camera + 14 stairs follow virtualStairIndex
 4 door slots show nearest door steps in range
 XZ repeats every LOOP_LENGTH; Y keeps climbing
 Fog (near 14, far 85) hides recycled segments
-HTML scroll wraps at 85%/15% offset so scroll never ends
+Drei ScrollControls infinite (no manual scrollTop reset)
 ```
 
 **Add a project (no Blender):** append to `projects` in `src/lib/projects.ts` + preview image. `DOOR_STEP` shrinks as the set grows (min 6 steps apart).
 
 ## Scroll camera
 
-- `StairwayScene`: `<ScrollControls pages={3} damping={0.18}>`
-- `useVirtualScrollIndex`: `virtualIndex += scroll.delta * SCROLL_SENSITIVITY` (42)
-- `CameraRig`: fixed `CAMERA_ORBIT_RADIUS` from central axis; looks at void center `(0, y, 0)` — no inner-spiral lookAt sway
+- `StairwayScene`: `<ScrollControls pages={3} damping={0.18} infinite>`
+- `useVirtualScrollIndex`: wrap-aware integration of `scroll.offset` × `CLIMB_SCALE` (28); per-frame index clamp 2.5 — do not use raw `scroll.delta` (spikes on wrap)
+- `CameraRig`: fixed `CAMERA_ORBIT_RADIUS`; `getContinuousOrbitAngle(index)` (no modulo — avoids ~360° snap each lap); looks at void center `(0, y, 0)`
 - `scrollProgress` in UI = position within current loop (0–1), not total height
 
 ## Door state machine
