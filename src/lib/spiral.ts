@@ -1,11 +1,33 @@
 import type { Vector3Tuple } from "three";
+import { projects, type Project } from "./projects";
 
-export const STAIR_COUNT = 24;
-export const PLATFORM_STAIR_INDICES = [5, 11, 17, 23] as const;
+/** One full helix turn in XZ; matches STAIR_ANGLE_STEP = 2π / LOOP_LENGTH */
+export const LOOP_LENGTH = 28;
+
+export const STAIR_POOL_SIZE = 14;
+export const DOOR_POOL_SIZE = 4;
+
+/** Minimum spacing between door landings as the project set grows */
+export const MIN_DOOR_STEP = 6;
 
 export const SPIRAL_RADIUS = 11;
 export const STAIR_HEIGHT_STEP = 0.52;
-export const STAIR_ANGLE_STEP = (Math.PI * 2) / 28;
+export const STAIR_ANGLE_STEP = (Math.PI * 2) / LOOP_LENGTH;
+
+/** Fixed orbit radius — camera stays this far from the central axis at all times */
+export const CAMERA_ORBIT_RADIUS = SPIRAL_RADIUS + 14;
+
+/** Vertical offset of camera above the current stair index */
+export const CAMERA_Y_OFFSET = 3;
+
+/** Look-at point on the central axis (void), slightly below camera height */
+export const CAMERA_LOOK_AT_Y_OFFSET = 1.2;
+
+/** @deprecated Static scene only — pool uses unbounded virtual indices */
+export const STAIR_COUNT = 24;
+
+/** @deprecated Use isDoorStairIndex + pool instead */
+export const PLATFORM_STAIR_INDICES = [5, 11, 17, 23] as const;
 
 export type RotationTuple = [number, number, number];
 
@@ -15,14 +37,48 @@ export type SpiralPlacement = {
   rotation: RotationTuple;
 };
 
-export function getStairPlacement(index: number): SpiralPlacement {
-  const angle = index * STAIR_ANGLE_STEP;
+export function getDoorStep(projectCount: number = projects.length): number {
+  const count = Math.max(1, projectCount);
+  return Math.max(MIN_DOOR_STEP, Math.floor(LOOP_LENGTH / count));
+}
+
+export function isDoorStairIndex(
+  virtualIndex: number,
+  doorStep: number = getDoorStep(),
+): boolean {
+  if (virtualIndex < 0) return false;
+  return virtualIndex % doorStep === 0;
+}
+
+export function getDoorSlotIndex(
+  virtualIndex: number,
+  doorStep: number = getDoorStep(),
+): number {
+  const projectCount = Math.max(1, projects.length);
+  return Math.floor(virtualIndex / doorStep) % projectCount;
+}
+
+/** Project for a pooled door at a virtual stair index (repeating set). */
+export function getProjectForStairIndex(
+  virtualIndex: number,
+): Project | undefined {
+  if (projects.length === 0) return undefined;
+  const doorStep = getDoorStep();
+  if (!isDoorStairIndex(virtualIndex, doorStep)) return undefined;
+  const slot = getDoorSlotIndex(virtualIndex, doorStep);
+  return projects[slot];
+}
+
+export function getStairPlacement(virtualIndex: number): SpiralPlacement {
+  const loopIndex =
+    ((virtualIndex % LOOP_LENGTH) + LOOP_LENGTH) % LOOP_LENGTH;
+  const angle = loopIndex * STAIR_ANGLE_STEP;
   const x = Math.cos(angle) * SPIRAL_RADIUS;
   const z = Math.sin(angle) * SPIRAL_RADIUS;
-  const y = index * STAIR_HEIGHT_STEP;
+  const y = virtualIndex * STAIR_HEIGHT_STEP;
 
   return {
-    index,
+    index: virtualIndex,
     position: [x, y, z],
     rotation: [0, -angle + Math.PI / 2, 0],
   };
@@ -30,7 +86,9 @@ export function getStairPlacement(index: number): SpiralPlacement {
 
 export function getPlatformPlacement(stairIndex: number): SpiralPlacement {
   const stair = getStairPlacement(stairIndex);
-  const angle = stairIndex * STAIR_ANGLE_STEP;
+  const loopIndex =
+    ((stairIndex % LOOP_LENGTH) + LOOP_LENGTH) % LOOP_LENGTH;
+  const angle = loopIndex * STAIR_ANGLE_STEP;
   const outwardX = Math.cos(angle);
   const outwardZ = Math.sin(angle);
 
@@ -47,7 +105,9 @@ export function getPlatformPlacement(stairIndex: number): SpiralPlacement {
 
 export function getDoorPlacement(stairIndex: number): SpiralPlacement {
   const platform = getPlatformPlacement(stairIndex);
-  const angle = stairIndex * STAIR_ANGLE_STEP;
+  const loopIndex =
+    ((stairIndex % LOOP_LENGTH) + LOOP_LENGTH) % LOOP_LENGTH;
+  const angle = loopIndex * STAIR_ANGLE_STEP;
   const outwardX = Math.cos(angle);
   const outwardZ = Math.sin(angle);
 
@@ -62,4 +122,7 @@ export function getDoorPlacement(stairIndex: number): SpiralPlacement {
   };
 }
 
+export const LOOP_HEIGHT = LOOP_LENGTH * STAIR_HEIGHT_STEP;
+
+/** @deprecated Scroll is delta-driven; kept for reference */
 export const SCENE_HEIGHT = STAIR_COUNT * STAIR_HEIGHT_STEP + 4;

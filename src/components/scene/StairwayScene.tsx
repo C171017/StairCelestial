@@ -25,7 +25,7 @@ export function StairwayScene() {
   return (
     <Canvas
       shadows
-      camera={{ position: [18, 4, 0], fov: 50, near: 0.1, far: 200 }}
+      camera={{ position: [25, 4, 0], fov: 58, near: 0.1, far: 200 }}
       gl={{ antialias: true, alpha: false }}
       dpr={[1, 1.5]}
     >

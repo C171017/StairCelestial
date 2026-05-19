@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Celestial Stairway — Visual Guide</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #07071a;
+      --bg2:       #0d0d2b;
+      --surface:   #111132;
+      --surface2:  #1a1a42;
+      --border:    #272750;
+      --cyan:      #00d4ff;
+      --cyan-dim:  #0099cc;
+      --purple:    #8b5cf6;
+      --green:     #10b981;
+      --amber:     #f59e0b;
+      --red:       #ef4444;
+      --text:      #e2e8f0;
+      --text-dim:  #94a3b8;
+      --text-muted:#4a5568;
+      --mono:      'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 200;
+      height: 54px;
+      background: rgba(7,7,26,0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 2rem; gap: 2rem;
+    }
+    .nav-logo { font-weight: 700; font-size: 0.82rem; letter-spacing: .08em; text-transform: uppercase; color: var(--cyan); white-space: nowrap; }
+    nav a { color: var(--text-dim); text-decoration: none; font-size: 0.82rem; transition: color .18s; white-space: nowrap; }
+    nav a:hover { color: var(--cyan); }
+    .nav-spacer { flex: 1; }
+
+    /* ── Layout ── */
+    .section { padding: 5rem 2rem; max-width: 1140px; margin: 0 auto; }
+    .section-divider { border: none; border-top: 1px solid var(--border); }
+
+    .section-label {
+      font-family: var(--mono); font-size: .68rem; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: .4rem;
+    }
+    h1 { font-size: clamp(2rem,5vw,3.2rem); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+    h2 { font-size: 1.7rem; font-weight: 600; letter-spacing: -.01em; margin-bottom: 1.75rem; }
+    h3 { font-size: 1rem; font-weight: 600; margin-bottom: .65rem; }
+    p  { color: var(--text-dim); }
+
+    code { font-family: var(--mono); font-size: .82em; background: var(--surface2); padding: .1em .35em; border-radius: 4px; color: var(--cyan); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: .18rem .55rem; border-radius: 9999px;
+      font-size: .72rem; font-weight: 500; font-family: var(--mono);
+    }
+    .bg-cyan   { background: rgba(0,212,255,.13); color: var(--cyan);   border: 1px solid rgba(0,212,255,.3); }
+    .bg-green  { background: rgba(16,185,129,.13); color: var(--green);  border: 1px solid rgba(16,185,129,.3); }
+    .bg-amber  { background: rgba(245,158,11,.13); color: var(--amber);  border: 1px solid rgba(245,158,11,.3); }
+    .bg-red    { background: rgba(239,68,68,.13);  color: var(--red);    border: 1px solid rgba(239,68,68,.3); }
+    .bg-purple { background: rgba(139,92,246,.13); color: var(--purple); border: 1px solid rgba(139,92,246,.3); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.4rem;
+      transition: border-color .2s;
+    }
+    .card:hover { border-color: var(--cyan-dim); }
+
+    /* ── Grids ── */
+    .g2 { display: grid; grid-template-columns: repeat(auto-fit,minmax(300px,1fr)); gap: 1.5rem; }
+    .g3 { display: grid; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); gap: 1rem; }
+
+    /* ── Hero ── */
+    #hero { padding-top: 6rem; padding-bottom: 4rem; }
+    .hero-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.25rem 0 2.5rem; }
+
+    /* Controls callout */
+    .controls-row {
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .control-chip {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .75rem 1rem; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 10px; flex: 1; min-width: 200px;
+    }
+    .control-icon { font-size: 1.4rem; flex-shrink: 0; }
+
+    /* ── Phase cards ── */
+    .phase-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 1.1rem; }
+    .phase-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.25rem;
+      position: relative; overflow: hidden;
+      cursor: pointer; transition: border-color .2s, transform .18s;
+    }
+    .phase-card::before { content:''; position:absolute; top:0;left:0;right:0; height:3px; }
+    .ph-done::before   { background: var(--green); }
+    .ph-active::before { background: var(--cyan); }
+    .ph-todo::before   { background: var(--text-muted); }
+    .phase-card:hover  { border-color: var(--cyan-dim); transform: translateY(-2px); }
+
+    .phase-num { font-family: var(--mono); font-size:.66rem; color: var(--text-muted); margin-bottom:.4rem; }
+    .phase-tasks { list-style:none; margin-top:.85rem; }
+    .phase-tasks li { font-size:.8rem; color:var(--text-dim); padding:.22rem 0 .22rem 1.1rem; position:relative; }
+    .phase-tasks li::before { content:'›'; position:absolute; left:0; color:var(--cyan-dim); }
+
+    .phase-detail { display:none; margin-top:.9rem; padding-top:.9rem; border-top:1px solid var(--border); font-size:.8rem; color:var(--text-dim); }
+    .phase-detail.open { display:block; }
+    .ph-hint { font-size:.72rem; color:var(--text-muted); text-align:right; margin-top:.5rem; }
+
+    /* Progress bar */
+    .progress-bar { display:flex; height:8px; border-radius:6px; overflow:hidden; background:var(--surface2); margin-bottom:2rem; }
+    .pb-seg { flex:1; }
+
+    /* ── File tree ── */
+    .file-tree { font-family:var(--mono); font-size:.8rem; line-height:2; }
+    .tree-dir  { color:var(--cyan); font-weight:500; }
+    .tree-file { color:var(--text-dim); cursor:default; }
+    .tree-file.star { color: #fcd34d; }
+    .tree-file.bolt { color: var(--amber); }
+    .tree-desc { color:var(--text-muted); font-size:.72rem; }
+    .ti { padding-left:1.4rem; }
+
+    /* ── Component hierarchy ── */
+    .comp-node {
+      font-family:var(--mono); font-size:.76rem;
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:8px; padding:.4rem .85rem; text-align:center; color:var(--cyan);
+    }
+    .vline  { width:2px; height:16px; background:var(--border); margin:0 auto; }
+    .hrow   { display:flex; gap:.5rem; justify-content:center; align-items:stretch; }
+
+    /* ── Spiral canvas ── */
+    #spiral-canvas {
+      display:block; border-radius:50%;
+      border:1px solid var(--border);
+      cursor:crosshair;
+    }
+    .spiral-wrap { display:flex; gap:2rem; align-items:flex-start; flex-wrap:wrap; }
+
+    .leg-item { display:flex; align-items:center; gap:.65rem; margin-bottom:.6rem; font-size:.83rem; }
+    .leg-dot  { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+
+    /* Constants table */
+    .ctable { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:.78rem; margin-top:.75rem; }
+    .ctable th { text-align:left; color:var(--text-muted); padding:.4rem .7rem; border-bottom:1px solid var(--border); font-weight:500; }
+    .ctable td { padding:.38rem .7rem; border-bottom:1px solid rgba(39,39,80,.5); }
+    .ctable td:nth-child(2) { color:var(--cyan); }
+    .ctable td:nth-child(3) { color:var(--text-dim); font-size:.72rem; }
+
+    /* ── Door state machine ── */
+    .state-flow { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+    .state-node {
+      background:var(--surface2); border:2px solid var(--border);
+      border-radius:10px; padding:.9rem 1.1rem; text-align:center;
+      min-width:130px; transition:border-color .2s; cursor:default;
+    }
+    .state-node.lit { border-color:var(--cyan); }
+    .state-name { font-weight:600; font-size:.88rem; }
+    .state-sub  { font-size:.72rem; color:var(--text-muted); margin-top:.2rem; }
+    .arrow-wrap { display:flex; flex-direction:column; align-items:center; gap:.15rem; }
+    .arrow-label { font-size:.7rem; color:var(--text-muted); }
+    .arrow-sym   { font-size:1.2rem; color:var(--border); }
+
+    .store-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:.45rem .75rem; background:var(--surface2); border-radius:6px;
+      gap:1rem;
+    }
+    .store-key { font-family:var(--mono); font-size:.78rem; color:var(--cyan); }
+    .store-val { font-size:.76rem; color:var(--text-dim); text-align:right; }
+
+    .warn-box {
+      margin-top:1rem; padding:.75rem 1rem;
+      background:rgba(245,158,11,.07); border:1px solid rgba(245,158,11,.28);
+      border-radius:8px; font-size:.78rem; color:var(--amber); line-height:1.7;
+    }
+
+    /* ── GLB cards ── */
+    .glb-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:1.15rem; transition:border-color .2s;
+    }
+    .glb-card:hover { border-color:var(--cyan-dim); }
+    .glb-icon { font-size:1.8rem; margin-bottom:.6rem; }
+    .glb-name { font-family:var(--mono); font-size:.82rem; color:var(--cyan); margin-bottom:.45rem; }
+
+    /* ── Stack ── */
+    .stack-item {
+      display:flex; align-items:center; gap:.9rem;
+      padding:.9rem 1rem; background:var(--surface);
+      border:1px solid var(--border); border-radius:10px;
+      transition:border-color .2s;
+    }
+    .stack-item:hover { border-color:var(--cyan-dim); }
+    .stack-icon {
+      width:40px; height:40px; border-radius:8px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:1.15rem;
+    }
+    .stack-title { font-weight:600; font-size:.88rem; }
+    .stack-desc  { font-size:.77rem; color:var(--text-dim); margin-top:.15rem; }
+
+    .cmd-box {
+      font-family:var(--mono); font-size:.82rem;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:10px; padding:.9rem 1.1rem; line-height:2;
+    }
+    .cmd-prompt { color:var(--text-muted); }
+    .cmd-text   { color:var(--green); }
+    .cmd-comment{ color:var(--text-muted); }
+
+    /* ── Misc helpers ── */
+    .mt1 { margin-top:.5rem; }
+    .mt2 { margin-top:1rem; }
+    .mt3 { margin-top:1.5rem; }
+    .mt4 { margin-top:2rem; }
+    .info-box {
+      padding:.9rem 1.1rem; background:rgba(0,212,255,.05);
+      border:1px solid rgba(0,212,255,.18); border-radius:8px;
+      font-size:.8rem; color:var(--text-dim); line-height:1.75;
+    }
+    .rule-row { display:flex; align-items:flex-start; gap:.5rem; margin-bottom:.35rem; font-size:.82rem; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+    /* Responsive */
+    @media (max-width:640px) {
+      nav a:not(.nav-logo) { display:none; }
+      .spiral-wrap { flex-direction:column; }
+      .state-flow  { flex-direction:column; }
+    }
+
+    /* Glow pulse on current phase */
+    @keyframes glow {
+      0%,100% { box-shadow: 0 0 0 0 rgba(0,212,255,0); }
+      50%      { box-shadow: 0 0 0 4px rgba(0,212,255,.15); }
+    }
+    .ph-active { animation: glow 2.5s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ NAV ═══════════════════ -->
+<nav>
+  <span class="nav-logo">★ Celestial Stairway</span>
+  <div class="nav-spacer"></div>
+  <a href="#overview">Overview</a>
+  <a href="#phases">Phases</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#spiral">Spiral</a>
+  <a href="#doors">Doors</a>
+  <a href="#assets">Assets</a>
+  <a href="#stack">Stack</a>
+</nav>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<section class="section" id="overview">
+  <p class="section-label">Personal portfolio</p>
+  <h1>Celestial Stairway<br><span style="color:var(--cyan)">Visual Guide</span></h1>
+
+  <p style="max-width:620px;margin-top:1rem;font-size:1.02rem;">
+    An interactive 3D portfolio homepage. The visitor scrolls up a glowing spiral staircase
+    floating in space — each platform landing holds a door to one of your projects.
+  </p>
+
+  <div class="hero-tags">
+    <span class="badge bg-green">Next.js 15</span>
+    <span class="badge bg-cyan">React Three Fiber</span>
+    <span class="badge bg-purple">Drei</span>
+    <span class="badge bg-amber">GSAP</span>
+    <span class="badge bg-amber">Zustand</span>
+    <span class="badge bg-cyan">Blender → GLB</span>
+    <span class="badge bg-purple">Tailwind CSS 4</span>
+    <span class="badge bg-green">Vercel</span>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-row">
+    <div class="control-chip">
+      <span class="control-icon">🖱</span>
+      <div>
+        <div style="font-weight:600;font-size:.88rem">Scroll</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">3rd-person camera ascends the outer edge of the helix</div>
+      </div>
+    </div>
+    <div class="control-chip">
+      <span class="control-icon">🚪</span>
+      <div>
+        <div style="font-weight:600;font-size:.88rem">Click once</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">GSAP swings door open, preview image texture loads</div>
+      </div>
+    </div>
+    <div class="control-chip">
+      <span class="control-icon">🔗</span>
+      <div>
+        <div style="font-weight:600;font-size:.88rem">Click again</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Opens project URL in new tab via <code>window.open</code></div>
+      </div>
+    </div>
+    <div class="control-chip">
+      <span class="control-icon">🌌</span>
+      <div>
+        <div style="font-weight:600;font-size:.88rem">Atmosphere</div>
+        <div style="font-size:.78rem;color:var(--text-dim)">Fog, stars, Milky Way, Jupiter, ringed planet background</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual rules -->
+  <div class="g2 mt4">
+    <div class="card">
+      <h3>Visual Direction — do not drift</h3>
+      <div class="mt2" style="display:flex;flex-direction:column;gap:.3rem">
+        <div class="rule-row">🌀 <span>Slow wide spiral — not a tight corkscrew</span></div>
+        <div class="rule-row">📷 <span>Camera <strong>outside</strong> spiral, looking upward along outer edge</span></div>
+        <div class="rule-row">🚪 <span>Graphite doors — thin <strong style="color:var(--cyan)">cyan-white emissive</strong> accents only</span></div>
+        <div class="rule-row">🪐 <span>One large Jupiter-like planet, one smaller ringed planet</span></div>
+        <div class="rule-row">✨ <span>Subtle Milky Way band, sparse starfield</span></div>
+        <div class="rule-row">🌫 <span>Fog hides repetition — no true infinite mesh count</span></div>
+      </div>
+      <hr style="border-color:var(--border);margin:.9rem 0">
+      <div style="color:var(--red);font-size:.78rem;line-height:1.9">
+        ✗ No fantasy/medieval style, characters, or physics engine<br>
+        ✗ Never merge stairs into one mesh in Blender<br>
+        ✗ Never use a center pivot on the door panel
+      </div>
+    </div>
+    <div class="card">
+      <h3>Hard rules (every 3D change)</h3>
+      <div class="mt1" style="display:flex;flex-direction:column;gap:.65rem">
+        <div style="padding:.7rem;background:var(--surface2);border-radius:8px;font-size:.82rem">
+          <div style="color:var(--cyan);font-weight:600;margin-bottom:.25rem">Modular geometry</div>
+          <div style="color:var(--text-dim)">Keep geometry low-poly, clearly named, export-ready for Three.js</div>
+        </div>
+        <div style="padding:.7rem;background:var(--surface2);border-radius:8px;font-size:.82rem">
+          <div style="color:var(--amber);font-weight:600;margin-bottom:.25rem">Door pivot</div>
+          <div style="color:var(--text-dim)">Panel separate from frame; pivot on hinge side — <strong>not</strong> center</div>
+        </div>
+        <div style="padding:.7rem;background:var(--surface2);border-radius:8px;font-size:.82rem">
+          <div style="color:var(--purple);font-weight:600;margin-bottom:.25rem">Infinite illusion</div>
+          <div style="color:var(--text-dim)">Recycle segments + fog + camera — not truly infinite geometry</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ PHASES ═══════════════════ -->
+<section class="section" id="phases">
+  <p class="section-label">Progress tracker</p>
+  <h2>Implementation Phases</h2>
+
+  <!-- Progress bar -->
+  <div class="progress-bar">
+    <div class="pb-seg" style="background:var(--green)" title="W1 Done"></div>
+    <div class="pb-seg" style="background:rgba(0,212,255,.55)" title="W2 In Progress"></div>
+    <div class="pb-seg" style="background:rgba(0,212,255,.28)" title="W3 In Progress"></div>
+    <div class="pb-seg" style="background:var(--text-muted)" title="W4 Todo"></div>
+    <div class="pb-seg" style="background:var(--text-muted)" title="W5 Todo"></div>
+    <div class="pb-seg" style="background:var(--text-muted)" title="W6 Todo"></div>
+  </div>
+  <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:1.75rem;margin-top:-.75rem">Click any card to expand details</p>
+
+  <div class="phase-grid">
+
+    <!-- W1 -->
+    <div class="phase-card ph-done" onclick="togglePhase(this)">
+      <div class="phase-num">PHASE W1</div>
+      <h3>Scaffold &amp; GLB Smoke Test</h3>
+      <span class="badge bg-green">✓ Done</span>
+      <ul class="phase-tasks">
+        <li><code>npm run dev</code> serves <code>/</code></li>
+        <li>No GLTF load errors in console</li>
+        <li>Each model visible at least once</li>
+      </ul>
+      <div class="phase-detail">
+        Key files: <code>StairwayScene.tsx</code>, <code>StairSegment.tsx</code>, <code>public/models/</code>
+      </div>
+      <div class="ph-hint">↓ expand</div>
+    </div>
+
+    <!-- W2 -->
+    <div class="phase-card ph-active" onclick="togglePhase(this)">
+      <div class="phase-num">PHASE W2 — CURRENT PRIORITY</div>
+      <h3>Spiral Alignment</h3>
+      <span class="badge bg-cyan">In Progress</span>
+      <ul class="phase-tasks">
+        <li>Tune <code>SPIRAL_RADIUS</code>, <code>STAIR_HEIGHT_STEP</code></li>
+        <li>Doors sit on platforms (no floating)</li>
+        <li>No z-fighting between platform &amp; door</li>
+        <li>Adjust planet positions if composition breaks</li>
+      </ul>
+      <div class="phase-detail">
+        Edit <code>src/lib/spiral.ts</code> — tune constants <strong>there first</strong>, not in Blender.<br>
+        Do NOT re-export GLBs unless scale is off by ~10× or more.
+      </div>
+      <div class="ph-hint">↓ expand</div>
+    </div>
+
+    <!-- W3 -->
+    <div class="phase-card ph-active" onclick="togglePhase(this)">
+      <div class="phase-num">PHASE W3</div>
+      <h3>Camera &amp; Scroll Feel</h3>
+      <span class="badge bg-cyan">In Progress</span>
+      <ul class="phase-tasks">
+        <li>Tune <code>ScrollControls</code> pages + damping</li>
+        <li><code>CameraRig</code> lerp factor + lookAt height</li>
+        <li>Fog <code>near</code>/<code>far</code> to hide repetition</li>
+      </ul>
+      <div class="phase-detail">
+        Done when: smooth trackpad scroll, camera never clips stairs, one door prominent in first ⅓ of scroll.
+      </div>
+      <div class="ph-hint">↓ expand</div>
+    </div>
+
+    <!-- W4 -->
+    <div class="phase-card ph-todo" onclick="togglePhase(this)">
+      <div class="phase-num">PHASE W4</div>
+      <h3>Doors, Previews &amp; Data</h3>
+      <span class="badge bg-amber">Todo</span>
+      <ul class="phase-tasks">
+        <li>Real entries in <code>projects.ts</code></li>
+        <li>Preview images in <code>public/previews/</code></li>
+        <li>Verify door hinge axis</li>
+        <li>Optional: keyboard accessibility</li>
+      </ul>
+      <div class="phase-detail">
+        4 doors: <code>door-0…door-3</code> ↔ <code>doorIndex 0–3</code> in projects.ts.
+        1st click = preview; 2nd click = URL. Only one door open at a time.
+      </div>
+      <div class="ph-hint">↓ expand</div>
+    </div>
+
+    <!-- W5 -->
+    <div class="phase-card ph-todo" onclick="togglePhase(this)">
+      <div class="phase-num">PHASE W5</div>
+      <h3>Atmosphere &amp; Polish</h3>
+      <span class="badge bg-amber">Todo</span>
+      <ul class="phase-tasks">
+        <li>Tune <code>Lights.tsx</code> intensities + colors</li>
+        <li>Refine star count, Milky Way opacity</li>
+        <li>Restrain emissive door strip brightness</li>
+        <li>Optional: light bloom pass</li>
+      </ul>
+      <div class="phase-detail">
+        Goal: Premium · mysterious · calm — not noisy or overexposed.<br>
+        <span style="color:var(--red)">Avoid heavy bloom, harsh contrast, dense star clutter.</span>
+      </div>
+      <div class="ph-hint">↓ expand</div>
+    </div>
+
+    <!-- W6 -->
+    <div class="phase-card ph-todo" onclick="togglePhase(this)">
+      <div class="phase-num">PHASE W6</div>
+      <h3>Infinite Illusion &amp; Deploy</h3>
+      <span class="badge bg-amber">Todo</span>
+      <ul class="phase-tasks">
+        <li>Segment recycling pool (~24 stairs)</li>
+        <li>Mobile: lower dpr, fewer stars, touch taps</li>
+        <li><code>npm run build</code> clean</li>
+        <li>Deploy to Vercel, verify GLB paths</li>
+      </ul>
+      <div class="phase-detail">
+        Pool repositions segments based on <code>scrollProgress</code>.
+        No true infinite geometry or physics for MVP.
+      </div>
+      <div class="ph-hint">↓ expand</div>
+    </div>
+
+  </div>
+
+  <!-- Quick picker -->
+  <div class="card mt4">
+    <h3 style="margin-bottom:1rem">Phase Picker — what to open when something breaks</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.5rem;font-size:.82rem">
+      <div style="padding:.5rem .75rem;background:var(--surface2);border-radius:8px"><span style="color:var(--text-muted)">Doors won't open</span> → <strong>W4</strong></div>
+      <div style="padding:.5rem .75rem;background:var(--surface2);border-radius:8px"><span style="color:var(--text-muted)">Stairs floating/wrong layout</span> → <strong>W2</strong></div>
+      <div style="padding:.5rem .75rem;background:var(--surface2);border-radius:8px"><span style="color:var(--text-muted)">Scroll feels bad</span> → <strong>W3</strong></div>
+      <div style="padding:.5rem .75rem;background:var(--surface2);border-radius:8px"><span style="color:var(--text-muted)">Looks flat / bad lighting</span> → <strong>W5</strong></div>
+      <div style="padding:.5rem .75rem;background:var(--surface2);border-radius:8px"><span style="color:var(--text-muted)">Slow on phone / deploy</span> → <strong>W6</strong></div>
+      <div style="padding:.5rem .75rem;background:var(--surface2);border-radius:8px"><span style="color:var(--text-muted)">New GLB from Blender</span> → <strong>W2</strong> after re-export</div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ ARCHITECTURE ═══════════════════ -->
+<section class="section" id="architecture">
+  <p class="section-label">Code map</p>
+  <h2>Architecture</h2>
+
+  <div class="g2" style="align-items:start">
+
+    <!-- File tree -->
+    <div class="card">
+      <h3 style="margin-bottom:1.1rem">Folder Map</h3>
+      <div class="file-tree">
+        <div class="tree-dir">src/app/</div>
+        <div class="ti">
+          <div class="tree-file">page.tsx <span class="tree-desc">— Home: &lt;StairwayScene&gt; + &lt;ProjectOverlay&gt;</span></div>
+          <div class="tree-file">layout.tsx <span class="tree-desc">— Root layout, metadata</span></div>
+          <div class="tree-file">globals.css <span class="tree-desc">— Full-viewport, dark background</span></div>
+        </div>
+        <div class="tree-dir" style="margin-top:.5rem">src/components/scene/</div>
+        <div class="ti">
+          <div class="tree-file">StairwayScene.tsx <span class="tree-desc">— &lt;Canvas&gt;, ScrollControls, Suspense</span></div>
+          <div class="tree-file">SpiralStaircase.tsx <span class="tree-desc">— Instantiates stairs, platforms, doors</span></div>
+          <div class="tree-file">StairSegment.tsx <span class="tree-desc">— useGLTF stair_segment, scene.clone(true)</span></div>
+          <div class="tree-file">PlatformLanding.tsx <span class="tree-desc">— useGLTF platform_landing</span></div>
+          <div class="tree-file star">ProjectDoor.tsx ★ <span class="tree-desc">— Door + preview screen + GSAP + clicks</span></div>
+          <div class="tree-file">CameraRig.tsx <span class="tree-desc">— useScroll → camera lerp on helix path</span></div>
+          <div class="tree-file">CelestialBackground.tsx <span class="tree-desc">— Jupiter + ringed planet GLBs</span></div>
+          <div class="tree-file">Atmosphere.tsx <span class="tree-desc">— fog, Stars, Milky Way plane</span></div>
+          <div class="tree-file">Lights.tsx <span class="tree-desc">— ambient + directional + point</span></div>
+          <div class="tree-file">cloneScene.ts <span class="tree-desc">— findChildByNamePart() helper</span></div>
+        </div>
+        <div class="tree-dir" style="margin-top:.5rem">src/components/ui/</div>
+        <div class="ti">
+          <div class="tree-file">ProjectOverlay.tsx <span class="tree-desc">— HTML overlay, scroll %, open project card</span></div>
+          <div class="tree-file">LoadingScreen.tsx <span class="tree-desc">— Canvas loading fallback</span></div>
+        </div>
+        <div class="tree-dir" style="margin-top:.5rem">src/lib/</div>
+        <div class="ti">
+          <div class="tree-file bolt">spiral.ts ⚡ <span class="tree-desc">— STAIR_COUNT, placements, helix constants</span></div>
+          <div class="tree-file">models.ts <span class="tree-desc">— MODEL_PATHS for all GLBs</span></div>
+          <div class="tree-file">projects.ts <span class="tree-desc">— Project[] + getProjectByDoorIndex</span></div>
+          <div class="tree-file">store.ts <span class="tree-desc">— usePortfolioStore (Zustand)</span></div>
+        </div>
+      </div>
+      <div class="mt2" style="font-size:.72rem;color:var(--text-muted)">★ most interaction logic &nbsp;⚡ tune layout here first</div>
+    </div>
+
+    <!-- Component hierarchy -->
+    <div class="card">
+      <h3 style="margin-bottom:1.15rem">Component Hierarchy</h3>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+        <div class="comp-node" style="background:rgba(139,92,246,.12);border-color:var(--purple);color:var(--purple)">page.tsx (dynamic, ssr:false)</div>
+        <div class="vline"></div>
+        <div class="comp-node" style="min-width:180px">StairwayScene</div>
+        <div style="font-size:.68rem;color:var(--text-muted);font-family:var(--mono)">&lt;ScrollControls&gt; wraps children</div>
+        <div class="vline"></div>
+        <div class="hrow" style="gap:.4rem;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div class="comp-node" style="min-width:130px;font-size:.7rem">SpiralStaircase</div>
+            <div class="vline"></div>
+            <div class="hrow" style="gap:.35rem">
+              <div class="comp-node" style="min-width:80px;font-size:.65rem">StairSegment<br><span style="color:var(--text-muted)">×24</span></div>
+              <div class="comp-node" style="min-width:80px;font-size:.65rem">PlatformLanding<br><span style="color:var(--text-muted)">×4</span></div>
+              <div class="comp-node" style="min-width:80px;font-size:.65rem;color:var(--amber);border-color:var(--amber)">ProjectDoor<br><span style="color:var(--text-muted)">×4</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="vline"></div>
+        <div class="hrow" style="flex-wrap:wrap;gap:.4rem">
+          <div class="comp-node" style="min-width:90px;font-size:.68rem">CameraRig</div>
+          <div class="comp-node" style="min-width:90px;font-size:.68rem">Atmosphere</div>
+          <div class="comp-node" style="min-width:90px;font-size:.68rem">Lights</div>
+          <div class="comp-node" style="min-width:140px;font-size:.68rem">CelestialBackground</div>
+        </div>
+      </div>
+
+      <hr style="border-color:var(--border);margin:1.25rem 0">
+
+      <h3 style="font-size:.88rem;margin-bottom:.75rem">Outside Canvas (HTML overlay)</h3>
+      <div class="hrow" style="gap:.5rem;justify-content:flex-start">
+        <div class="comp-node" style="color:var(--purple);border-color:var(--purple);font-size:.75rem">ProjectOverlay</div>
+        <div class="comp-node" style="color:var(--purple);border-color:var(--purple);font-size:.75rem">LoadingScreen</div>
+      </div>
+
+      <hr style="border-color:var(--border);margin:1.25rem 0">
+
+      <h3 style="font-size:.88rem;margin-bottom:.75rem">Data flow</h3>
+      <div style="font-size:.78rem;color:var(--text-dim);line-height:1.9;font-family:var(--mono)">
+        useScroll() → CameraRig → scrollProgress → store<br>
+        store.scrollProgress → ProjectOverlay (HTML)<br>
+        pointerDown → ProjectDoor → GSAP + store<br>
+        store.openedDoorId → closes prev door via effect
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ SPIRAL ═══════════════════ -->
+<section class="section" id="spiral">
+  <p class="section-label">Helix math</p>
+  <h2>Spiral Layout</h2>
+  <p>All geometry is driven by constants in <code>src/lib/spiral.ts</code>. Tune here first — not in Blender.</p>
+
+  <div class="spiral-wrap mt4">
+
+    <!-- Canvas -->
+    <div style="flex-shrink:0">
+      <canvas id="spiral-canvas" width="320" height="320"></canvas>
+      <p style="text-align:center;font-size:.72rem;color:var(--text-muted);margin-top:.5rem">Top-down view · hover to inspect stairs</p>
+    </div>
+
+    <!-- Legend + constants -->
+    <div style="flex:1;min-width:260px">
+      <div class="leg-item"><div class="leg-dot" style="background:#374151"></div>Stair segment ×24</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--cyan)"></div>Platform landing ×4</div>
+      <div class="leg-item"><div class="leg-dot" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div>Project door (stair 5, 11, 17, 23)</div>
+
+      <div class="mt3">
+        <h3 style="font-size:.88rem">Constants</h3>
+        <table class="ctable">
+          <thead>
+            <tr><th>Constant</th><th>Value</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>STAIR_COUNT</td><td>24</td><td>Total stair instances</td></tr>
+            <tr><td>PLATFORM_STAIR_INDICES</td><td>[5,11,17,23]</td><td>Which stairs get a door</td></tr>
+            <tr><td>SPIRAL_RADIUS</td><td>11</td><td>Helix radius</td></tr>
+            <tr><td>STAIR_HEIGHT_STEP</td><td>0.52</td><td>Vertical rise per stair</td></tr>
+            <tr><td>STAIR_ANGLE_STEP</td><td>2π/28</td><td>Rotation per stair (slow wide spiral)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt3">
+        <h3 style="font-size:.88rem">Functions in spiral.ts</h3>
+        <div style="font-family:var(--mono);font-size:.77rem;line-height:2.1;color:var(--text-dim)">
+          <div><span style="color:var(--cyan)">getStairPlacement</span>(index) → position + Y rotation</div>
+          <div><span style="color:var(--cyan)">getPlatformPlacement</span>(stairIndex) → offset outward from stair</div>
+          <div><span style="color:var(--cyan)">getDoorPlacement</span>(stairIndex) → slightly above/outside platform</div>
+        </div>
+      </div>
+
+      <div class="info-box mt3">
+        <strong style="color:var(--cyan)">When stairs/doors float or clip:</strong><br>
+        Tune constants in spiral.ts first — only re-export from Blender if scale is wrong by ~10× or more.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Side-view height chart -->
+  <div class="card mt4">
+    <h3 style="margin-bottom:1rem">Side View — Height Profile</h3>
+    <div style="position:relative;height:90px;overflow:hidden">
+      <canvas id="height-canvas" style="width:100%;height:90px"></canvas>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.68rem;color:var(--text-muted);margin-top:.4rem">
+      <span>Stair 0</span><span>Stair 6</span><span>Stair 12</span><span>Stair 18</span><span>Stair 23</span>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ DOORS ═══════════════════ -->
+<section class="section" id="doors">
+  <p class="section-label">Interaction model</p>
+  <h2>Door State Machine</h2>
+
+  <div class="g2" style="align-items:start">
+
+    <!-- State flow diagram -->
+    <div class="card">
+      <h3 style="margin-bottom:1.25rem">States &amp; Transitions</h3>
+
+      <div class="state-flow">
+        <div class="state-node" id="sn-idle">
+          <div class="state-name">Idle</div>
+          <div class="state-sub">All doors closed</div>
+        </div>
+        <div class="arrow-wrap">
+          <div class="arrow-label">1st click</div>
+          <div class="arrow-sym">→</div>
+        </div>
+        <div class="state-node lit" id="sn-open">
+          <div class="state-name" style="color:var(--cyan)">Open</div>
+          <div class="state-sub">Preview image loaded<br>GSAP panel swing</div>
+        </div>
+        <div class="arrow-wrap">
+          <div class="arrow-label">2nd click</div>
+          <div class="arrow-sym">→</div>
+        </div>
+        <div class="state-node" id="sn-nav">
+          <div class="state-name" style="color:var(--amber)">Navigate</div>
+          <div class="state-sub"><code>window.open(url)</code></div>
+        </div>
+      </div>
+
+      <div style="margin-top:1.1rem;font-size:.8rem;color:var(--text-dim);padding:.65rem .85rem;background:var(--surface2);border-radius:8px">
+        Opening a <strong>different door</strong> automatically closes the previously open door via <code>openedDoorId</code> effect in the store.
+      </div>
+
+      <hr style="border-color:var(--border);margin:1.1rem 0">
+
+      <h3 style="font-size:.88rem;margin-bottom:.75rem">Door ↔ Platform mapping</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+        <span class="badge bg-cyan">door-0 → stair 5</span>
+        <span class="badge bg-cyan">door-1 → stair 11</span>
+        <span class="badge bg-cyan">door-2 → stair 17</span>
+        <span class="badge bg-cyan">door-3 → stair 23</span>
+      </div>
+      <div style="font-size:.78rem;color:var(--text-dim);margin-top:.75rem">
+        Each <code>Project</code> in <code>projects.ts</code> has <code>doorIndex 0–3</code> matching the platform order in <code>PLATFORM_STAIR_INDICES</code>.
+      </div>
+
+      <div class="warn-box">
+        ⚠ Hit testing uses invisible <code>boxGeometry</code> mesh — not GLB mesh pointer events.<br>
+        Hinge axis: <code>rotation.y</code>. If panel swings wrong, try <code>rotation.z</code> or check Blender pivot. Do not move pivot in code.
+      </div>
+    </div>
+
+    <!-- Zustand store -->
+    <div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem">Zustand Store (<code>src/lib/store.ts</code>)</h3>
+        <div style="display:flex;flex-direction:column;gap:.4rem">
+          <div class="store-row">
+            <span class="store-key">activeDoorId</span>
+            <span class="store-val">Hovered / focused door</span>
+          </div>
+          <div class="store-row">
+            <span class="store-key">openedDoorId</span>
+            <span class="store-val">Currently open door</span>
+          </div>
+          <div class="store-row">
+            <span class="store-key">currentProject</span>
+            <span class="store-val">Project linked to open door</span>
+          </div>
+          <div class="store-row">
+            <span class="store-key">scrollProgress</span>
+            <span class="store-val">0 – 1 from scroll offset</span>
+          </div>
+        </div>
+        <div style="margin-top:1rem;font-size:.78rem;color:var(--text-dim)">
+          Store is written by <code>CameraRig</code> (scrollProgress) and <code>ProjectDoor</code> (door IDs). Read by <code>ProjectOverlay</code> for the HTML UI layer.
+        </div>
+      </div>
+
+      <div class="card mt2">
+        <h3 style="font-size:.88rem;margin-bottom:.85rem">GSAP Door Animation</h3>
+        <div style="font-family:var(--mono);font-size:.78rem;color:var(--text-dim);line-height:1.9;background:var(--surface2);padding:.75rem;border-radius:8px">
+          <span style="color:var(--purple)">gsap</span>.<span style="color:var(--cyan)">to</span>(panel.rotation, {<br>
+          &nbsp;&nbsp;<span style="color:var(--amber)">y</span>: DOOR_OPEN_ANGLE, <span style="color:var(--text-muted)">// -π × 0.55</span><br>
+          &nbsp;&nbsp;<span style="color:var(--amber)">duration</span>: 0.8,<br>
+          &nbsp;&nbsp;<span style="color:var(--amber)">ease</span>: <span style="color:var(--green)">"power2.out"</span><br>
+          })
+        </div>
+        <div style="font-size:.78rem;color:var(--text-dim);margin-top:.75rem">
+          After open: show preview mesh + apply texture from <code>project.previewImage</code>.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ ASSETS ═══════════════════ -->
+<section class="section" id="assets">
+  <p class="section-label">3D assets</p>
+  <h2>GLB Asset Gallery</h2>
+  <p>Exported from <code>blender/stairCelestial.blend</code> → <code>public/models/</code>. Paths configured in <code>src/lib/models.ts</code>.</p>
+
+  <div class="g3 mt4">
+
+    <div class="glb-card">
+      <div class="glb-icon">🪜</div>
+      <div class="glb-name">stair_segment.glb</div>
+      <p style="font-size:.8rem">One stair slab, cloned ×24 along the helix using <code>scene.clone(true)</code></p>
+      <div class="mt2"><span class="badge bg-purple">Instanced ×24</span></div>
+    </div>
+
+    <div class="glb-card">
+      <div class="glb-icon">🏛</div>
+      <div class="glb-name">platform_landing.glb</div>
+      <p style="font-size:.8rem">Landing platform at each door position (stair indices 5, 11, 17, 23)</p>
+      <div class="mt2"><span class="badge bg-purple">×4 instances</span></div>
+    </div>
+
+    <div class="glb-card">
+      <div class="glb-icon">🚪</div>
+      <div class="glb-name">project_door_portal.glb</div>
+      <p style="font-size:.8rem">Frame + panel + handle + emissive cyan strip. Panel has hinge-side pivot — not center!</p>
+      <div class="mt2"><span class="badge bg-cyan">Key interactive asset</span></div>
+    </div>
+
+    <div class="glb-card">
+      <div class="glb-icon">🖥</div>
+      <div class="glb-name">preview_screen.glb</div>
+      <p style="font-size:.8rem">Plane mesh behind door. Preview image texture is applied in code from <code>project.previewImage</code></p>
+      <div class="mt2"><span class="badge bg-amber">Texture applied in code</span></div>
+    </div>
+
+    <div class="glb-card">
+      <div class="glb-icon">🪐</div>
+      <div class="glb-name">jupiter_planet.glb</div>
+      <p style="font-size:.8rem">Large distant background planet. Positioned in <code>CelestialBackground.tsx</code></p>
+      <div class="mt2"><span class="badge bg-green">Background</span></div>
+    </div>
+
+    <div class="glb-card">
+      <div class="glb-icon">💫</div>
+      <div class="glb-name">ringed_planet.glb</div>
+      <p style="font-size:.8rem">Smaller ringed background planet. Adds depth to the space environment</p>
+      <div class="mt2"><span class="badge bg-green">Background</span></div>
+    </div>
+
+  </div>
+
+  <div class="info-box mt3">
+    <strong style="color:var(--cyan)">Naming quirk:</strong> Blender may suffix nodes (e.g. <code>door_01_panel.001</code>).
+    Code uses <code>findChildByNamePart(root, "panel")</code> — partial name match, not exact string — so suffixes don't break anything.
+  </div>
+
+  <!-- What lives where -->
+  <div class="card mt3">
+    <h3 style="margin-bottom:1rem">What lives in GLB vs. Three.js code</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:.82rem">
+      <div>
+        <div style="font-weight:600;color:var(--orange, #f97316);margin-bottom:.5rem">In GLB (Blender)</div>
+        <ul style="list-style:none;color:var(--text-dim);line-height:2">
+          <li>Stairs, platforms, doors geometry</li>
+          <li>Jupiter + ringed planet meshes</li>
+          <li>Door mesh + emissive materials</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-weight:600;color:var(--cyan);margin-bottom:.5rem">In Three.js code</div>
+        <ul style="list-style:none;color:var(--text-dim);line-height:2">
+          <li>Starfield (<code>Stars</code>), fog, Milky Way plane</li>
+          <li>Door open animation + preview texture</li>
+          <li>Scroll camera path (CameraRig)</li>
+          <li>Segment recycling (W6)</li>
+          <li>HTML overlay UI</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ═══════════════════ STACK ═══════════════════ -->
+<section class="section" id="stack">
+  <p class="section-label">Technologies</p>
+  <h2>Tech Stack</h2>
+
+  <div class="g2 mt1">
+
+    <div class="stack-item">
+      <div class="stack-icon" style="background:#000;border:1px solid var(--border)">▲</div>
+      <div>
+        <div class="stack-title">Next.js 15 (App Router)</div>
+        <div class="stack-desc">SSR disabled for Canvas via <code>dynamic(..., {ssr:false})</code> — do not remove without a plan.</div>
+      </div>
+    </div>
+
+    <div class="stack-item">
+      <div class="stack-icon" style="background:rgba(255,100,50,.12);border:1px solid rgba(255,100,50,.3)">⬡</div>
+      <div>
+        <div class="stack-title">React Three Fiber + Drei</div>
+        <div class="stack-desc"><code>ScrollControls</code>, <code>useGLTF</code>, <code>Stars</code>, <code>useScroll</code> — R3F wraps Three.js as React components.</div>
+      </div>
+    </div>
+
+    <div class="stack-item">
+      <div class="stack-icon" style="background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2)">✦</div>
+      <div>
+        <div class="stack-title">GSAP</div>
+        <div class="stack-desc">Door swing animation: <code>panel.rotation.y</code> → <code>-π × 0.55</code> over 0.8 s with power2.out ease.</div>
+      </div>
+    </div>
+
+    <div class="stack-item">
+      <div class="stack-icon" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2)">◈</div>
+      <div>
+        <div class="stack-title">Zustand</div>
+        <div class="stack-desc">Lightweight global state: door IDs + scroll progress. Store: <code>src/lib/store.ts</code></div>
+      </div>
+    </div>
+
+    <div class="stack-item">
+      <div class="stack-icon" style="background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2)">🎨</div>
+      <div>
+        <div class="stack-title">Tailwind CSS 4</div>
+        <div class="stack-desc">Used for HTML overlay UI only (<code>ProjectOverlay</code>, <code>LoadingScreen</code>). Not inside Canvas.</div>
+      </div>
+    </div>
+
+    <div class="stack-item">
+      <div class="stack-icon" style="background:rgba(255,119,51,.1);border:1px solid rgba(255,119,51,.2)">⬡</div>
+      <div>
+        <div class="stack-title">Blender → GLB pipeline</div>
+        <div class="stack-desc">Source: <code>blender/stairCelestial.blend</code> → exported to <code>public/models/*.glb</code>. Blender work is complete.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Commands -->
+  <div class="cmd-box mt4">
+    <div><span class="cmd-prompt">$ </span><span class="cmd-text">npm run dev</span>  <span class="cmd-comment">  # start dev server at localhost:3000</span></div>
+    <div><span class="cmd-prompt">$ </span><span class="cmd-text">npm run build</span><span class="cmd-comment">  # must pass cleanly before any PR</span></div>
+  </div>
+
+</section>
+
+<footer style="text-align:center;padding:3rem 2rem;color:var(--text-muted);font-size:.75rem;border-top:1px solid var(--border)">
+  Celestial Stairway Portfolio — Visual Docs — Generated from <code>docs/PROJECT.md</code>, <code>ARCHITECTURE.md</code>, <code>WEB-PHASES.md</code>
+</footer>
+
+<!-- ═══════════════════ SCRIPTS ═══════════════════ -->
+<script>
+/* ── Phase toggle ── */
+function togglePhase(card) {
+  const d = card.querySelector('.phase-detail');
+  const h = card.querySelector('.ph-hint');
+  if (!d) return;
+  const open = d.classList.toggle('open');
+  if (h) h.textContent = open ? '↑ collapse' : '↓ expand';
+}
+
+/* ── Spiral top-down canvas ── */
+(function () {
+  const canvas = document.getElementById('spiral-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+
+  const STAIR_COUNT = 24;
+  const SPIRAL_RADIUS = 11;
+  const ANGLE_STEP = (2 * Math.PI) / 28;
+  const PLATFORMS = new Set([5, 11, 17, 23]);
+  const scale = (W / 2 - 28) / (SPIRAL_RADIUS + 1);
+
+  let hov = -1;
+
+  function pos(i) {
+    const a = i * ANGLE_STEP;
+    return { x: cx + Math.cos(a) * SPIRAL_RADIUS * scale, y: cy + Math.sin(a) * SPIRAL_RADIUS * scale, a };
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // BG radial gradient
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, W / 2);
+    g.addColorStop(0, '#0f0f30');
+    g.addColorStop(1, '#07071480');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // Guide circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, SPIRAL_RADIUS * scale, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(39,39,80,.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Connecting lines between stairs
+    ctx.beginPath();
+    for (let i = 0; i < STAIR_COUNT; i++) {
+      const p = pos(i);
+      i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+    }
+    ctx.strokeStyle = 'rgba(39,39,80,.6)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Stair dots
+    for (let i = 0; i < STAIR_COUNT; i++) {
+      const p = pos(i);
+      const isPlatform = PLATFORMS.has(i);
+      const isHov = i === hov;
+      const r = isPlatform ? 9 : (isHov ? 7 : 5);
+
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+
+      if (isPlatform) {
+        ctx.fillStyle = isHov ? '#00ffcc' : '#00d4ff';
+        ctx.shadowColor = '#00d4ff';
+        ctx.shadowBlur = isHov ? 18 : 8;
+      } else {
+        ctx.fillStyle = isHov ? '#94a3b8' : '#2d3748';
+      }
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Amber dot for door
+      if (isPlatform) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#f59e0b';
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // Labels for platforms or hovered
+      if (isPlatform || isHov) {
+        const labelR = SPIRAL_RADIUS * scale + 19;
+        const lx = cx + Math.cos(p.a) * labelR;
+        const ly = cy + Math.sin(p.a) * labelR;
+        if (lx > 8 && lx < W - 8 && ly > 8 && ly < H - 8) {
+          ctx.fillStyle = isPlatform ? '#00d4ff' : '#94a3b8';
+          ctx.font = `${isPlatform ? '600' : '400'} 10px "JetBrains Mono", monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(i, lx, ly);
+        }
+      }
+    }
+
+    // Center label
+    ctx.fillStyle = '#374151';
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('↑ scroll', cx, cy);
+
+    // Tooltip for hovered
+    if (hov >= 0) {
+      const p = pos(hov);
+      const isPlatform = PLATFORMS.has(hov);
+      const label = isPlatform ? `Stair ${hov} — platform + door ${[...PLATFORMS].indexOf(hov)}` : `Stair ${hov}`;
+      ctx.font = '11px "JetBrains Mono", monospace';
+      const tw = ctx.measureText(label).width + 18;
+      let tx = p.x - tw / 2, ty = p.y - 38;
+      tx = Math.max(4, Math.min(W - 4 - tw, tx));
+      ty = Math.max(4, ty);
+      ctx.fillStyle = '#0d0d2b';
+      ctx.beginPath();
+      ctx.roundRect(tx, ty, tw, 22, 4);
+      ctx.fill();
+      ctx.strokeStyle = isPlatform ? '#00d4ff' : '#272750';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = isPlatform ? '#00d4ff' : '#94a3b8';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, tx + 9, ty + 11);
+    }
+  }
+
+  canvas.addEventListener('mousemove', (e) => {
+    const r = canvas.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * (W / r.width);
+    const my = (e.clientY - r.top) * (H / r.height);
+    hov = -1;
+    for (let i = 0; i < STAIR_COUNT; i++) {
+      const p = pos(i);
+      if (Math.hypot(mx - p.x, my - p.y) < 14) { hov = i; break; }
+    }
+    draw();
+  });
+
+  canvas.addEventListener('mouseleave', () => { hov = -1; draw(); });
+  draw();
+})();
+
+/* ── Height profile canvas ── */
+(function () {
+  const canvas = document.getElementById('height-canvas');
+  if (!canvas) return;
+  const parent = canvas.parentElement;
+  const W = parent.clientWidth || 700;
+  const H = 90;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const STAIR_COUNT = 24;
+  const HEIGHT_STEP = 0.52;
+  const PLATFORMS = new Set([5, 11, 17, 23]);
+  const maxH = (STAIR_COUNT - 1) * HEIGHT_STEP;
+  const pad = 20;
+
+  function sx(i) { return pad + (i / (STAIR_COUNT - 1)) * (W - pad * 2); }
+  function sy(i) { return (H - pad) - (i * HEIGHT_STEP / maxH) * (H - pad * 2); }
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Baseline
+  ctx.beginPath();
+  ctx.moveTo(pad, H - pad);
+  ctx.lineTo(W - pad, H - pad);
+  ctx.strokeStyle = '#272750';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Line connecting stairs
+  ctx.beginPath();
+  for (let i = 0; i < STAIR_COUNT; i++) {
+    i === 0 ? ctx.moveTo(sx(i), sy(i)) : ctx.lineTo(sx(i), sy(i));
+  }
+  ctx.strokeStyle = '#374151';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Stair dots
+  for (let i = 0; i < STAIR_COUNT; i++) {
+    const x = sx(i), y = sy(i);
+    const isPlatform = PLATFORMS.has(i);
+
+    ctx.beginPath();
+    ctx.arc(x, y, isPlatform ? 7 : 4, 0, Math.PI * 2);
+    ctx.fillStyle = isPlatform ? '#00d4ff' : '#2d3748';
+    if (isPlatform) { ctx.shadowColor = '#00d4ff'; ctx.shadowBlur = 8; }
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    if (isPlatform) {
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#f59e0b';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Drop line
+      ctx.beginPath();
+      ctx.moveTo(x, y + 8);
+      ctx.lineTo(x, H - pad);
+      ctx.strokeStyle = 'rgba(0,212,255,.2)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Label
+      ctx.fillStyle = '#00d4ff';
+      ctx.font = '9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(i, x, y - 13);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

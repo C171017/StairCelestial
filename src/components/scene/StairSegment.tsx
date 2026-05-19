@@ -1,26 +1,11 @@
 "use client";
 
-import { useGLTF } from "@react-three/drei";
-import { useMemo } from "react";
-import { MODEL_PATHS } from "@/lib/models";
+import type { Object3D } from "three";
+
 type StairSegmentProps = {
-  position: [number, number, number];
-  rotation: [number, number, number];
+  object: Object3D;
 };
 
-export function StairSegment({ position, rotation }: StairSegmentProps) {
-  const { scene } = useGLTF(MODEL_PATHS.stair);
-  const clone = useMemo(() => scene.clone(true), [scene]);
-
-  return (
-    <primitive
-      object={clone}
-      position={position}
-      rotation={rotation}
-      castShadow
-      receiveShadow
-    />
-  );
+export function StairSegment({ object }: StairSegmentProps) {
+  return <primitive object={object} castShadow receiveShadow />;
 }
-
-useGLTF.preload(MODEL_PATHS.stair);

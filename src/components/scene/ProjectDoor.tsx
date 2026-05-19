@@ -3,32 +3,34 @@
 import { useGLTF } from "@react-three/drei";
 import { type ThreeEvent } from "@react-three/fiber";
 import gsap from "gsap";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { getProjectByDoorIndex } from "@/lib/projects";
+import { getProjectForStairIndex } from "@/lib/spiral";
 import { usePortfolioStore } from "@/lib/store";
 import { MODEL_PATHS } from "@/lib/models";
 import { findChildByNamePart } from "./cloneScene";
 
 type ProjectDoorProps = {
-  doorIndex: number;
-  position: [number, number, number];
-  rotation: [number, number, number];
+  poolId: number;
 };
 
 const DOOR_OPEN_ANGLE = -Math.PI * 0.55;
 
-export function ProjectDoor({ doorIndex, position, rotation }: ProjectDoorProps) {
-  const doorId = `door-${doorIndex}`;
+export function ProjectDoor({ poolId }: ProjectDoorProps) {
+  const doorId = `pool-door-${poolId}`;
   const groupRef = useRef<THREE.Group>(null);
   const panelRef = useRef<THREE.Object3D | null>(null);
   const previewRef = useRef<THREE.Mesh | null>(null);
   const isOpenRef = useRef(false);
   const tweenRef = useRef<gsap.core.Tween | null>(null);
+  const prevVirtualIndexRef = useRef(-1);
 
   const { scene: doorScene } = useGLTF(MODEL_PATHS.door);
   const { scene: previewScene } = useGLTF(MODEL_PATHS.previewScreen);
 
+  const virtualIndex = usePortfolioStore(
+    (s) => s.doorPoolVirtualIndices[poolId] ?? -1,
+  );
   const openedDoorId = usePortfolioStore((s) => s.openedDoorId);
   const setOpenedDoor = usePortfolioStore((s) => s.setOpenedDoor);
   const setActiveDoor = usePortfolioStore((s) => s.setActiveDoor);
@@ -37,7 +39,20 @@ export function ProjectDoor({ doorIndex, position, rotation }: ProjectDoorProps)
   const doorClone = useMemo(() => doorScene.clone(true), [doorScene]);
   const previewClone = useMemo(() => previewScene.clone(true), [previewScene]);
 
-  const project = getProjectByDoorIndex(doorIndex);
+  const project =
+    virtualIndex >= 0 ? getProjectForStairIndex(virtualIndex) : undefined;
+
+  const closeDoor = useCallback(() => {
+    isOpenRef.current = false;
+    tweenRef.current?.kill();
+    if (panelRef.current) {
+      panelRef.current.rotation.y = 0;
+    }
+    if (previewRef.current) previewRef.current.visible = false;
+    if (usePortfolioStore.getState().openedDoorId === doorId) {
+      resetDoors();
+    }
+  }, [doorId, resetDoors]);
 
   useEffect(() => {
     panelRef.current = findChildByNamePart(doorClone, "panel");
@@ -64,10 +79,22 @@ export function ProjectDoor({ doorIndex, position, rotation }: ProjectDoorProps)
   }, [doorClone, previewClone]);
 
   useEffect(() => {
+    if (
+      prevVirtualIndexRef.current >= 0 &&
+      virtualIndex !== prevVirtualIndexRef.current
+    ) {
+      closeDoor();
+    }
+    prevVirtualIndexRef.current = virtualIndex;
+  }, [virtualIndex, closeDoor]);
+
+  useEffect(() => {
     if (!project?.previewImage || !previewRef.current) return;
 
     const loader = new THREE.TextureLoader();
+    let cancelled = false;
     loader.load(project.previewImage, (texture) => {
+      if (cancelled) return;
       texture.colorSpace = THREE.SRGBColorSpace;
       const mesh = previewRef.current;
       if (!mesh) return;
@@ -81,7 +108,11 @@ export function ProjectDoor({ doorIndex, position, rotation }: ProjectDoorProps)
       });
       mesh.material = material;
     });
-  }, [project?.previewImage]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [project?.previewImage, project?.id]);
 
   useEffect(() => {
     if (openedDoorId !== doorId && isOpenRef.current) {
@@ -134,8 +165,10 @@ export function ProjectDoor({ doorIndex, position, rotation }: ProjectDoorProps)
     openDoor();
   };
 
+  if (virtualIndex < 0) return null;
+
   return (
-    <group ref={groupRef} position={position} rotation={rotation}>
+    <group ref={groupRef}>
       <primitive object={doorClone} />
       <mesh
         position={[0, 1.1, 0.35]}

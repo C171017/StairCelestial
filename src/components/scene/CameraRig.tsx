@@ -1,55 +1,52 @@
 "use client";
 
-import { useScroll } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { useVirtualScrollIndex } from "@/hooks/useVirtualScrollIndex";
 import {
-  SCENE_HEIGHT,
-  SPIRAL_RADIUS,
+  CAMERA_LOOK_AT_Y_OFFSET,
+  CAMERA_ORBIT_RADIUS,
+  CAMERA_Y_OFFSET,
+  LOOP_LENGTH,
   STAIR_ANGLE_STEP,
-  STAIR_COUNT,
   STAIR_HEIGHT_STEP,
 } from "@/lib/spiral";
-import { usePortfolioStore } from "@/lib/store";
+
+const CAMERA_LERP = 0.1;
 
 export function CameraRig() {
-  const scroll = useScroll();
+  const virtualIndexRef = useVirtualScrollIndex();
   const { camera } = useThree();
-  const targetLookAt = useRef(new THREE.Vector3(0, 4, 0));
+  const lookAtTarget = useRef(new THREE.Vector3(0, 0, 0));
   const desiredPosition = useMemo(() => new THREE.Vector3(), []);
   const desiredLookAt = useMemo(() => new THREE.Vector3(), []);
 
   useFrame(() => {
-    const progress = scroll.offset;
-    usePortfolioStore.getState().setScrollProgress(progress);
+    const floatIndex = virtualIndexRef.current;
+    const loopIndex = ((floatIndex % LOOP_LENGTH) + LOOP_LENGTH) % LOOP_LENGTH;
+    const angle = loopIndex * STAIR_ANGLE_STEP;
+    const y = floatIndex * STAIR_HEIGHT_STEP;
 
-    const maxStairIndex = STAIR_COUNT - 1;
-    const floatIndex = progress * maxStairIndex;
-    const angle = floatIndex * STAIR_ANGLE_STEP;
-    const y = floatIndex * STAIR_HEIGHT_STEP + 2.2;
-
-    const camRadius = SPIRAL_RADIUS + 7.5;
+    // Fixed radius from central axis — only angle and height change while scrolling
     desiredPosition.set(
-      Math.cos(angle) * camRadius,
-      y,
-      Math.sin(angle) * camRadius,
+      Math.cos(angle) * CAMERA_ORBIT_RADIUS,
+      y + CAMERA_Y_OFFSET,
+      Math.sin(angle) * CAMERA_ORBIT_RADIUS,
     );
 
-    desiredLookAt.set(
-      Math.cos(angle) * (SPIRAL_RADIUS - 1),
-      y - 1.5,
-      Math.sin(angle) * (SPIRAL_RADIUS - 1),
-    );
+    // Look at the spiral void center (axis), not the inner stair edge — avoids in/out sway
+    desiredLookAt.set(0, y + CAMERA_LOOK_AT_Y_OFFSET, 0);
 
-    camera.position.lerp(desiredPosition, 0.08);
-    targetLookAt.current.lerp(desiredLookAt, 0.08);
-    camera.lookAt(targetLookAt.current);
+    camera.position.lerp(desiredPosition, CAMERA_LERP);
+    lookAtTarget.current.lerp(desiredLookAt, CAMERA_LERP);
+    camera.lookAt(lookAtTarget.current);
   });
 
   return null;
 }
 
+/** Small fixed pages — travel is driven by accumulated scroll delta. */
 export function getScrollPages(): number {
-  return Math.max(3, SCENE_HEIGHT / 4);
+  return 3;
 }

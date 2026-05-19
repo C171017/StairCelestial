@@ -43,7 +43,7 @@ export function Atmosphere() {
   return (
     <>
       <color attach="background" args={["#030508"]} />
-      <fog attach="fog" args={["#030508", 18, 72]} />
+      <fog attach="fog" args={["#030508", 14, 85]} />
       <Stars
         radius={120}
         depth={60}
