@@ -8,20 +8,7 @@ export function ProjectOverlay() {
   const scrollProgress = usePortfolioStore((s) => s.scrollProgress);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-between p-6 md:p-10">
-      <header className="max-w-xl">
-        <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/70">
-          Portfolio
-        </p>
-        <h1 className="mt-2 text-3xl font-light tracking-tight text-white md:text-4xl">
-          Celestial Stairway
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-slate-300/90 md:text-base">
-          Scroll to ascend the spiral. Click a door to zoom in and preview;
-          click again to visit. Scroll away to return to the path.
-        </p>
-      </header>
-
+    <div className="pointer-events-none fixed inset-0 z-10 flex flex-col justify-end p-6 md:p-10">
       <footer className="flex items-end justify-between gap-4">
         <p className="text-xs text-slate-400">
           Scroll {Math.round(scrollProgress * 100)}%
