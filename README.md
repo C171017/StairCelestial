@@ -14,8 +14,9 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Controls
 
 - **Scroll** — ascend the spiral (seamless infinite scroll)
-- **Click door** — open or close preview
-- **Double-click door** — open project URL
+- **Click door once** — zoom in, open door + preview
+- **Click door again** — open project URL in a new tab
+- **Scroll away** — zoom back to the spiral path (door closes)
 
 ## Project data
 
@@ -28,7 +29,8 @@ Edit `src/lib/projects.ts` and add preview images under `public/previews/`. No n
 | Doc | Purpose |
 |-----|---------|
 | [`docs/PROJECT.md`](docs/PROJECT.md) | Vision, rules, status, current focus |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Code map, pool, scroll, camera, doors |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Code map, pool, scroll, camera, door zoom |
+| [`docs/README.md`](docs/README.md) | Agent index + **doc maintenance rules** |
 | [`docs/WEB-PHASES.md`](docs/WEB-PHASES.md) | Web implementation phases W1–W6 |
 | [`blender/md/`](blender/md/) | Blender MCP prompts (complete) |
 

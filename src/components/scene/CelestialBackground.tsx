@@ -3,8 +3,8 @@
 import { useGLTF, useTexture } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
-import type { Group } from "three";
-import { MeshBasicMaterial, Vector3 } from "three";
+import type { Group, Object3D } from "three";
+import { Mesh, MeshBasicMaterial, Vector3 } from "three";
 import { MODEL_PATHS } from "@/lib/models";
 import { SATURN_TEXTURES } from "@/lib/textures";
 import { applySaturnMaterials } from "./saturnMaterials";
@@ -18,6 +18,26 @@ const ATMOSPHERE_SCALE = 1.06;
 
 /** World-fixed tilt — rings read from typical camera angles without copying camera rotation */
 const SATURN_TILT: [number, number, number] = [0.35, 0.55, 0.08];
+
+/**
+ * Jupiter backdrop placement (derived from camera helix vs GLB bounds).
+ * Camera orbits at CAMERA_ORBIT_RADIUS (25) around Y, climbing STAIR_HEIGHT_STEP per scroll.
+ * GLB mesh radius ≈ 9.45; world radius = scale × 9.45.
+ * Sampled min distance camera→center ≈ 313 at [110, 40, -320] → margin ≈ 6.6× radius (never inside).
+ * Apparent diameter ≈ 2×atan(R/minDist) ≈ 17° (reference: large right backdrop, not filling FOV).
+ */
+const JUPITER_POSITION: [number, number, number] = [110, 40, -320];
+const JUPITER_SCALE = 5;
+
+function applyJupiterBackgroundMaterial(root: Object3D) {
+  root.traverse((child) => {
+    if (!(child instanceof Mesh)) return;
+    child.material = new MeshBasicMaterial({
+      color: "#c8b498",
+      fog: false,
+    });
+  });
+}
 
 function SaturnAtmosphere() {
   const material = useMemo(
@@ -97,14 +117,18 @@ function FixedRingedPlanet() {
 
 export function CelestialBackground() {
   const jupiter = useGLTF(MODEL_PATHS.jupiter);
-  const jupiterClone = useMemo(() => jupiter.scene.clone(true), [jupiter.scene]);
+  const jupiterClone = useMemo(() => {
+    const clone = jupiter.scene.clone(true);
+    applyJupiterBackgroundMaterial(clone);
+    return clone;
+  }, [jupiter.scene]);
 
   return (
     <group>
       <primitive
         object={jupiterClone}
-        position={[36, 22, -68]}
-        scale={10}
+        position={JUPITER_POSITION}
+        scale={JUPITER_SCALE}
       />
       <FixedRingedPlanet />
     </group>

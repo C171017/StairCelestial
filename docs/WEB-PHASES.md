@@ -14,21 +14,18 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 
 ---
 
-## W2 — Spiral alignment (current priority)
+## W2 — Spiral alignment ✅ Mostly done
 
 **Goal:** Stairs, platforms, and doors sit correctly relative to each other and match Blender scale.
 
-**Tasks:**
+**Done:**
 
-1. Run dev server; scroll through several laps; inspect gaps, overlaps, floating doors
-2. Tune `src/lib/spiral.ts`: `SPIRAL_RADIUS`, `STAIR_HEIGHT_STEP`, platform/door offsets
-3. Adjust `CelestialBackground.tsx` planet positions if they break composition
+- `DOOR_Y_OFFSET_ABOVE_PLATFORM` in `spiral.ts` from GLB mesh bounds (doors on platform tops)
+- Visual pass in browser — doors no longer clip through slabs
 
-**Done when:**
+**Remaining (optional):**
 
-- Spiral reads clearly while scrolling
-- Doors sit on platforms, not inside stairs or void
-- No z-fighting between platform and door
+- Fine-tune `SPIRAL_RADIUS`, `STAIR_HEIGHT_STEP`, planet positions in `CelestialBackground.tsx`
 
 **Do not:** Re-export GLBs unless scale is wrong by ~10× or more
 
@@ -42,31 +39,39 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 
 - `ScrollControls` with `infinite`, `pages={3}`, `damping={0.18}`
 - `useVirtualScrollIndex` — wrap-aware offset integration (see [ARCHITECTURE.md](./ARCHITECTURE.md))
-- `CameraRig` — `CAMERA_ORBIT_RADIUS`, void-center look-at, `getContinuousOrbitAngle`
+- `CameraRig` — orbit + **door-focus zoom blend** (`doorCameraFocus.ts`)
 - Fog in `Atmosphere.tsx` — `near: 14`, `far: 85`
+- Focus release on scroll via `focusScrollAnchor` (not door stair index)
 
 **Optional tuning:**
 
-- `CameraRig` `CAMERA_LERP`, FOV in `StairwayScene.tsx`
+- `CameraRig` `CAMERA_LERP` / `FOCUS_BLEND_LERP`, FOV in `StairwayScene.tsx`
+- `doorCameraFocus.ts` — `DOOR_LOOK_AT_HEIGHT`, `getViewportFrameBias()` for vertical centering
 - `MAX_DIFF_PER_FRAME` in `useVirtualScrollIndex.ts` if scroll feels slow/fast
 
 ---
 
-## W4 — Doors, previews & project data
+## W4 — Doors, previews & project data (in progress)
 
 **Goal:** Production-ready project wiring and reliable door interaction.
 
+**Done:**
+
+- Real project URLs in `projects.ts` (Music, Stars, Guanchang, Columbia-Barnard Network)
+- First click → open + preview + zoom; second click → URL
+- Scroll away → `resetDoors()` (zoom out + close)
+- Zoom works for **any** visible pooled door (`focusScrollAnchor` + world-space focus target)
+
 **Tasks:**
 
-1. Replace placeholder entries in `src/lib/projects.ts` (real titles, URLs, descriptions)
-2. Add real preview images to `public/previews/` (PNG/WebP; update paths)
-3. Verify hinge: panel opens on hinge side; fix axis in `ProjectDoor.tsx` if needed
-4. Optional: keyboard accessible focus, close door on scroll away
+1. Add real preview images to `public/previews/` (PNG/WebP; update `previewImage` paths)
+2. Verify hinge: panel opens on hinge side; fix axis in `ProjectDoor.tsx` if needed
+3. Optional: keyboard accessible focus
 
 **Done when:**
 
 - Projects repeat correctly each lap via `getProjectForStairIndex`
-- First click opens preview texture; second opens URL
+- Preview textures are real screenshots, not SVG placeholders
 - Only one door open at a time
 
 **Door IDs in store:** `pool-door-0` … `pool-door-3` (not `door-0`)
@@ -124,6 +129,8 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 | User asks for… | Start phase |
 |----------------|-------------|
 | “doors broken / won’t open” | W4 |
+| “zoom wrong / door low on screen” | W3 — `doorCameraFocus.ts` |
+| “zoom only works on first door” | W3 — use `focusScrollAnchor`, not door index |
 | “stairs floating / wrong layout” | W2 |
 | “scroll jumps / stutter at lap” | W3 — read `useVirtualScrollIndex.ts` |
 | “looks flat / lighting” | W5 |

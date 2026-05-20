@@ -16,7 +16,7 @@ src/components/scene/
   StairSegment.tsx      — Renders one pre-cloned stair Object3D
   PlatformLanding.tsx   — Renders one pre-cloned platform Object3D
   ProjectDoor.tsx       — Door + preview screen + GSAP + clicks (pooled)
-  CameraRig.tsx         — virtualStairIndex → camera lerp on helix
+  CameraRig.tsx         — Orbit camera + door-focus zoom blend
   CelestialBackground.tsx — Jupiter + ringed planet GLBs
   Atmosphere.tsx        — fog, Stars, Milky Way plane
   Lights.tsx            — ambient + directional + point
@@ -30,7 +30,8 @@ src/components/ui/
   LoadingScreen.tsx     — Canvas loading fallback
 
 src/lib/
-  spiral.ts             — LOOP_LENGTH, placements, camera orbit, door helpers
+  spiral.ts             — LOOP_LENGTH, placements, camera orbit, door Y offset
+  doorCameraFocus.ts    — Zoom-to-door pose, viewport framing, scroll release threshold
   spiralPool.ts         — assignPoolSlots, assignDoorPoolSlots
   models.ts             — MODEL_PATHS for all GLBs
   projects.ts           — Project[] (data-only growth)
@@ -74,8 +75,9 @@ Functions:
 - `getPlatformPlacement` / `getDoorPlacement` — outward offsets
 - `getContinuousOrbitAngle(virtualIndex)` — unbounded angle for camera (no modulo)
 - `isDoorStairIndex` / `getDoorSlotIndex` / `getProjectForStairIndex`
+- `DOOR_Y_OFFSET_ABOVE_PLATFORM` — derived from GLB bounds so door bottom sits on platform top (~1.75), not a hand-tuned `0.12`
 
-**When stairs/doors float or clip:** tune constants here first, not in Blender, unless scale is fundamentally wrong.
+**When stairs/doors float or clip:** tune `DOOR_Y_OFFSET` / platform offsets here first, not in Blender, unless scale is fundamentally wrong.
 
 ## Infinite illusion (pool + fog)
 
@@ -100,12 +102,34 @@ Current behavior:
 3. On true backward lap cross (`offset` was low, then `> 0.85` and `≤ 1.02`): add `-last + offset`.
 4. If `|diff| > 0.15` without a valid lap cross (e.g. damp overshoot past 1.0): **resync only** — skip that frame.
 5. `virtualStairIndex = unboundedOffset × CLIMB_SCALE` (28 steps per full scroll range).
+6. While a door is focused: if `|virtualStairIndex - focusScrollAnchor| > SCROLL_FOCUS_RELEASE_THRESHOLD` (~0.35 steps), call `resetDoors()` (zoom out + close door). **Do not** compare camera index to the door’s stair index — that breaks zoom for doors far along the spiral.
 
 ## Scroll camera
 
 - `StairwayScene`: `<ScrollControls pages={3} damping={0.18} infinite>`
-- `CameraRig`: `getContinuousOrbitAngle` + fixed `CAMERA_ORBIT_RADIUS`; looks at void center
+- **Orbit mode:** `getContinuousOrbitAngle` + fixed `CAMERA_ORBIT_RADIUS`; looks at void center
+- **Focus mode:** blends toward `getFocusCameraPose()` when `doorFocusTarget` is set (see below)
 - Canvas FOV `58`; `scrollProgress` in UI = position within current loop (0–1)
+
+## Door interaction & zoom
+
+**User flow**
+
+1. **First click** on any visible pooled door → open panel + preview texture + **camera zooms to that door**
+2. **Second click** (same door, while open) → `window.open(project.url)`
+3. **Scroll away** from anchor position → zoom returns to orbit, door closes, overlay clears
+
+**`doorCameraFocus.ts`**
+
+- `worldRootToFocusTarget()` — focus point from the door root’s **world matrix** (correct for pooled slots)
+- `getFocusCameraPose()` — distance from FOV + aspect; extra **viewport frame bias** lowers look-at so the portal sits centered (stronger on portrait / narrow widths)
+- Tune vertical framing: `DOOR_LOOK_AT_HEIGHT`, `getViewportFrameBias()`, camera `position.y` offset in `getFocusCameraPose`
+- `SCROLL_FOCUS_RELEASE_THRESHOLD` — scroll delta before releasing focus
+
+**`CameraRig.tsx`**
+
+- `focusBlend` lerps 0↔1 between orbit pose and focus pose
+- Uses stored `doorFocusTarget` from the click (not recomputed from a stale index alone)
 
 ## Door state machine
 
@@ -119,14 +143,20 @@ Current behavior:
 | `virtualStairIndex` | Unbounded climb index |
 | `doorPoolVirtualIndices` | Per-slot virtual stair index (-1 = hidden) |
 | `scrollProgress` | Loop-normalized 0–1 for UI |
+| `focusedDoorId` | Door receiving camera zoom (`pool-door-0` … `3`) |
+| `doorFocusTarget` | World-space look-at + forward for zoom framing |
+| `focusVirtualIndex` | Stair index of focused door (metadata) |
+| `focusScrollAnchor` | `virtualStairIndex` when focus started — scroll release uses **this**, not `focusVirtualIndex` |
 
 **Interaction** (`ProjectDoor.tsx`):
 
-1. First pointer down → open + preview from `getProjectForStairIndex(virtualIndex)`
+1. First pointer down → `setDoorFocus` + open + preview from `getProjectForStairIndex(virtualIndex)`
 2. Second pointer down → `window.open(project.url)`
 3. When a pool slot’s virtual index changes, door closes and preview texture reloads
 
-`projects.ts` `doorIndex` is legacy for static mapping; pooled doors use `getProjectForStairIndex` from virtual stair index.
+`projects.ts` `doorIndex` is legacy slot order; pooled doors use `getProjectForStairIndex(virtualIndex)`.
+
+**Current projects** (edit in `projects.ts`): Music, Stars, Guanchang, Columbia-Barnard Network — preview images still placeholder SVGs under `public/previews/`.
 
 ## What lives in code vs Blender
 
@@ -135,6 +165,7 @@ Current behavior:
 | Stairs, platforms, doors, planets | Starfield (`Stars`), fog, Milky Way plane |
 | Door mesh + emissive materials | Door open animation, preview texture |
 | | Virtual scroll + segment pool |
+| | Door-focus camera zoom + viewport framing |
 | | HTML overlay UI |
 
 ## Build / run
@@ -156,3 +187,5 @@ npm run build  # must pass before PR
 - Putting infinite loop logic inside GLB instead of recycling transforms
 - Breaking `ScrollControls` by moving `CameraRig` outside its provider
 - Cloning GLB per frame instead of reusing pool clones + updating transforms
+- Releasing door focus when `|index - focusVirtualIndex| > threshold` (use `focusScrollAnchor` instead)
+- Forgetting to update `docs/` after changing door/zoom/scroll UX (see [README.md](./README.md) § Keeping docs in sync)

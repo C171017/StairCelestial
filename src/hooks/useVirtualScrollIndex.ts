@@ -3,6 +3,7 @@
 import { useScroll } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
+import { SCROLL_FOCUS_RELEASE_THRESHOLD } from "@/lib/doorCameraFocus";
 import { LOOP_LENGTH } from "@/lib/spiral";
 import { usePortfolioStore } from "@/lib/store";
 
@@ -81,7 +82,17 @@ export function useVirtualScrollIndex() {
     const index = unboundedOffsetRef.current * CLIMB_SCALE;
     virtualIndexRef.current = index;
 
-    usePortfolioStore.getState().setVirtualStairIndex(index);
+    const store = usePortfolioStore.getState();
+    const { focusedDoorId, focusScrollAnchor, resetDoors } = store;
+    if (
+      focusedDoorId !== null &&
+      focusScrollAnchor !== null &&
+      Math.abs(index - focusScrollAnchor) > SCROLL_FOCUS_RELEASE_THRESHOLD
+    ) {
+      resetDoors();
+    }
+
+    store.setVirtualStairIndex(index);
 
     const normalized =
       ((index % LOOP_LENGTH) + LOOP_LENGTH) % LOOP_LENGTH / LOOP_LENGTH;

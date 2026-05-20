@@ -5,7 +5,14 @@ import { type ThreeEvent } from "@react-three/fiber";
 import gsap from "gsap";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { getProjectForStairIndex } from "@/lib/spiral";
+
+const _worldPos = new THREE.Vector3();
+const _worldQuat = new THREE.Quaternion();
+import {
+  placementToFocusTarget,
+  worldRootToFocusTarget,
+} from "@/lib/doorCameraFocus";
+import { getDoorPlacement, getProjectForStairIndex } from "@/lib/spiral";
 import { usePortfolioStore } from "@/lib/store";
 import { MODEL_PATHS } from "@/lib/models";
 import { findChildByNamePart } from "./cloneScene";
@@ -15,7 +22,6 @@ type ProjectDoorProps = {
 };
 
 const DOOR_OPEN_ANGLE = -Math.PI * 0.55;
-const SINGLE_CLICK_DELAY_MS = 280;
 
 export function ProjectDoor({ poolId }: ProjectDoorProps) {
   const doorId = `pool-door-${poolId}`;
@@ -24,7 +30,6 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   const previewRef = useRef<THREE.Mesh | null>(null);
   const isOpenRef = useRef(false);
   const tweenRef = useRef<gsap.core.Tween | null>(null);
-  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevVirtualIndexRef = useRef(-1);
 
   const { scene: doorScene } = useGLTF(MODEL_PATHS.door);
@@ -36,6 +41,7 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   const openedDoorId = usePortfolioStore((s) => s.openedDoorId);
   const setOpenedDoor = usePortfolioStore((s) => s.setOpenedDoor);
   const setActiveDoor = usePortfolioStore((s) => s.setActiveDoor);
+  const setDoorFocus = usePortfolioStore((s) => s.setDoorFocus);
   const resetDoors = usePortfolioStore((s) => s.resetDoors);
 
   const doorClone = useMemo(() => doorScene.clone(true), [doorScene]);
@@ -61,13 +67,6 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
       resetDoors();
     }
   }, [doorId, resetDoors]);
-
-  const clearClickTimer = useCallback(() => {
-    if (clickTimerRef.current) {
-      clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = null;
-    }
-  }, []);
 
   useEffect(() => {
     panelRef.current = findChildByNamePart(doorClone, "panel");
@@ -145,10 +144,22 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   }, [openedDoorId, doorId]);
 
   const openDoor = useCallback(() => {
-    if (!panelRef.current || !project || isOpenRef.current) return;
+    if (!panelRef.current || !project) return;
 
     resetDoors();
     setOpenedDoor(doorId, project);
+
+    const doorRoot = groupRef.current?.parent ?? groupRef.current;
+    let focusTarget;
+    if (doorRoot) {
+      doorRoot.updateWorldMatrix(true, true);
+      doorRoot.getWorldPosition(_worldPos);
+      doorRoot.getWorldQuaternion(_worldQuat);
+      focusTarget = worldRootToFocusTarget(_worldPos, _worldQuat);
+    } else {
+      focusTarget = placementToFocusTarget(getDoorPlacement(virtualIndex));
+    }
+    setDoorFocus(doorId, focusTarget, virtualIndex);
     isOpenRef.current = true;
 
     tweenRef.current?.kill();
@@ -166,34 +177,19 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
         { x: 1, y: 1, z: 1, duration: 0.6, ease: "power2.out" },
       );
     }
-  }, [doorId, project, resetDoors, setOpenedDoor]);
+  }, [doorId, project, resetDoors, setDoorFocus, setOpenedDoor, virtualIndex]);
 
-  const toggleDoor = useCallback(() => {
-    if (isOpenRef.current) {
-      closeDoor();
-    } else {
-      openDoor();
-    }
-  }, [closeDoor, openDoor]);
-
-  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     setActiveDoor(doorId);
-    clearClickTimer();
-    clickTimerRef.current = setTimeout(() => {
-      clickTimerRef.current = null;
-      toggleDoor();
-    }, SINGLE_CLICK_DELAY_MS);
-  };
 
-  const handleDoubleClick = (event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation();
-    clearClickTimer();
-    if (!project?.url) return;
-    window.open(project.url, "_blank", "noopener,noreferrer");
-  };
+    if (isOpenRef.current && project) {
+      window.open(project.url, "_blank", "noopener,noreferrer");
+      return;
+    }
 
-  useEffect(() => () => clearClickTimer(), [clearClickTimer]);
+    openDoor();
+  };
 
   if (virtualIndex < 0) return null;
 
@@ -202,8 +198,7 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
       <primitive object={doorClone} />
       <mesh
         position={[0, 1.1, 0.35]}
-        onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
+        onPointerDown={handlePointerDown}
         onPointerOver={(e) => {
           e.stopPropagation();
           document.body.style.cursor = "pointer";

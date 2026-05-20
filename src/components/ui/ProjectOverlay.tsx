@@ -17,8 +17,8 @@ export function ProjectOverlay() {
           Celestial Stairway
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-300/90 md:text-base">
-          Scroll to ascend the spiral. Click a door to open or close it;
-          double-click to visit the project.
+          Scroll to ascend the spiral. Click a door to zoom in and preview;
+          click again to visit. Scroll away to return to the path.
         </p>
       </header>
 
@@ -39,7 +39,7 @@ export function ProjectOverlay() {
               {currentProject.description}
             </p>
             <p className="mt-3 text-xs text-cyan-100/70">
-              Double-click the door to visit →
+              Click the door again to visit →
             </p>
           </div>
         )}

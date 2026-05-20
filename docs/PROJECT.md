@@ -6,8 +6,8 @@ A **personal portfolio homepage** built as a 3D web experience:
 
 - An **endless-feeling celestial spiral staircase** in space
 - **Scroll** moves a guided third-person camera up the **outer edge** of the spiral
-- **Project doors** on platform landings: **first click** opens door + preview; **second click** opens project URL
-- Must stay **smooth on desktop and mobile**
+- **Project doors** on platform landings: **first click** opens door + preview + **zooms camera to the door**; **second click** opens project URL; **scroll away** returns to spiral view
+- Must stay **smooth on desktop and mobile** (zoom framing is aspect-aware in `doorCameraFocus.ts`)
 
 ## Visual direction (do not drift)
 
@@ -58,20 +58,23 @@ Update this section when you complete a milestone.
 | Web | Scroll camera (fixed orbit, void look-at) | **Done** |
 | Web | Seamless infinite scroll (lap wraps) | **Done** |
 | Web | Door click → open → second click → URL | **Done** |
+| Web | Door-focus camera zoom (any pooled door) | **Done** |
 | Web | Atmosphere (fog, stars, Milky Way, planets) | **Done (tune)** |
-| Web | Real project data in `src/lib/projects.ts` | **Todo** |
-| Web | Spiral/door alignment matches GLB scale | **Todo** |
+| Web | Real project URLs in `src/lib/projects.ts` | **Done** |
+| Web | Real preview images (replace SVG placeholders) | **Todo** |
+| Web | Spiral/door alignment (`DOOR_Y_OFFSET` from GLB bounds) | **Done** |
 | Web | Mobile performance pass | **Todo** |
 | Web | Deploy Vercel | **Todo** |
 
 ## Current focus
 
-**Phase W2–W4** (see [WEB-PHASES.md](./WEB-PHASES.md)): align spiral constants to Blender scale, verify door hinge rotation, replace placeholder previews with real project URLs/images.
+**Phase W4–W6** (see [WEB-PHASES.md](./WEB-PHASES.md)): real preview images for doors, mobile perf, deploy. Door zoom/framing: tune `src/lib/doorCameraFocus.ts` if composition feels off.
 
 ## Agent instructions
 
 - Prefer **small, focused diffs** — match existing patterns in `src/`
-- Before changing layout or scroll, read `src/lib/spiral.ts`, `src/hooks/useVirtualScrollIndex.ts`, and [ARCHITECTURE.md](./ARCHITECTURE.md)
+- Before changing layout, scroll, or doors, read `spiral.ts`, `doorCameraFocus.ts`, `useVirtualScrollIndex.ts`, and [ARCHITECTURE.md](./ARCHITECTURE.md)
+- **Update docs in the same change** when behavior or UX differs from [docs/](./README.md) — see **Keeping docs in sync** in [docs/README.md](./README.md)
 - Do **not** join stairs/doors into one mesh in Blender re-exports
 - Do **not** add heavy post-processing or physics unless the user asks
 - After substantive changes, run `npm run build` and note any manual browser checks
@@ -83,7 +86,8 @@ Update this section when you complete a milestone.
 src/app/page.tsx              — homepage, dynamic Canvas import
 src/hooks/useVirtualScrollIndex.ts — scroll → virtualStairIndex
 src/components/scene/         — all R3F scene components
-src/lib/spiral.ts             — helix + camera constants (tune here first)
+src/lib/spiral.ts             — helix + orbit camera + door placement Y
+src/lib/doorCameraFocus.ts    — zoom pose + viewport centering (tune framing here)
 src/lib/spiralPool.ts         — pool slot assignment
 src/lib/projects.ts           — portfolio entries
 src/lib/store.ts              — Zustand
