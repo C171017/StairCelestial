@@ -1,5 +1,10 @@
 import { create } from "zustand";
-import { CLIMB_SCALE, LOOP_LENGTH, SCROLL_START_OFFSET } from "./spiral";
+import {
+  CLIMB_SCALE,
+  DOOR_POOL_SIZE,
+  LOOP_LENGTH,
+  SCROLL_START_OFFSET,
+} from "./spiral";
 import type { DoorFocusTarget } from "./doorCameraFocus";
 import type { Project } from "./projects";
 
@@ -43,7 +48,7 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   currentProject: null,
   scrollProgress: INITIAL_SCROLL_PROGRESS,
   virtualStairIndex: INITIAL_VIRTUAL_STAIR_INDEX,
-  doorPoolVirtualIndices: [-1, -1, -1, -1],
+  doorPoolVirtualIndices: Array.from({ length: DOOR_POOL_SIZE }, () => -1),
   focusedDoorId: null,
   doorFocusTarget: null,
   focusVirtualIndex: null,

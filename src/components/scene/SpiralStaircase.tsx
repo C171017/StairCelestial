@@ -6,6 +6,7 @@ import { useMemo, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { MODEL_PATHS } from "@/lib/models";
 import {
+  DOOR_POOL_SEARCH_RADIUS,
   DOOR_POOL_SIZE,
   STAIR_POOL_SIZE,
   getDoorPlacement,
@@ -65,7 +66,7 @@ export function SpiralStaircase({ virtualIndexRef }: SpiralStaircaseProps) {
       virtualIndex,
       DOOR_POOL_SIZE,
       isDoorStairIndex,
-      24,
+      DOOR_POOL_SEARCH_RADIUS,
       lastDoorSlotsRef.current,
     );
     lastDoorSlotsRef.current = doorSlots;

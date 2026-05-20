@@ -44,9 +44,9 @@ src/lib/
 
 | File | Role |
 |------|------|
-| `stair_segment.glb` | One stair slab; **14 pool clones** |
-| `platform_landing.glb` | Landing; **4 pool clones** |
-| `project_door_portal.glb` | Frame + panel; **4 pool clones** |
+| `stair_segment.glb` | One stair slab; **64 pool clones** |
+| `platform_landing.glb` | Landing; **12 pool clones** |
+| `project_door_portal.glb` | Frame + panel; **12 pool clones** |
 | `preview_screen.glb` | Plane behind door; texture applied in code |
 | `jupiter_planet.glb` | Background |
 | `ringed_planet.glb` | Background |
@@ -60,8 +60,9 @@ Paths: `src/lib/models.ts` → `public/models/`
 | Constant | Value | Purpose |
 |----------|-------|---------|
 | `LOOP_LENGTH` | 28 | One full XZ turn; angle uses `index % LOOP_LENGTH` |
-| `STAIR_POOL_SIZE` | 14 | Active stair instances around camera |
-| `DOOR_POOL_SIZE` | 4 | Active door+platform groups in view |
+| `STAIR_POOL_SIZE` | 64 | Active stair instances around camera |
+| `DOOR_POOL_SIZE` | 12 | Active door+platform groups in view |
+| `DOOR_POOL_SEARCH_RADIUS` | 56 | Virtual steps ±center when collecting door slot candidates |
 | `SPIRAL_RADIUS` | 11 | Helix radius for stair/platform placement |
 | `STAIR_HEIGHT_STEP` | 0.52 | Vertical rise per stair (Y is unbounded) |
 | `STAIR_ANGLE_STEP` | 2π/28 | Rotation per loop step |
@@ -86,9 +87,9 @@ Functions:
 ```txt
 Drei ScrollControls infinite
 scroll.offset → computeTrackerStep (lap vs capped delta) → unboundedOffset → virtualStairIndex
-14 pooled stairs + 4 pooled door slots reposition each frame
+64 pooled stairs + 12 pooled door slots reposition each frame
 XZ repeats every LOOP_LENGTH; Y keeps climbing
-Fog (#030508, near 14, far 85) hides recycled segments
+Fog (#030508, near 22, far 95) softens distant geometry and recycled segments
 ```
 
 **Add a project (no Blender):** append to `projects` in `src/lib/projects.ts` + preview under `public/previews/`. `DOOR_STEP` auto-adjusts from project count (min 6 steps apart).
@@ -146,13 +147,13 @@ Dev: `window.__scrollDebug` (development only) exposes per-frame `maxDisplayInde
 
 | Field | Meaning |
 |-------|---------|
-| `activeDoorId` | `pool-door-0` … `pool-door-3` |
+| `activeDoorId` | `pool-door-0` … `pool-door-11` |
 | `openedDoorId` | Door currently open |
 | `currentProject` | Project linked to open door |
 | `virtualStairIndex` | Unbounded climb index |
 | `doorPoolVirtualIndices` | Per-slot virtual stair index (-1 = hidden) |
 | `scrollProgress` | Loop-normalized 0–1 for UI |
-| `focusedDoorId` | Door receiving camera zoom (`pool-door-0` … `3`) |
+| `focusedDoorId` | Door receiving camera zoom (`pool-door-0` … `11`) |
 | `doorFocusTarget` | World-space look-at + forward for zoom framing |
 | `focusVirtualIndex` | Stair index of focused door (metadata) |
 | `focusScrollAnchor` | `virtualStairIndex` when focus started — scroll release uses **this**, not `focusVirtualIndex` |
