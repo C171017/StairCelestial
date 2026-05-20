@@ -97,12 +97,13 @@ Do **not** drive climb from raw `scroll.delta` — it spikes when Drei resets of
 
 Current behavior:
 
-1. Integrate `scroll.offset` with capped normal diffs (`±0.1` per frame).
-2. On true forward lap cross (`offset` was high, then `< 0.15`): add `1 - last + offset`.
-3. On true backward lap cross (`offset` was low, then `> 0.85` and `≤ 1.02`): add `-last + offset`.
-4. If `|diff| > 0.15` without a valid lap cross (e.g. damp overshoot past 1.0): **resync only** — skip that frame.
-5. `virtualStairIndex = unboundedOffset × CLIMB_SCALE` (28 steps per full scroll range).
-6. While a door is focused: if `|virtualStairIndex - focusScrollAnchor| > SCROLL_FOCUS_RELEASE_THRESHOLD` (~0.35 steps), call `resetDoors()` (zoom out + close door). **Do not** compare camera index to the door’s stair index — that breaks zoom for doors far along the spiral.
+1. On mount, `useCenteredScrollInit` sets `scrollTop` to half the track and seeds `unboundedOffset` / store at `SCROLL_START_OFFSET` (0.5) so both scroll directions work from the first frame.
+2. Integrate `scroll.offset` with capped normal diffs (`±0.1` per frame).
+3. On forward lap cross or Drei infinite reset (`last > 0.7`, `offset < 0.25`): add `1 - last + offset`.
+4. On backward lap cross or Drei reset (`last < 0.3`, `offset > 0.75`): add `-last + offset`.
+5. When `offset < 0` or `> 1.02` (post-reset damp), still integrate with capped delta — do not skip the frame.
+6. `virtualStairIndex = unboundedOffset × CLIMB_SCALE` (28 steps per full scroll range); index may go negative (stairs below start elevation).
+7. While a door is focused: if `|virtualStairIndex - focusScrollAnchor| > SCROLL_FOCUS_RELEASE_THRESHOLD` (~0.35 steps), call `resetDoors()` (zoom out + close door). **Do not** compare camera index to the door’s stair index — that breaks zoom for doors far along the spiral.
 
 ## Scroll camera
 

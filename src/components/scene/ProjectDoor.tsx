@@ -47,8 +47,7 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   const doorClone = useMemo(() => doorScene.clone(true), [doorScene]);
   const previewClone = useMemo(() => previewScene.clone(true), [previewScene]);
 
-  const project =
-    virtualIndex >= 0 ? getProjectForStairIndex(virtualIndex) : undefined;
+  const project = getProjectForStairIndex(virtualIndex);
 
   const closeDoor = useCallback(() => {
     if (!isOpenRef.current) return;
@@ -190,8 +189,6 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
 
     openDoor();
   };
-
-  if (virtualIndex < 0) return null;
 
   return (
     <group ref={groupRef}>

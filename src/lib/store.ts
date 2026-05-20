@@ -1,6 +1,13 @@
 import { create } from "zustand";
+import { CLIMB_SCALE, LOOP_LENGTH, SCROLL_START_OFFSET } from "./spiral";
 import type { DoorFocusTarget } from "./doorCameraFocus";
 import type { Project } from "./projects";
+
+const INITIAL_VIRTUAL_STAIR_INDEX = SCROLL_START_OFFSET * CLIMB_SCALE;
+const INITIAL_SCROLL_PROGRESS =
+  ((INITIAL_VIRTUAL_STAIR_INDEX % LOOP_LENGTH) + LOOP_LENGTH) %
+  LOOP_LENGTH /
+  LOOP_LENGTH;
 
 type PortfolioState = {
   activeDoorId: string | null;
@@ -34,8 +41,8 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   activeDoorId: null,
   openedDoorId: null,
   currentProject: null,
-  scrollProgress: 0,
-  virtualStairIndex: 0,
+  scrollProgress: INITIAL_SCROLL_PROGRESS,
+  virtualStairIndex: INITIAL_VIRTUAL_STAIR_INDEX,
   doorPoolVirtualIndices: [-1, -1, -1, -1],
   focusedDoorId: null,
   doorFocusTarget: null,

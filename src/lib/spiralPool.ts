@@ -38,7 +38,7 @@ export function assignDoorPoolSlots(
   const candidates: number[] = [];
 
   for (let i = center - searchRadius; i <= center + searchRadius; i++) {
-    if (i >= 0 && isDoor(i)) candidates.push(i);
+    if (isDoor(i)) candidates.push(i);
   }
 
   candidates.sort(

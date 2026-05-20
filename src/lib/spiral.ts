@@ -4,6 +4,12 @@ import { projects, type Project } from "./projects";
 /** One full helix turn in XZ; matches STAIR_ANGLE_STEP = 2π / LOOP_LENGTH */
 export const LOOP_LENGTH = 28;
 
+/** Centered Drei scroll offset at load — symmetric runway up and down. */
+export const SCROLL_START_OFFSET = 0.5;
+
+/** Virtual stair steps per one full scroll offset range (0→1). */
+export const CLIMB_SCALE = LOOP_LENGTH;
+
 export const STAIR_POOL_SIZE = 14;
 export const DOOR_POOL_SIZE = 4;
 
@@ -54,8 +60,8 @@ export function isDoorStairIndex(
   virtualIndex: number,
   doorStep: number = getDoorStep(),
 ): boolean {
-  if (virtualIndex < 0) return false;
-  return virtualIndex % doorStep === 0;
+  const mod = ((virtualIndex % doorStep) + doorStep) % doorStep;
+  return mod === 0;
 }
 
 export function getDoorSlotIndex(
@@ -63,7 +69,8 @@ export function getDoorSlotIndex(
   doorStep: number = getDoorStep(),
 ): number {
   const projectCount = Math.max(1, projects.length);
-  return Math.floor(virtualIndex / doorStep) % projectCount;
+  const slot = Math.floor(virtualIndex / doorStep);
+  return ((slot % projectCount) + projectCount) % projectCount;
 }
 
 /** Project for a pooled door at a virtual stair index (repeating set). */
