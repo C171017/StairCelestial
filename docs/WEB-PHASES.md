@@ -37,7 +37,7 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 
 **Implemented:**
 
-- `ScrollControls` with `infinite`, `pages={3}`, `damping={0.18}`
+- `ScrollControls` with `infinite`, `pages={3}`, `damping={0.3}`
 - `useVirtualScrollIndex` — wrap-aware offset integration (see [ARCHITECTURE.md](./ARCHITECTURE.md))
 - `CameraRig` — orbit + **door-focus zoom blend** (`doorCameraFocus.ts`)
 - Fog in `Atmosphere.tsx` — `near: 14`, `far: 85`
@@ -47,7 +47,7 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 
 - `CameraRig` `CAMERA_LERP` / `FOCUS_BLEND_LERP`, FOV in `StairwayScene.tsx`
 - `doorCameraFocus.ts` — `DOOR_LOOK_AT_HEIGHT`, `getViewportFrameBias()` for vertical centering
-- `MAX_DIFF_PER_FRAME` in `useVirtualScrollIndex.ts` if scroll feels slow/fast
+- `MAX_TRACKER_STEP` / `MAX_DISPLAY_STEP` in `useVirtualScrollIndex.ts` if scroll feels slow/fast
 
 ---
 

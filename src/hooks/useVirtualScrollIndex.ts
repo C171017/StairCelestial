@@ -14,8 +14,11 @@ import { usePortfolioStore } from "@/lib/store";
 
 export { CLIMB_SCALE };
 
-/** Max normal scroll progress change per frame (non-wrap). */
-const MAX_DIFF_PER_FRAME = 0.1;
+/** Max tracker step per frame on normal integration (non-wrap). */
+const MAX_TRACKER_STEP = 0.06;
+
+/** Max display offset step per frame — what camera/geometry consume. */
+const MAX_DISPLAY_STEP = 0.04;
 
 const WRAP_TOP_ENTER = 0.85;
 const WRAP_TOP_EXIT = 0.15;
@@ -24,8 +27,8 @@ const WRAP_BOTTOM_EXIT = 0.85;
 /** Drei damp can overshoot past 1.0 — not a real lap boundary. */
 const OFFSET_MAX = 1.02;
 
-/** Large offset jump — normal integration only below this. */
-const LARGE_DIFF = 0.15;
+/** Min |Δoffset| to treat as Drei infinite teleport (not fast damp). */
+const RESET_DISCONTINUITY = 0.45;
 
 /** Explicit Drei infinite-reset signatures (offset discontinuity). */
 const DREI_RESET_HIGH_LAST = 0.7;
@@ -36,20 +39,41 @@ const DREI_RESET_HIGH_OFFSET = 0.75;
 /** Wheel down → descend the spiral (negative virtual index). */
 const SCROLL_CLIMB_SIGN = -1;
 
+declare global {
+  interface Window {
+    __scrollDebug?: {
+      offset: number;
+      targetUnbounded: number;
+      displayUnbounded: number;
+      virtualIndex: number;
+      maxDisplayIndexDelta: number;
+      frameCount: number;
+    };
+  }
+}
+
+function clampStep(value: number, max: number): number {
+  return Math.max(-max, Math.min(max, value));
+}
+
 /**
  * Integrates Drei scroll.offset into an unbounded virtual stair index.
- * Handles true 1→0 / 0→1 boundary crosses and Drei infinite DOM teleports.
+ * Tracker keeps lap accounting; display layer is always capped for steady motion.
  */
 export function useVirtualScrollIndex() {
   const scroll = useScroll();
   const virtualIndexRef = useRef(SCROLL_START_OFFSET * CLIMB_SCALE);
   const lastOffsetRef = useRef(SCROLL_START_OFFSET);
-  const unboundedOffsetRef = useRef(SCROLL_START_OFFSET);
+  const targetUnboundedOffsetRef = useRef(SCROLL_START_OFFSET);
+  const displayUnboundedOffsetRef = useRef(SCROLL_START_OFFSET);
   const armedTopWrapRef = useRef(false);
   const armedBottomWrapRef = useRef(false);
+  const maxDisplayIndexDeltaRef = useRef(0);
+  const lastDisplayIndexRef = useRef(SCROLL_START_OFFSET * CLIMB_SCALE);
 
   const scrollRefs = {
-    unboundedOffsetRef,
+    targetUnboundedOffsetRef,
+    displayUnboundedOffsetRef,
     lastOffsetRef,
     armedTopWrapRef,
     armedBottomWrapRef,
@@ -61,6 +85,7 @@ export function useVirtualScrollIndex() {
     const o = scroll.offset;
     const last = lastOffsetRef.current;
     const diff = SCROLL_CLIMB_SIGN * (o - last);
+    const offsetJump = Math.abs(o - last);
 
     if (o > WRAP_TOP_ENTER && o <= OFFSET_MAX) {
       armedTopWrapRef.current = true;
@@ -86,29 +111,53 @@ export function useVirtualScrollIndex() {
       o <= OFFSET_MAX;
 
     const dreiForwardReset =
-      last > DREI_RESET_HIGH_LAST && o < DREI_RESET_LOW_OFFSET;
+      offsetJump > RESET_DISCONTINUITY &&
+      last > DREI_RESET_HIGH_LAST &&
+      o < DREI_RESET_LOW_OFFSET;
     const dreiBackwardReset =
-      last < DREI_RESET_LOW_LAST && o > DREI_RESET_HIGH_OFFSET;
-    const postResetOvershoot = o < 0 || o > OFFSET_MAX;
+      offsetJump > RESET_DISCONTINUITY &&
+      last < DREI_RESET_LOW_LAST &&
+      o > DREI_RESET_HIGH_OFFSET;
+
+    const target = targetUnboundedOffsetRef;
 
     if (crossedTop || dreiForwardReset) {
-      unboundedOffsetRef.current += SCROLL_CLIMB_SIGN * (1 - last + o);
+      target.current += SCROLL_CLIMB_SIGN * (1 - last + o);
       armedTopWrapRef.current = false;
     } else if (crossedBottom || dreiBackwardReset) {
-      unboundedOffsetRef.current += SCROLL_CLIMB_SIGN * (-last + o);
+      target.current += SCROLL_CLIMB_SIGN * (-last + o);
       armedBottomWrapRef.current = false;
-    } else if (postResetOvershoot || Math.abs(diff) <= LARGE_DIFF) {
-      const capped = Math.max(
-        -MAX_DIFF_PER_FRAME,
-        Math.min(MAX_DIFF_PER_FRAME, diff),
-      );
-      unboundedOffsetRef.current += capped;
+    } else {
+      const capped = clampStep(diff, MAX_TRACKER_STEP);
+      target.current += capped;
     }
 
     lastOffsetRef.current = o;
 
-    const index = unboundedOffsetRef.current * CLIMB_SCALE;
+    const displayStep = clampStep(
+      target.current - displayUnboundedOffsetRef.current,
+      MAX_DISPLAY_STEP,
+    );
+    displayUnboundedOffsetRef.current += displayStep;
+
+    const index = displayUnboundedOffsetRef.current * CLIMB_SCALE;
+    const displayDelta = Math.abs(index - lastDisplayIndexRef.current);
+    if (displayDelta > maxDisplayIndexDeltaRef.current) {
+      maxDisplayIndexDeltaRef.current = displayDelta;
+    }
+    lastDisplayIndexRef.current = index;
     virtualIndexRef.current = index;
+
+    if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
+      window.__scrollDebug = {
+        offset: o,
+        targetUnbounded: target.current,
+        displayUnbounded: displayUnboundedOffsetRef.current,
+        virtualIndex: index,
+        maxDisplayIndexDelta: maxDisplayIndexDeltaRef.current,
+        frameCount: (window.__scrollDebug?.frameCount ?? 0) + 1,
+      };
+    }
 
     const store = usePortfolioStore.getState();
     const { focusedDoorId, focusScrollAnchor, resetDoors } = store;

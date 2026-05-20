@@ -95,19 +95,21 @@ Fog (#030508, near 14, far 85) hides recycled segments
 
 Do **not** drive climb from raw `scroll.delta` — it spikes when Drei resets offset.
 
-Current behavior:
+Two-layer integration (tracker + display):
 
-1. On mount, `useCenteredScrollInit` sets `scrollTop` to half the track and seeds `unboundedOffset` / store at `SCROLL_START_OFFSET` (0.5) so both scroll directions work from the first frame.
-2. Integrate `scroll.offset` with capped normal diffs (`±0.1` per frame).
-3. On forward lap cross or Drei infinite reset (`last > 0.7`, `offset < 0.25`): add `1 - last + offset`.
-4. On backward lap cross or Drei reset (`last < 0.3`, `offset > 0.75`): add `-last + offset`.
-5. When `offset < 0` or `> 1.02` (post-reset damp), still integrate with capped delta — do not skip the frame.
-6. `virtualStairIndex = unboundedOffset × CLIMB_SCALE` (28 steps per full scroll range); index may go negative (stairs below start elevation).
-7. While a door is focused: if `|virtualStairIndex - focusScrollAnchor| > SCROLL_FOCUS_RELEASE_THRESHOLD` (~0.35 steps), call `resetDoors()` (zoom out + close door). **Do not** compare camera index to the door’s stair index — that breaks zoom for doors far along the spiral.
+1. On mount, `useCenteredScrollInit` sets `scrollTop` to half the track and seeds **target** and **display** unbounded offsets at `SCROLL_START_OFFSET` (0.5) so both scroll directions work from the first frame.
+2. **Tracker** (`targetUnboundedOffset`): integrates `scroll.offset` with capped normal diffs (`±0.06` per frame). Never skips frames on large diffs.
+3. On forward lap cross or Drei infinite reset: requires `|Δoffset| > 0.45` plus signature (`last > 0.7`, `offset < 0.25` forward; `last < 0.3`, `offset > 0.75` backward). Applies full wrap correction to the tracker only.
+4. On backward lap cross: add `-last + offset` to tracker (armed wrap at bottom).
+5. **Display** (`displayUnboundedOffset`): each frame moves toward the tracker with `±0.04` max step — this value drives the store/camera so lap teleports never lurch in one frame.
+6. `virtualStairIndex = displayUnbounded × CLIMB_SCALE` (28 steps per full scroll range); index may go negative (stairs below start elevation).
+7. While a door is focused: if `|virtualStairIndex - focusScrollAnchor| > SCROLL_FOCUS_RELEASE_THRESHOLD` (~0.35 steps), call `resetDoors()` (zoom out + close door). Uses **display** index so release matches visible motion.
+
+Dev: `window.__scrollDebug` (development only) exposes per-frame `maxDisplayIndexDelta` for profiling.
 
 ## Scroll camera
 
-- `StairwayScene`: `<ScrollControls pages={3} damping={0.18} infinite>`
+- `StairwayScene`: `<ScrollControls pages={3} damping={0.3} infinite>`
 - **Orbit mode:** `getContinuousOrbitAngle` + fixed `CAMERA_ORBIT_RADIUS`; looks at void center
 - **Focus mode:** blends toward `getFocusCameraPose()` when `doorFocusTarget` is set (see below)
 - Canvas FOV `58`; `scrollProgress` in UI = position within current loop (0–1)

@@ -30,7 +30,7 @@ export function StairwayScene() {
       dpr={[1, 1.5]}
     >
       <Suspense fallback={null}>
-        <ScrollControls pages={getScrollPages()} damping={0.18} infinite>
+        <ScrollControls pages={getScrollPages()} damping={0.3} infinite>
           <SceneContent />
         </ScrollControls>
       </Suspense>

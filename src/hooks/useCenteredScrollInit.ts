@@ -5,7 +5,8 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { SCROLL_START_OFFSET } from "@/lib/spiral";
 
 type CenteredScrollRefs = {
-  unboundedOffsetRef: MutableRefObject<number>;
+  targetUnboundedOffsetRef: MutableRefObject<number>;
+  displayUnboundedOffsetRef: MutableRefObject<number>;
   lastOffsetRef: MutableRefObject<number>;
   armedTopWrapRef: MutableRefObject<boolean>;
   armedBottomWrapRef: MutableRefObject<boolean>;
@@ -34,7 +35,8 @@ export function useCenteredScrollInit(refs: CenteredScrollRefs) {
       el.scrollTop = top;
       el.dispatchEvent(new Event("scroll"));
 
-      refs.unboundedOffsetRef.current = SCROLL_START_OFFSET;
+      refs.targetUnboundedOffsetRef.current = SCROLL_START_OFFSET;
+      refs.displayUnboundedOffsetRef.current = SCROLL_START_OFFSET;
       refs.lastOffsetRef.current = SCROLL_START_OFFSET;
       refs.armedTopWrapRef.current = false;
       refs.armedBottomWrapRef.current = false;
