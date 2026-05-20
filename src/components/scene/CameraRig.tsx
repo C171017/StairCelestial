@@ -1,10 +1,9 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { getFocusCameraPose } from "@/lib/doorCameraFocus";
-import { useVirtualScrollIndex } from "@/hooks/useVirtualScrollIndex";
 import { usePortfolioStore } from "@/lib/store";
 import {
   CAMERA_LOOK_AT_Y_OFFSET,
@@ -17,8 +16,11 @@ import {
 const CAMERA_LERP = 0.1;
 const FOCUS_BLEND_LERP = 0.08;
 
-export function CameraRig() {
-  const virtualIndexRef = useVirtualScrollIndex();
+type CameraRigProps = {
+  virtualIndexRef: MutableRefObject<number>;
+};
+
+export function CameraRig({ virtualIndexRef }: CameraRigProps) {
   const { camera } = useThree();
   const lookAtTarget = useRef(new THREE.Vector3(0, 0, 0));
   const desiredPosition = useMemo(() => new THREE.Vector3(), []);

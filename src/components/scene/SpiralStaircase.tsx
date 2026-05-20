@@ -2,7 +2,7 @@
 
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { MODEL_PATHS } from "@/lib/models";
 import {
@@ -13,13 +13,21 @@ import {
   getStairPlacement,
   isDoorStairIndex,
 } from "@/lib/spiral";
-import { assignDoorPoolSlots, assignPoolSlots } from "@/lib/spiralPool";
+import {
+  assignDoorPoolSlots,
+  assignPoolSlots,
+  type DoorPoolSlot,
+} from "@/lib/spiralPool";
 import { usePortfolioStore } from "@/lib/store";
 import { PlatformLanding } from "./PlatformLanding";
 import { ProjectDoor } from "./ProjectDoor";
 import { StairSegment } from "./StairSegment";
 
-export function SpiralStaircase() {
+type SpiralStaircaseProps = {
+  virtualIndexRef: MutableRefObject<number>;
+};
+
+export function SpiralStaircase({ virtualIndexRef }: SpiralStaircaseProps) {
   const { scene: stairScene } = useGLTF(MODEL_PATHS.stair);
   const { scene: platformScene } = useGLTF(MODEL_PATHS.platform);
 
@@ -27,6 +35,7 @@ export function SpiralStaircase() {
   const platformGroups = useRef<(THREE.Group | null)[]>([]);
   const doorRootGroups = useRef<(THREE.Group | null)[]>([]);
   const lastDoorPoolIndices = useRef<number[]>([]);
+  const lastDoorSlotsRef = useRef<DoorPoolSlot[] | null>(null);
 
   const stairObjects = useMemo(
     () =>
@@ -41,7 +50,7 @@ export function SpiralStaircase() {
   );
 
   useFrame(() => {
-    const virtualIndex = usePortfolioStore.getState().virtualStairIndex;
+    const virtualIndex = virtualIndexRef.current;
     const stairSlots = assignPoolSlots(virtualIndex, STAIR_POOL_SIZE);
 
     stairSlots.forEach(({ poolId, virtualIndex: vi }) => {
@@ -56,7 +65,10 @@ export function SpiralStaircase() {
       virtualIndex,
       DOOR_POOL_SIZE,
       isDoorStairIndex,
+      24,
+      lastDoorSlotsRef.current,
     );
+    lastDoorSlotsRef.current = doorSlots;
 
     const poolIndices: number[] = [];
 

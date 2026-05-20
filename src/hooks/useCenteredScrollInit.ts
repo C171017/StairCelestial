@@ -8,13 +8,12 @@ type CenteredScrollRefs = {
   targetUnboundedOffsetRef: MutableRefObject<number>;
   displayUnboundedOffsetRef: MutableRefObject<number>;
   lastOffsetRef: MutableRefObject<number>;
-  armedTopWrapRef: MutableRefObject<boolean>;
-  armedBottomWrapRef: MutableRefObject<boolean>;
 };
 
 /**
  * Centers the Drei scroll container and syncs integration refs so climb works
- * both directions from the first frame.
+ * both directions from the first frame. Seeds `lastOffsetRef` from damped
+ * `scroll.offset` after layout so it matches Drei, not the idealized 0.5 seed.
  */
 export function useCenteredScrollInit(refs: CenteredScrollRefs) {
   const scroll = useScroll();
@@ -37,9 +36,15 @@ export function useCenteredScrollInit(refs: CenteredScrollRefs) {
 
       refs.targetUnboundedOffsetRef.current = SCROLL_START_OFFSET;
       refs.displayUnboundedOffsetRef.current = SCROLL_START_OFFSET;
-      refs.lastOffsetRef.current = SCROLL_START_OFFSET;
-      refs.armedTopWrapRef.current = false;
-      refs.armedBottomWrapRef.current = false;
+
+      const syncLastFromDrei = () => {
+        if (cancelled) return;
+        refs.lastOffsetRef.current = scroll.offset;
+      };
+      requestAnimationFrame(() => {
+        requestAnimationFrame(syncLastFromDrei);
+      });
+
       doneRef.current = true;
       return true;
     };

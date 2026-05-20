@@ -11,19 +11,21 @@ src/app/
   globals.css           — Full-viewport, dark background
 
 src/components/scene/
-  StairwayScene.tsx     — <Canvas>, ScrollControls infinite, Suspense
-  SpiralStaircase.tsx   — Pooled stairs + door/platform groups (useFrame)
+  StairwayScene.tsx     — <Canvas>, ScrollControls infinite; SceneContent runs `useVirtualScrollIndex`, passes ref to `SpiralStaircase` + `CameraRig`
+  SpiralStaircase.tsx   — Pooled stairs + door/platform groups (useFrame); reads `virtualIndexRef` (same float as camera)
   StairSegment.tsx      — Renders one pre-cloned stair Object3D
   PlatformLanding.tsx   — Renders one pre-cloned platform Object3D
   ProjectDoor.tsx       — Door + preview screen + GSAP + clicks (pooled)
-  CameraRig.tsx         — Orbit camera + door-focus zoom blend
+  CameraRig.tsx         — Orbit camera + door-focus zoom blend (consumes `virtualIndexRef`)
   CelestialBackground.tsx — Jupiter + ringed planet GLBs
   Atmosphere.tsx        — fog, Stars, Milky Way plane
   Lights.tsx            — ambient + directional + point
   cloneScene.ts         — findChildByNamePart() helper
 
 src/hooks/
-  useVirtualScrollIndex.ts — wrap-aware scroll.offset → virtualStairIndex
+  useVirtualScrollIndex.ts — wrap-aware scroll.offset → virtualStairIndex (store + smoothing)
+  scrollLapIntegration.ts — `computeTrackerStep` (Drei lap teleports vs capped delta); `npm run test:scroll`
+  useCenteredScrollInit.ts — center scroll DOM; seed refs; sync `lastOffsetRef` from damped `scroll.offset`
 
 src/components/ui/
   ProjectOverlay.tsx    — HTML overlay, scroll %, open project card
@@ -32,7 +34,7 @@ src/components/ui/
 src/lib/
   spiral.ts             — LOOP_LENGTH, placements, camera orbit, door Y offset
   doorCameraFocus.ts    — Zoom-to-door pose, viewport framing, scroll release threshold
-  spiralPool.ts         — assignPoolSlots, assignDoorPoolSlots
+  spiralPool.ts         — assignPoolSlots (floor-centered window), assignDoorPoolSlots (nearest doors + slot hysteresis)
   models.ts             — MODEL_PATHS for all GLBs
   projects.ts           — Project[] (data-only growth)
   store.ts              — usePortfolioStore (Zustand)
@@ -83,7 +85,7 @@ Functions:
 
 ```txt
 Drei ScrollControls infinite
-scroll.offset → armed lap detection → unboundedOffset → virtualStairIndex
+scroll.offset → computeTrackerStep (lap vs capped delta) → unboundedOffset → virtualStairIndex
 14 pooled stairs + 4 pooled door slots reposition each frame
 XZ repeats every LOOP_LENGTH; Y keeps climbing
 Fog (#030508, near 14, far 85) hides recycled segments
@@ -91,21 +93,25 @@ Fog (#030508, near 14, far 85) hides recycled segments
 
 **Add a project (no Blender):** append to `projects` in `src/lib/projects.ts` + preview under `public/previews/`. `DOOR_STEP` auto-adjusts from project count (min 6 steps apart).
 
-## Scroll integration (`useVirtualScrollIndex.ts`)
+## Scroll integration (`useVirtualScrollIndex.ts` + `scrollLapIntegration.ts`)
 
 Do **not** drive climb from raw `scroll.delta` — it spikes when Drei resets offset.
 
+Lap math lives in [`scrollLapIntegration.ts`](src/hooks/scrollLapIntegration.ts) (`computeTrackerStep`) so it stays testable; the hook wires it to the store and display smoothing.
+
 Two-layer integration (tracker + display):
 
-1. On mount, `useCenteredScrollInit` sets `scrollTop` to half the track and seeds **target** and **display** unbounded offsets at `SCROLL_START_OFFSET` (0.5) so both scroll directions work from the first frame.
-2. **Tracker** (`targetUnboundedOffset`): integrates `scroll.offset` with capped normal diffs (`±0.06` per frame). Never skips frames on large diffs.
-3. On forward lap cross or Drei infinite reset: requires `|Δoffset| > 0.45` plus signature (`last > 0.7`, `offset < 0.25` forward; `last < 0.3`, `offset > 0.75` backward). Applies full wrap correction to the tracker only.
-4. On backward lap cross: add `-last + offset` to tracker (armed wrap at bottom).
+1. On mount, `useCenteredScrollInit` sets `scrollTop` to half the track and seeds **target** and **display** unbounded offsets at `SCROLL_START_OFFSET` (0.5). After layout, `lastOffsetRef` is synced from damped `scroll.offset` (double `requestAnimationFrame`) so the first integration step matches Drei, not a stale 0.5 guess.
+2. **Tracker** (`targetUnboundedOffset`): each frame adds `computeTrackerStep(last, offset)` — capped normal diffs (`±0.06` per frame) unless a Drei infinite teleport is detected.
+3. **Forward / bottom teleport** (`|Δoffset| > 0.45`, `last > 0.7`, `offset < 0.25`): add `SCROLL_CLIMB_SIGN * (1 - last + offset)` (~0 when Drei snaps high → low).
+4. **Backward / top teleport** (`|Δoffset| > 0.45`, `last < 0.12`, `offset > 0.75`): add **`-SCROLL_CLIMB_SIGN * (-last + offset)`** (~+1 lap in climb direction — the naive `SCROLL_CLIMB_SIGN * (-last + offset)` was inverted and caused harsh jumps). `last < 0.12` keeps this branch off normal damp motion in the 0.2–0.3 band.
 5. **Display** (`displayUnboundedOffset`): each frame moves toward the tracker with `±0.04` max step — this value drives the store/camera so lap teleports never lurch in one frame.
 6. `virtualStairIndex = displayUnbounded × CLIMB_SCALE` (28 steps per full scroll range); index may go negative (stairs below start elevation).
 7. While a door is focused: if `|virtualStairIndex - focusScrollAnchor| > SCROLL_FOCUS_RELEASE_THRESHOLD` (~0.35 steps), call `resetDoors()` (zoom out + close door). Uses **display** index so release matches visible motion.
 
-Dev: `window.__scrollDebug` (development only) exposes per-frame `maxDisplayIndexDelta` for profiling.
+**Scene wiring:** `useVirtualScrollIndex()` runs once in `StairwayScene` `SceneContent`; the returned ref is passed to `SpiralStaircase` and `CameraRig` so geometry reads the same float index as the camera without waiting on Zustand per frame.
+
+Dev: `window.__scrollDebug` (development only) exposes per-frame `maxDisplayIndexDelta` for profiling. CI/local: `npm run test:scroll` exercises lap detection edge cases.
 
 ## Scroll camera
 

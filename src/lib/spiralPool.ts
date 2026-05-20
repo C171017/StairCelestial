@@ -3,11 +3,14 @@ export type PoolSlotAssignment = {
   virtualIndex: number;
 };
 
+/** Prefer incumbent door slot until a candidate is this much closer (steps). */
+const DOOR_SLOT_HYSTERESIS_STEPS = 1.5;
+
 export function computeVisibleRange(
   virtualIndex: number,
   poolSize: number,
 ): [number, number] {
-  const centerIndex = Math.round(virtualIndex);
+  const centerIndex = Math.floor(virtualIndex);
   const half = Math.floor(poolSize / 2);
   const startIndex = centerIndex - half;
   const endIndex = startIndex + poolSize - 1;
@@ -33,8 +36,9 @@ export function assignDoorPoolSlots(
   poolSize: number,
   isDoor: (index: number) => boolean,
   searchRadius = 24,
+  previous: DoorPoolSlot[] | null = null,
 ): DoorPoolSlot[] {
-  const center = Math.round(virtualIndex);
+  const center = Math.floor(virtualIndex);
   const candidates: number[] = [];
 
   for (let i = center - searchRadius; i <= center + searchRadius; i++) {
@@ -45,11 +49,28 @@ export function assignDoorPoolSlots(
     (a, b) => Math.abs(a - center) - Math.abs(b - center),
   );
 
-  const picked = candidates.slice(0, poolSize);
-
-  return Array.from({ length: poolSize }, (_, poolId) => {
-    const index = picked[poolId];
+  const proposed = Array.from({ length: poolSize }, (_, poolId) => {
+    const index = candidates[poolId];
     if (index === undefined) return null;
     return { poolId, virtualIndex: index };
+  });
+
+  if (!previous || previous.length !== poolSize) {
+    return proposed;
+  }
+
+  return proposed.map((newSlot, poolId) => {
+    const prevSlot = previous[poolId];
+    if (!newSlot) return null;
+    if (!prevSlot) return newSlot;
+
+    const oldIdx = prevSlot.virtualIndex;
+    const newIdx = newSlot.virtualIndex;
+    if (oldIdx === newIdx) return newSlot;
+
+    const dOld = Math.abs(oldIdx - center);
+    const dNew = Math.abs(newIdx - center);
+    if (dNew + DOOR_SLOT_HYSTERESIS_STEPS < dOld) return newSlot;
+    return prevSlot;
   });
 }

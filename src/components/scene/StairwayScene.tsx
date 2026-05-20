@@ -3,6 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { ScrollControls } from "@react-three/drei";
 import { Suspense } from "react";
+import { useVirtualScrollIndex } from "@/hooks/useVirtualScrollIndex";
 import { Atmosphere } from "./Atmosphere";
 import { CameraRig, getScrollPages } from "./CameraRig";
 import { CelestialBackground } from "./CelestialBackground";
@@ -10,13 +11,15 @@ import { Lights } from "./Lights";
 import { SpiralStaircase } from "./SpiralStaircase";
 
 function SceneContent() {
+  const virtualIndexRef = useVirtualScrollIndex();
+
   return (
     <>
       <Atmosphere />
       <Lights />
       <CelestialBackground />
-      <SpiralStaircase />
-      <CameraRig />
+      <SpiralStaircase virtualIndexRef={virtualIndexRef} />
+      <CameraRig virtualIndexRef={virtualIndexRef} />
     </>
   );
 }
