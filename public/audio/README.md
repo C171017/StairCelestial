@@ -6,7 +6,7 @@
 | `ambient-loop.webm` | Background music (WebM/Opus); preferred when supported |
 | `ambient-loop.m4a` | Same background music (AAC); Safari / iOS fallback |
 
-Replace `consent-sting.m4a` with your own space-themed UI sting when ready (see below).
+`consent-sting.m4a` is the ElevenLabs “soft sci-fi UI activate” sting (trimmed ~0.75s with fade). Replace this file to change the opt-in sound.
 
 ---
 
@@ -41,4 +41,4 @@ Replace `consent-sting.m4a` with your own space-themed UI sting when ready (see 
 - Mono or stereo, **0.3–0.8 s**, normalized but not loud (site plays at ~60% volume in code)
 - **M4A (AAC)** is enough for the sting; keep background music as WebM + M4A
 
-The current `consent-sting.m4a` is a **generated placeholder** (pink noise + low tone), not your song — swap the file and hard-refresh to test.
+Hard-refresh after replacing audio files.
