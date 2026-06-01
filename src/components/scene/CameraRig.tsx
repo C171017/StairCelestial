@@ -20,6 +20,10 @@ type CameraRigProps = {
   virtualIndexRef: MutableRefObject<number>;
 };
 
+function frameLerpAmount(perFrameAmount: number, delta: number): number {
+  return 1 - Math.pow(1 - perFrameAmount, delta * 60);
+}
+
 export function CameraRig({ virtualIndexRef }: CameraRigProps) {
   const { camera } = useThree();
   const lookAtTarget = useRef(new THREE.Vector3(0, 0, 0));
@@ -29,7 +33,7 @@ export function CameraRig({ virtualIndexRef }: CameraRigProps) {
   const orbitLookAt = useMemo(() => new THREE.Vector3(), []);
   const focusBlend = useRef(0);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     const floatIndex = virtualIndexRef.current;
     const angle = getContinuousOrbitAngle(floatIndex);
     const y = floatIndex * STAIR_HEIGHT_STEP;
@@ -44,10 +48,11 @@ export function CameraRig({ virtualIndexRef }: CameraRigProps) {
     const { focusedDoorId, doorFocusTarget } = usePortfolioStore.getState();
     const targetBlend =
       focusedDoorId !== null && doorFocusTarget !== null ? 1 : 0;
+    const focusLerp = frameLerpAmount(FOCUS_BLEND_LERP, delta);
     focusBlend.current = THREE.MathUtils.lerp(
       focusBlend.current,
       targetBlend,
-      FOCUS_BLEND_LERP,
+      focusLerp,
     );
 
     if (focusBlend.current > 0.001 && doorFocusTarget) {
@@ -67,8 +72,9 @@ export function CameraRig({ virtualIndexRef }: CameraRigProps) {
 
     const positionLerp =
       focusBlend.current > 0.05 || targetBlend > 0 ? 0.12 : CAMERA_LERP;
-    camera.position.lerp(desiredPosition, positionLerp);
-    lookAtTarget.current.lerp(desiredLookAt, positionLerp);
+    const cameraLerp = frameLerpAmount(positionLerp, delta);
+    camera.position.lerp(desiredPosition, cameraLerp);
+    lookAtTarget.current.lerp(desiredLookAt, cameraLerp);
     camera.lookAt(lookAtTarget.current);
   });
 

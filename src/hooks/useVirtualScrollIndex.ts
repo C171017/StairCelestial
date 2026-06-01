@@ -4,6 +4,7 @@ import { useScroll } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import type { MutableRefObject } from "react";
+import { MathUtils } from "three";
 import { computeTrackerStep } from "@/hooks/scrollLapIntegration";
 import { useCenteredScrollInit } from "@/hooks/useCenteredScrollInit";
 import { SCROLL_FOCUS_RELEASE_THRESHOLD } from "@/lib/doorCameraFocus";
@@ -16,8 +17,10 @@ import { usePortfolioStore } from "@/lib/store";
 
 export { CLIMB_SCALE };
 
-/** Max display offset step per frame — what camera/geometry consume. */
-const MAX_DISPLAY_STEP = 0.04;
+/** Max display offset speed — what camera/geometry consume. */
+const MAX_DISPLAY_OFFSET_SPEED = 2.4;
+const DISPLAY_DAMPING = 18;
+const MAX_FRAME_DELTA = 1 / 30;
 
 declare global {
   interface Window {
@@ -57,7 +60,7 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
 
   useCenteredScrollInit(scrollRefs);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const o = scroll.offset;
     const last = lastOffsetRef.current;
 
@@ -65,11 +68,19 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
     target.current += computeTrackerStep(last, o);
     lastOffsetRef.current = o;
 
-    const displayStep = clampStep(
-      target.current - displayUnboundedOffsetRef.current,
-      MAX_DISPLAY_STEP,
+    const frameDelta = Math.min(delta, MAX_FRAME_DELTA);
+    const currentDisplay = displayUnboundedOffsetRef.current;
+    const dampedDisplay = MathUtils.damp(
+      currentDisplay,
+      target.current,
+      DISPLAY_DAMPING,
+      frameDelta,
     );
-    displayUnboundedOffsetRef.current += displayStep;
+    const displayStep = clampStep(
+      dampedDisplay - currentDisplay,
+      MAX_DISPLAY_OFFSET_SPEED * frameDelta,
+    );
+    displayUnboundedOffsetRef.current = currentDisplay + displayStep;
 
     const index = displayUnboundedOffsetRef.current * CLIMB_SCALE;
     const displayDelta = Math.abs(index - lastDisplayIndexRef.current);
