@@ -21,6 +21,10 @@ export { CLIMB_SCALE };
 const MAX_DISPLAY_OFFSET_SPEED = 2.4;
 const DISPLAY_DAMPING = 18;
 const MAX_FRAME_DELTA = 1 / 30;
+const AUTO_LAUNCH_DURATION = 1.25;
+const AUTO_SETTLE_DURATION = 3.5;
+const AUTO_LAUNCH_OFFSET_SPEED = 0.09;
+const AUTO_CRUISE_OFFSET_SPEED = 0.015;
 
 declare global {
   interface Window {
@@ -39,6 +43,22 @@ function clampStep(value: number, max: number): number {
   return Math.max(-max, Math.min(max, value));
 }
 
+function smoothstep(t: number): number {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * (3 - 2 * x);
+}
+
+function getAutoOffsetSpeed(elapsed: number): number {
+  if (elapsed < AUTO_LAUNCH_DURATION) {
+    const launchT = elapsed / AUTO_LAUNCH_DURATION;
+    return AUTO_LAUNCH_OFFSET_SPEED * smoothstep(launchT);
+  }
+
+  const settleT = (elapsed - AUTO_LAUNCH_DURATION) / AUTO_SETTLE_DURATION;
+  const blend = smoothstep(settleT);
+  return MathUtils.lerp(AUTO_LAUNCH_OFFSET_SPEED, AUTO_CRUISE_OFFSET_SPEED, blend);
+}
+
 /**
  * Integrates Drei scroll.offset into an unbounded virtual stair index.
  * Tracker keeps lap accounting; display layer is always capped for steady motion.
@@ -46,6 +66,7 @@ function clampStep(value: number, max: number): number {
 export function useVirtualScrollIndex(): MutableRefObject<number> {
   const scroll = useScroll();
   const virtualIndexRef = useRef(SCROLL_START_OFFSET * CLIMB_SCALE);
+  const autoElapsedRef = useRef(0);
   const lastOffsetRef = useRef(SCROLL_START_OFFSET);
   const targetUnboundedOffsetRef = useRef(SCROLL_START_OFFSET);
   const displayUnboundedOffsetRef = useRef(SCROLL_START_OFFSET);
@@ -63,12 +84,14 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
   useFrame((_, delta) => {
     const o = scroll.offset;
     const last = lastOffsetRef.current;
+    const frameDelta = Math.min(delta, MAX_FRAME_DELTA);
 
     const target = targetUnboundedOffsetRef;
     target.current += computeTrackerStep(last, o);
+    autoElapsedRef.current += frameDelta;
+    target.current += getAutoOffsetSpeed(autoElapsedRef.current) * frameDelta;
     lastOffsetRef.current = o;
 
-    const frameDelta = Math.min(delta, MAX_FRAME_DELTA);
     const currentDisplay = displayUnboundedOffsetRef.current;
     const dampedDisplay = MathUtils.damp(
       currentDisplay,
