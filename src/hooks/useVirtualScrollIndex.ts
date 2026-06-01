@@ -88,8 +88,14 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
 
     const target = targetUnboundedOffsetRef;
     target.current += computeTrackerStep(last, o);
-    autoElapsedRef.current += frameDelta;
-    target.current += getAutoOffsetSpeed(autoElapsedRef.current) * frameDelta;
+
+    const { focusedDoorId, focusScrollAnchor, resetDoors } =
+      usePortfolioStore.getState();
+    const autoScrollPaused = focusedDoorId !== null;
+    if (!autoScrollPaused) {
+      autoElapsedRef.current += frameDelta;
+      target.current += getAutoOffsetSpeed(autoElapsedRef.current) * frameDelta;
+    }
     lastOffsetRef.current = o;
 
     const currentDisplay = displayUnboundedOffsetRef.current;
@@ -124,8 +130,6 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
       };
     }
 
-    const store = usePortfolioStore.getState();
-    const { focusedDoorId, focusScrollAnchor, resetDoors } = store;
     if (
       focusedDoorId !== null &&
       focusScrollAnchor !== null &&
@@ -134,7 +138,7 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
       resetDoors();
     }
 
-    store.setVirtualStairIndex(index);
+    usePortfolioStore.getState().setVirtualStairIndex(index);
 
     const normalized =
       ((index % LOOP_LENGTH) + LOOP_LENGTH) % LOOP_LENGTH / LOOP_LENGTH;
