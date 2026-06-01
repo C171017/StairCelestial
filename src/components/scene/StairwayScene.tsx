@@ -8,6 +8,7 @@ import { Atmosphere } from "./Atmosphere";
 import { CameraRig, getScrollPages } from "./CameraRig";
 import { CelestialBackground } from "./CelestialBackground";
 import { Lights } from "./Lights";
+import { SceneReadyMarker } from "./SceneReadyMarker";
 import { SpiralStaircase } from "./SpiralStaircase";
 
 function SceneContent() {
@@ -20,6 +21,7 @@ function SceneContent() {
       <CelestialBackground />
       <SpiralStaircase virtualIndexRef={virtualIndexRef} />
       <CameraRig virtualIndexRef={virtualIndexRef} />
+      <SceneReadyMarker />
     </>
   );
 }

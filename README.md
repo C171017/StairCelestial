@@ -11,6 +11,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Audio (intro gate)
+
+Site audio lives in [`public/audio/`](public/audio/): `consent-sting.m4a` (short opt-in clip) and `ambient-loop.m4a` / `ambient-loop.webm` (full track with format fallback). See [`public/audio/README.md`](public/audio/README.md).
+
 ## Controls
 
 - **Scroll** — ascend the spiral (seamless infinite scroll)

@@ -28,6 +28,7 @@ type PortfolioState = {
   focusVirtualIndex: number | null;
   /** Camera scroll index when focus started — scroll delta clears focus */
   focusScrollAnchor: number | null;
+  sceneBootstrapped: boolean;
   setActiveDoor: (doorId: string | null) => void;
   setOpenedDoor: (doorId: string | null, project: Project | null) => void;
   setScrollProgress: (progress: number) => void;
@@ -40,6 +41,7 @@ type PortfolioState = {
   ) => void;
   clearDoorFocus: () => void;
   resetDoors: () => void;
+  setSceneBootstrapped: (bootstrapped: boolean) => void;
 };
 
 export const usePortfolioStore = create<PortfolioState>((set) => ({
@@ -53,6 +55,7 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   doorFocusTarget: null,
   focusVirtualIndex: null,
   focusScrollAnchor: null,
+  sceneBootstrapped: false,
   setActiveDoor: (doorId) => set({ activeDoorId: doorId }),
   setOpenedDoor: (doorId, project) =>
     set({
@@ -88,4 +91,5 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
       focusVirtualIndex: null,
       focusScrollAnchor: null,
     }),
+  setSceneBootstrapped: (sceneBootstrapped) => set({ sceneBootstrapped }),
 }));

@@ -1,23 +1,29 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { AudioConsentGate } from "@/components/ui/AudioConsentGate";
 import { ProjectOverlay } from "@/components/ui/ProjectOverlay";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { SiteAudioProvider } from "@/hooks/useSiteAudio";
 
 const StairwayScene = dynamic(
   () =>
     import("@/components/scene/StairwayScene").then((mod) => mod.StairwayScene),
   {
     ssr: false,
-    loading: () => <LoadingScreen />,
+    loading: () => null,
   },
 );
 
 export default function HomePage() {
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-[#030508]">
-      <StairwayScene />
-      <ProjectOverlay />
-    </main>
+    <SiteAudioProvider>
+      <main className="relative h-screen w-screen overflow-hidden bg-[#030508]">
+        <div className="relative z-0 h-full w-full">
+          <StairwayScene />
+        </div>
+        <ProjectOverlay />
+        <AudioConsentGate />
+      </main>
+    </SiteAudioProvider>
   );
 }
