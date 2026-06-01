@@ -59,18 +59,45 @@ export function assignDoorPoolSlots(
     return proposed;
   }
 
-  return proposed.map((newSlot, poolId) => {
+  const assigned: DoorPoolSlot[] = Array.from(
+    { length: poolSize },
+    () => null,
+  );
+  const usedIndices = new Set<number>();
+  const candidateSet = new Set(candidates);
+
+  proposed.forEach((newSlot, poolId) => {
     const prevSlot = previous[poolId];
-    if (!newSlot) return null;
-    if (!prevSlot) return newSlot;
+    if (!prevSlot || usedIndices.has(prevSlot.virtualIndex)) return;
+    if (!candidateSet.has(prevSlot.virtualIndex)) return;
 
     const oldIdx = prevSlot.virtualIndex;
-    const newIdx = newSlot.virtualIndex;
-    if (oldIdx === newIdx) return newSlot;
-
     const dOld = Math.abs(oldIdx - center);
-    const dNew = Math.abs(newIdx - center);
-    if (dNew + DOOR_SLOT_HYSTERESIS_STEPS < dOld) return newSlot;
-    return prevSlot;
+    const dNew = newSlot
+      ? Math.abs(newSlot.virtualIndex - center)
+      : Number.POSITIVE_INFINITY;
+    if (dNew + DOOR_SLOT_HYSTERESIS_STEPS < dOld) return;
+
+    assigned[poolId] = { poolId, virtualIndex: oldIdx };
+    usedIndices.add(oldIdx);
+  });
+
+  let candidateCursor = 0;
+  return assigned.map((slot, poolId) => {
+    if (slot) return slot;
+
+    while (
+      candidateCursor < candidates.length &&
+      usedIndices.has(candidates[candidateCursor])
+    ) {
+      candidateCursor += 1;
+    }
+
+    const index = candidates[candidateCursor];
+    if (index === undefined) return null;
+
+    candidateCursor += 1;
+    usedIndices.add(index);
+    return { poolId, virtualIndex: index };
   });
 }

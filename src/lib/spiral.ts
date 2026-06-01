@@ -10,12 +10,12 @@ export const SCROLL_START_OFFSET = 0.5;
 /** Virtual stair steps per one full scroll offset range (0→1). */
 export const CLIMB_SCALE = LOOP_LENGTH;
 
-/** Wide enough that frustum rarely exceeds one contiguous index window (avoids “missing” helix segments). */
-export const STAIR_POOL_SIZE = 64;
-export const DOOR_POOL_SIZE = 12;
+/** Wide enough for tall/narrow frustums so edge stairs do not recycle onscreen. */
+export const STAIR_POOL_SIZE = 112;
+export const DOOR_POOL_SIZE = 20;
 
 /** Half-width (in virtual steps) when gathering door candidates for slots. */
-export const DOOR_POOL_SEARCH_RADIUS = 56;
+export const DOOR_POOL_SEARCH_RADIUS = 84;
 
 /** Minimum spacing between door landings as the project set grows */
 export const MIN_DOOR_STEP = 6;
