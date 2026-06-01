@@ -9,7 +9,7 @@ import { useSiteAudio } from "@/hooks/useSiteAudio";
 import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
 import { EYE_CONTROL_SIZE_CLASS } from "@/lib/eyeConsentLayout";
 import { usePortfolioStore } from "@/lib/store";
-import { EyeConsentSvg } from "./EyeConsentSvg";
+import { EYE_LID_PATHS, EyeConsentSvg } from "./EyeConsentSvg";
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
@@ -19,6 +19,7 @@ function prefersReducedMotion(): boolean {
 export function AudioConsentGate() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const controlRef = useRef<HTMLButtonElement>(null);
+  const eyeApertureRef = useRef<SVGPathElement>(null);
   const upperLidRef = useRef<SVGPathElement>(null);
   const lowerLidRef = useRef<SVGPathElement>(null);
   const scleraExtrasRef = useRef<SVGGElement>(null);
@@ -33,6 +34,7 @@ export function AudioConsentGate() {
   const timelineCompleteRef = useRef(false);
   const dismissStartedRef = useRef(false);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
+  const soundEnabledRef = useRef(false);
 
   const [visible, setVisible] = useState(true);
   const [interactive, setInteractive] = useState(false);
@@ -49,7 +51,12 @@ export function AudioConsentGate() {
     stopAmbient,
   } = useSiteAudio();
 
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
   const eyeRefs = {
+    eyeAperture: eyeApertureRef,
     upperLid: upperLidRef,
     lowerLid: lowerLidRef,
     scleraExtras: scleraExtrasRef,
@@ -134,7 +141,10 @@ export function AudioConsentGate() {
 
   useEffect(() => {
     const t = AUDIO_CONSENT_TIMING;
+    timelineCompleteRef.current = false;
 
+    const control = controlRef.current;
+    const aperture = eyeApertureRef.current;
     const upper = upperLidRef.current;
     const lower = lowerLidRef.current;
     const sclera = scleraExtrasRef.current;
@@ -144,11 +154,42 @@ export function AudioConsentGate() {
     const ring = playRingRef.current;
     const play = playIconRef.current;
 
-    if (!upper || !lower || !iris || !pupil || !ring || !play) return;
+    if (
+      !control ||
+      !aperture ||
+      !upper ||
+      !lower ||
+      !iris ||
+      !pupil ||
+      !ring ||
+      !play
+    ) {
+      return;
+    }
 
+    gsap.set(control, {
+      opacity: 0,
+      scale: 0.985,
+      transformOrigin: "center center",
+    });
+    gsap.set(aperture, {
+      attr: { d: EYE_LID_PATHS.apertureClosed },
+    });
+    gsap.set(upper, {
+      attr: { d: EYE_LID_PATHS.upperClosed },
+      opacity: 0,
+      y: 0,
+    });
+    gsap.set(lower, {
+      attr: { d: EYE_LID_PATHS.lowerClosed },
+      opacity: 0,
+      y: 0,
+    });
+    gsap.set(sclera, { opacity: 0 });
+    gsap.set([iris, pupil, highlight], { opacity: 1 });
     gsap.set(ring, { opacity: 0 });
     gsap.set(play, { opacity: 0 });
-    syncPlayPauseIcons(false);
+    gsap.set(pauseIconRef.current, { opacity: 0 });
 
     const tl = gsap.timeline({
       onComplete: () => {
@@ -159,30 +200,79 @@ export function AudioConsentGate() {
     timelineRef.current = tl;
 
     if (reducedMotion) {
-      gsap.set([upper, lower, sclera], { opacity: 0 });
-      gsap.set(highlight, { opacity: 0 });
-      gsap.set(pupil, { opacity: 0 });
-      gsap.set(iris, {
-        fill: "transparent",
-        stroke: "rgba(165, 243, 252, 0.85)",
-        strokeWidth: 2,
-      });
+      gsap.set(control, { opacity: 1, scale: 1 });
+      gsap.set([upper, lower, sclera, iris, pupil, highlight], { opacity: 0 });
       gsap.set(ring, { opacity: 1 });
-      gsap.set(play, { opacity: 1 });
 
-      tl.call(() => setInteractive(true), [], 0);
+      tl.call(() => {
+        timelineCompleteRef.current = true;
+        syncPlayPauseIcons(soundEnabledRef.current);
+        setInteractive(true);
+      }, [], 0);
       tl.to({}, { duration: t.reducedMotionHold });
     } else {
-      tl.to(upper, { y: -38, duration: t.lidOpen, ease: "power2.inOut" }, 0);
-      tl.to(lower, { y: 38, duration: t.lidOpen, ease: "power2.inOut" }, 0);
+      tl.to(
+        control,
+        {
+          opacity: 1,
+          scale: 1,
+          duration: t.revealClosedEye,
+          ease: "power1.out",
+        },
+        t.blackHold,
+      );
 
+      const openStart = t.blackHold + t.revealClosedEye + t.closedEyeHold;
+      tl.to(
+        [upper, lower],
+        {
+          opacity: 1,
+          duration: t.revealClosedEye,
+          ease: "power1.out",
+        },
+        t.blackHold,
+      );
+      tl.to(
+        aperture,
+        {
+          attr: { d: EYE_LID_PATHS.apertureOpen },
+          duration: t.lidOpen,
+          ease: "power3.inOut",
+        },
+        openStart,
+      );
+      tl.to(
+        upper,
+        {
+          attr: { d: EYE_LID_PATHS.upperOpen },
+          duration: t.lidOpen,
+          ease: "power3.inOut",
+        },
+        openStart,
+      );
+      tl.to(
+        lower,
+        {
+          attr: { d: EYE_LID_PATHS.lowerOpen },
+          duration: t.lidOpen,
+          ease: "power3.inOut",
+        },
+        openStart,
+      );
+      tl.to(
+        sclera,
+        { opacity: 1, duration: t.lidOpen * 0.6, ease: "power2.out" },
+        openStart + t.lidOpen * 0.22,
+      );
+
+      const isolateStart = openStart + t.lidOpen + t.openEyeHold;
       tl.to(
         [upper, lower, sclera],
         { opacity: 0, duration: t.isolateEye, ease: "power2.inOut" },
-        t.lidOpen,
+        isolateStart,
       );
 
-      const morphStart = t.lidOpen + t.isolateEye;
+      const morphStart = isolateStart + t.isolateEye * 0.45;
       tl.to(
         highlight,
         { opacity: 0, duration: t.morphToPlay * 0.5, ease: "power2.inOut" },
@@ -195,13 +285,7 @@ export function AudioConsentGate() {
       );
       tl.to(
         iris,
-        {
-          fill: "transparent",
-          stroke: "rgba(165, 243, 252, 0.85)",
-          strokeWidth: 2,
-          duration: t.morphToPlay,
-          ease: "power2.inOut",
-        },
+        { opacity: 0, duration: t.morphToPlay, ease: "power2.inOut" },
         morphStart,
       );
       tl.to(
@@ -216,7 +300,10 @@ export function AudioConsentGate() {
       );
 
       const morphEnd = morphStart + t.morphToPlay;
-      tl.call(() => setInteractive(true), [], morphEnd);
+      tl.call(() => {
+        syncPlayPauseIcons(soundEnabledRef.current);
+        setInteractive(true);
+      }, [], morphEnd);
       tl.to({}, { duration: t.hold }, morphEnd);
     }
 
@@ -227,6 +314,7 @@ export function AudioConsentGate() {
   }, [reducedMotion, syncPlayPauseIcons]);
 
   useEffect(() => {
+    if (!timelineCompleteRef.current) return;
     syncPlayPauseIcons(soundEnabled);
   }, [soundEnabled, syncPlayPauseIcons]);
 
@@ -269,7 +357,7 @@ export function AudioConsentGate() {
       <button
         ref={controlRef}
         type="button"
-        className={`${EYE_CONTROL_SIZE_CLASS} flex items-center justify-center rounded-full border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 disabled:cursor-default`}
+        className={`${EYE_CONTROL_SIZE_CLASS} flex items-center justify-center rounded-full border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-amber-100/60 disabled:cursor-default`}
         onClick={handleControlClick}
         disabled={!interactive || dismissing}
         aria-label={

@@ -32,3 +32,7 @@ body {
 *::-webkit-scrollbar {
   display: none;
 }
+
+nextjs-portal {
+  display: none !important;
+}
