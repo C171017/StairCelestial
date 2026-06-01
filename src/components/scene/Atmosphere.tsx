@@ -1,42 +1,108 @@
 "use client";
 
-import { Stars } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo } from "react";
 import * as THREE from "three";
 
-function MilkyWayBand() {
-  const material = useMemo(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      const gradient = ctx.createLinearGradient(0, 0, 512, 512);
-      gradient.addColorStop(0, "rgba(8, 12, 28, 0)");
-      gradient.addColorStop(0.35, "rgba(90, 120, 200, 0.08)");
-      gradient.addColorStop(0.5, "rgba(180, 200, 255, 0.14)");
-      gradient.addColorStop(0.65, "rgba(90, 120, 200, 0.08)");
-      gradient.addColorStop(1, "rgba(8, 12, 28, 0)");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 512, 512);
+const STAR_COUNT = 3200;
+const STAR_RADIUS = 135;
+const STAR_DEPTH = 70;
+const STAR_MIN_PIXEL_SIZE = 1.45;
+
+function seededRandom(seed: number): () => number {
+  let state = seed;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function BrowserSafeStars() {
+  const materialRef = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: {
+          pixelRatio: { value: 1 },
+          time: { value: 0 },
+        },
+        vertexShader: `
+          uniform float pixelRatio;
+          uniform float time;
+          attribute float size;
+          attribute float twinkle;
+          varying float vTwinkle;
+
+          void main() {
+            vTwinkle = 0.72 + 0.28 * sin(time * 0.8 + twinkle);
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            float perspectiveSize = size * pixelRatio * (58.0 / -mvPosition.z);
+            gl_PointSize = max(${STAR_MIN_PIXEL_SIZE.toFixed(2)}, perspectiveSize);
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+        fragmentShader: `
+          varying float vTwinkle;
+
+          void main() {
+            float d = distance(gl_PointCoord, vec2(0.5));
+            float alpha = smoothstep(0.5, 0.14, d) * vTwinkle;
+            gl_FragColor = vec4(vec3(0.86, 0.91, 1.0), alpha);
+
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+          }
+        `,
+        transparent: true,
+        depthWrite: false,
+        depthTest: true,
+        blending: THREE.AdditiveBlending,
+      }),
+    [],
+  );
+
+  const { gl } = useThree();
+
+  const geometry = useMemo(() => {
+    const random = seededRandom(17017);
+    const positions = new Float32Array(STAR_COUNT * 3);
+    const sizes = new Float32Array(STAR_COUNT);
+    const twinkles = new Float32Array(STAR_COUNT);
+    const spherical = new THREE.Spherical();
+    const vector = new THREE.Vector3();
+
+    for (let i = 0; i < STAR_COUNT; i += 1) {
+      spherical.radius = STAR_RADIUS + random() * STAR_DEPTH;
+      spherical.phi = Math.acos(1 - random() * 2);
+      spherical.theta = random() * Math.PI * 2;
+      vector.setFromSpherical(spherical);
+
+      const positionIndex = i * 3;
+      positions[positionIndex] = vector.x;
+      positions[positionIndex + 1] = vector.y;
+      positions[positionIndex + 2] = vector.z;
+      sizes[i] = 2.2 + random() * 2.8;
+      twinkles[i] = random() * Math.PI * 2;
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      opacity: 0.55,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    });
+    const bufferGeometry = new THREE.BufferGeometry();
+    bufferGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(positions, 3),
+    );
+    bufferGeometry.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
+    bufferGeometry.setAttribute(
+      "twinkle",
+      new THREE.BufferAttribute(twinkles, 1),
+    );
+    return bufferGeometry;
   }, []);
 
-  return (
-    <mesh position={[0, 22, -80]} rotation={[0.2, 0.6, -0.35]} material={material}>
-      <planeGeometry args={[180, 90]} />
-    </mesh>
-  );
+  useFrame((state) => {
+    materialRef.uniforms.time.value = state.clock.elapsedTime;
+    materialRef.uniforms.pixelRatio.value = Math.min(gl.getPixelRatio(), 2);
+  });
+
+  return <points geometry={geometry} material={materialRef} />;
 }
 
 export function Atmosphere() {
@@ -44,16 +110,7 @@ export function Atmosphere() {
     <>
       <color attach="background" args={["#030508"]} />
       <fog attach="fog" args={["#030508", 22, 95]} />
-      <Stars
-        radius={120}
-        depth={60}
-        count={2500}
-        factor={3}
-        saturation={0.15}
-        fade
-        speed={0.15}
-      />
-      {/* <MilkyWayBand /> */}
+      <BrowserSafeStars />
     </>
   );
 }
