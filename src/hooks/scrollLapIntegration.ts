@@ -39,7 +39,7 @@ export function computeTrackerStep(last: number, o: number): number {
     return SCROLL_CLIMB_SIGN * (1 - last + o);
   }
   if (dreiBackwardReset) {
-    return -SCROLL_CLIMB_SIGN * (-last + o);
+    return SCROLL_CLIMB_SIGN * (o - 1 - last);
   }
   return clampStep(diff, MAX_TRACKER_STEP);
 }

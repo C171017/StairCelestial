@@ -20,12 +20,22 @@ function approxEqual(a: number, b: number, eps = 1e-5) {
   );
 }
 
-// Top reset (backward): offset low → high — tracker should gain ~+1 lap (not ~−1).
+// Top reset (backward): offset low → high — tracker should use the short
+// wrapped distance, not advance a full lap.
+{
+  const d = computeTrackerStep(0.01, 0.95);
+  assert.ok(
+    approxEqual(d, 0.06, 1e-3),
+    `top reset: expected short wrapped step, got ${d}`,
+  );
+}
+
+// Top reset after Drei briefly reports a negative offset should also avoid a lap jump.
 {
   const d = computeTrackerStep(-0.067, 0.951);
   assert.ok(
-    d > 1 && d < 1.05,
-    `top reset: expected ~+1.02, got ${d}`,
+    Math.abs(d) <= 0.06,
+    `negative top reset: expected capped-size step, got ${d}`,
   );
 }
 
