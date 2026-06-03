@@ -27,13 +27,11 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   const doorId = `pool-door-${poolId}`;
   const groupRef = useRef<THREE.Group>(null);
   const panelRef = useRef<THREE.Object3D | null>(null);
-  const previewRef = useRef<THREE.Mesh | null>(null);
   const isOpenRef = useRef(false);
   const tweenRef = useRef<gsap.core.Tween | null>(null);
   const prevVirtualIndexRef = useRef(-1);
 
   const { scene: doorScene } = useGLTF(MODEL_PATHS.door);
-  const { scene: previewScene } = useGLTF(MODEL_PATHS.previewScreen);
 
   const virtualIndex = usePortfolioStore(
     (s) => s.doorPoolVirtualIndices[poolId] ?? -1,
@@ -45,7 +43,6 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   const resetDoors = usePortfolioStore((s) => s.resetDoors);
 
   const doorClone = useMemo(() => doorScene.clone(true), [doorScene]);
-  const previewClone = useMemo(() => previewScene.clone(true), [previewScene]);
 
   const project = getProjectForStairIndex(virtualIndex);
 
@@ -61,7 +58,6 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
         ease: "power2.inOut",
       });
     }
-    if (previewRef.current) previewRef.current.visible = false;
     if (usePortfolioStore.getState().openedDoorId === doorId) {
       resetDoors();
     }
@@ -69,27 +65,7 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
 
   useEffect(() => {
     panelRef.current = findChildByNamePart(doorClone, "panel");
-    const previewMesh = findChildByNamePart(
-      previewClone,
-      "preview_screen",
-    ) as THREE.Mesh | null;
-    previewRef.current = previewMesh;
-
-    if (previewMesh) {
-      previewMesh.visible = false;
-      const mat = previewMesh.material;
-      if (mat && !Array.isArray(mat) && mat instanceof THREE.MeshStandardMaterial) {
-        mat.emissive = new THREE.Color("#1a3048");
-        mat.emissiveIntensity = 0.35;
-      }
-    }
-
-    if (groupRef.current && previewClone) {
-      previewClone.position.set(0, 0, -0.12);
-      previewClone.scale.set(0.85, 0.85, 0.85);
-      groupRef.current.add(previewClone);
-    }
-  }, [doorClone, previewClone]);
+  }, [doorClone]);
 
   useEffect(() => {
     if (
@@ -102,32 +78,6 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   }, [virtualIndex, closeDoor]);
 
   useEffect(() => {
-    if (!project?.previewImage || !previewRef.current) return;
-
-    const loader = new THREE.TextureLoader();
-    let cancelled = false;
-    loader.load(project.previewImage, (texture) => {
-      if (cancelled) return;
-      texture.colorSpace = THREE.SRGBColorSpace;
-      const mesh = previewRef.current;
-      if (!mesh) return;
-
-      const material = new THREE.MeshStandardMaterial({
-        map: texture,
-        emissive: new THREE.Color("#224466"),
-        emissiveIntensity: 0.25,
-        metalness: 0.1,
-        roughness: 0.4,
-      });
-      mesh.material = material;
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [project?.previewImage, project?.id]);
-
-  useEffect(() => {
     if (openedDoorId !== doorId && isOpenRef.current) {
       isOpenRef.current = false;
       tweenRef.current?.kill();
@@ -138,7 +88,6 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
           ease: "power2.inOut",
         });
       }
-      if (previewRef.current) previewRef.current.visible = false;
     }
   }, [openedDoorId, doorId]);
 
@@ -167,15 +116,6 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
       duration: 0.85,
       ease: "power2.out",
     });
-
-    if (previewRef.current) {
-      previewRef.current.visible = true;
-      gsap.fromTo(
-        previewRef.current.scale,
-        { x: 0.92, y: 0.92, z: 0.92 },
-        { x: 1, y: 1, z: 1, duration: 0.6, ease: "power2.out" },
-      );
-    }
   }, [doorId, project, resetDoors, setDoorFocus, setOpenedDoor, virtualIndex]);
 
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
@@ -216,4 +156,3 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
 }
 
 useGLTF.preload(MODEL_PATHS.door);
-useGLTF.preload(MODEL_PATHS.previewScreen);

@@ -140,9 +140,7 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
       usePortfolioStore.getState();
     const autoScrollPaused = focusedDoorId !== null;
 
-    if (userHoldingStillRef.current || autoScrollPaused) {
-      velocityRef.current = 0;
-    } else if (Math.abs(scrollStep) > INPUT_STEP_THRESHOLD) {
+    if (Math.abs(scrollStep) > INPUT_STEP_THRESHOLD) {
       hasUserInteractedRef.current = true;
       const measuredVelocity = clampStep(
         scrollStep / Math.max(frameDelta, 0.001),
@@ -159,6 +157,8 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
       );
       velocityRef.current =
         currentVelocity + (measuredVelocity - currentVelocity) * blend;
+    } else if (userHoldingStillRef.current || autoScrollPaused) {
+      velocityRef.current = 0;
     } else if (hasUserInteractedRef.current) {
       velocityRef.current = decayTowardCruise(
         velocityRef.current,
