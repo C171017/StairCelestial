@@ -6,7 +6,11 @@
 import gsap from "gsap";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSiteAudio } from "@/hooks/useSiteAudio";
-import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
+import {
+  AUDIO_CONSENT_TIMING,
+  getLidOpenStart,
+  getStarRevealStart,
+} from "@/lib/audioConsentTiming";
 import { EYE_CONTROL_SIZE_CLASS } from "@/lib/eyeConsentLayout";
 import { usePortfolioStore } from "@/lib/store";
 import { EYE_LID_PATHS, EyeConsentSvg } from "./EyeConsentSvg";
@@ -20,6 +24,7 @@ export function AudioConsentGate() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const controlRef = useRef<HTMLButtonElement>(null);
   const eyeApertureRef = useRef<SVGPathElement>(null);
+  const eyeInteriorRef = useRef<SVGGElement>(null);
   const upperLidRef = useRef<SVGPathElement>(null);
   const lowerLidRef = useRef<SVGPathElement>(null);
   const scleraExtrasRef = useRef<SVGGElement>(null);
@@ -37,6 +42,8 @@ export function AudioConsentGate() {
   const transitionStartedRef = useRef(false);
   const waitingMainRevealDurationRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(false);
+  const starRevealDoneRef = useRef(false);
+  const runStarRevealRef = useRef<(() => void) | null>(null);
 
   const [visible, setVisible] = useState(true);
   const [interactive, setInteractive] = useState(false);
@@ -64,6 +71,7 @@ export function AudioConsentGate() {
 
   const eyeRefs = {
     eyeAperture: eyeApertureRef,
+    eyeInterior: eyeInteriorRef,
     upperLid: upperLidRef,
     lowerLid: lowerLidRef,
     scleraExtras: scleraExtrasRef,
@@ -155,74 +163,60 @@ export function AudioConsentGate() {
     revealMainAndFinish(duration);
   }, [revealMainAndFinish, sceneBootstrapped]);
 
+  useEffect(() => {
+    if (!sceneBootstrapped) return;
+    runStarRevealRef.current?.();
+  }, [sceneBootstrapped]);
+
   const startPlayToSceneTransition = useCallback(() => {
     if (transitionStartedRef.current || dismissStartedRef.current) return;
     transitionStartedRef.current = true;
 
     const t = AUDIO_CONSENT_TIMING;
-    const overlay = overlayRef.current;
     const control = controlRef.current;
-    const currentReveal = usePortfolioStore.getState();
-    const revealState = {
-      shooting: currentReveal.introShootingStarIntensity,
-      stars: currentReveal.introStarsOpacity,
+    const overlay = overlayRef.current;
+    const crossfade = {
+      main: usePortfolioStore.getState().introMainOpacity,
+      control: 1,
+      overlay: 1,
     };
 
-    const tl = gsap.timeline();
-    transitionTimelineRef.current = tl;
-
-    tl.call(
-      () => {
+    const tl = gsap.timeline({
+      onComplete: () => {
         setDismissing(true);
         setInteractive(false);
-        requestMainReveal(t.mainReveal);
+        if (overlay) {
+          overlay.style.pointerEvents = "none";
+        }
+        completeIntro();
       },
-      [],
-      t.starCrossfade + t.starOnlyHold,
-    );
+    });
+    transitionTimelineRef.current = tl;
 
     tl.to(
-      revealState,
+      crossfade,
       {
-        stars: 1,
-        shooting: 1,
-        duration: t.starCrossfade,
+        main: 1,
+        control: 0,
+        overlay: 0,
+        duration: t.playSceneCrossfade,
         ease: "sine.inOut",
         onUpdate: () => {
-          setIntroReveal({
-            introShootingStarIntensity: revealState.shooting,
-            introStarsOpacity: revealState.stars,
-          });
+          setIntroReveal({ introMainOpacity: crossfade.main });
+          if (control) {
+            gsap.set(control, {
+              opacity: crossfade.control,
+              scale: 0.96 + crossfade.control * 0.04,
+            });
+          }
+          if (overlay) {
+            gsap.set(overlay, { opacity: crossfade.overlay });
+          }
         },
       },
       0,
     );
-
-    if (overlay) {
-      tl.to(
-        overlay,
-        {
-          backgroundColor: "rgba(3, 5, 8, 0)",
-          duration: t.starCrossfade,
-          ease: "sine.inOut",
-        },
-        0,
-      );
-    }
-
-    if (control) {
-      tl.to(
-        control,
-        {
-          opacity: 0,
-          scale: 0.98,
-          duration: t.starCrossfade,
-          ease: "sine.inOut",
-        },
-        0.08,
-      );
-    }
-  }, [requestMainReveal, setIntroReveal]);
+  }, [completeIntro, setIntroReveal]);
 
   const startClickedTransition = useCallback(() => {
     if (dismissStartedRef.current) return;
@@ -236,70 +230,75 @@ export function AudioConsentGate() {
     const overlay = overlayRef.current;
     const control = controlRef.current;
     const currentReveal = usePortfolioStore.getState();
-    const revealState = {
+    const currentMain = currentReveal.introMainOpacity;
+    const crossfade = {
+      main: currentMain,
+      control: control ? (gsap.getProperty(control, "opacity") as number) : 0,
+      overlay: overlay ? (gsap.getProperty(overlay, "opacity") as number) : 0,
       shooting: Math.max(currentReveal.introShootingStarIntensity, 0.35),
       stars: currentReveal.introStarsOpacity,
     };
 
     const tl = gsap.timeline({
       onComplete: () => {
-        requestMainReveal(t.clickedMainReveal);
+        if (overlay) {
+          overlay.style.pointerEvents = "none";
+        }
+        completeIntro();
       },
     });
     transitionTimelineRef.current = tl;
 
     if (control) {
       gsap.killTweensOf(control);
-      tl.fromTo(
-        control,
-        {
-          scale: 1.08,
-        },
-        {
-          opacity: 0,
-          scale: 0.92,
-          duration: t.clickedStarCrossfade,
-          ease: "sine.inOut",
-        },
-        0,
-      );
-    }
-
-    if (overlay) {
-      tl.to(
-        overlay,
-        {
-          backgroundColor: "rgba(3, 5, 8, 0)",
-          duration: t.clickedStarCrossfade,
-          ease: "sine.inOut",
-        },
-        0,
-      );
     }
 
     tl.to(
-      revealState,
+      crossfade,
       {
-        stars: 1,
+        main: 1,
+        control: 0,
+        overlay: 0,
         shooting: 1,
-        duration: t.clickedStarCrossfade,
+        stars: 1,
+        duration: t.clickedSceneCrossfade,
         ease: "sine.inOut",
         onUpdate: () => {
           setIntroReveal({
-            introShootingStarIntensity: revealState.shooting,
-            introStarsOpacity: revealState.stars,
+            introMainOpacity: crossfade.main,
+            introShootingStarIntensity: crossfade.shooting,
+            introStarsOpacity: crossfade.stars,
           });
+          if (control) {
+            gsap.set(control, {
+              opacity: crossfade.control,
+              scale: 0.92 + crossfade.control * 0.16,
+            });
+          }
+          if (overlay) {
+            gsap.set(overlay, {
+              opacity: crossfade.overlay,
+              backgroundColor: "rgba(3, 5, 8, 0)",
+            });
+          }
         },
       },
       0,
     );
-  }, [requestMainReveal, setIntroReveal]);
+  }, [completeIntro, setIntroReveal]);
 
   useEffect(() => {
     const t = AUDIO_CONSENT_TIMING;
+    const store = usePortfolioStore.getState();
+    if (store.introEpochMs === null) {
+      store.setIntroEpochMs(performance.now());
+    }
+
     dismissStartedRef.current = false;
     transitionStartedRef.current = false;
     waitingMainRevealDurationRef.current = null;
+    starRevealDoneRef.current = false;
+    runStarRevealRef.current = null;
     setDismissing(false);
     setInteractive(false);
     setIntroReveal({
@@ -311,6 +310,7 @@ export function AudioConsentGate() {
     const control = controlRef.current;
     const overlay = overlayRef.current;
     const aperture = eyeApertureRef.current;
+    const eyeInterior = eyeInteriorRef.current;
     const upper = upperLidRef.current;
     const lower = lowerLidRef.current;
     const sclera = scleraExtrasRef.current;
@@ -324,6 +324,7 @@ export function AudioConsentGate() {
     if (
       !control ||
       !aperture ||
+      !eyeInterior ||
       !upper ||
       !lower ||
       !iris ||
@@ -362,6 +363,7 @@ export function AudioConsentGate() {
       y: 0,
     });
     gsap.set(sclera, { opacity: 0 });
+    gsap.set(eyeInterior, { opacity: 1 });
     gsap.set([iris, pupil, highlight], { opacity: 1 });
     gsap.set(ring, { opacity: 0 });
     gsap.set(iconGroup, { opacity: 0 });
@@ -370,21 +372,59 @@ export function AudioConsentGate() {
 
     const tl = gsap.timeline();
     timelineRef.current = tl;
+    const revealState = {
+      shooting: 0,
+      stars: 0,
+    };
+
+    const runStarReveal = () => {
+      if (starRevealDoneRef.current) return;
+      if (!usePortfolioStore.getState().sceneBootstrapped) return;
+
+      starRevealDoneRef.current = true;
+      gsap.killTweensOf(revealState);
+      gsap.to(revealState, {
+        stars: 1,
+        shooting: 1,
+        duration: t.starCrossfade,
+        ease: "sine.inOut",
+        onUpdate: () => {
+          setIntroReveal({
+            introShootingStarIntensity: revealState.shooting,
+            introStarsOpacity: revealState.stars,
+          });
+        },
+      });
+      if (overlay) {
+        gsap.to(overlay, {
+          backgroundColor: "rgba(3, 5, 8, 0)",
+          duration: t.starCrossfade,
+          ease: "sine.inOut",
+        });
+      }
+    };
 
     if (reducedMotion) {
-      gsap.set(control, { opacity: 1, scale: 1 });
-      gsap.set([upper, lower], { opacity: 0.5 });
-      gsap.set(sclera, { opacity: 0.32 });
-      gsap.set(iris, { opacity: 0.28 });
-      gsap.set([pupil, highlight], { opacity: 0 });
-      gsap.set([ring, iconGroup], { opacity: 1 });
-
-      tl.call(() => {
+      runStarRevealRef.current = () => {
+        if (starRevealDoneRef.current) return;
+        if (!usePortfolioStore.getState().sceneBootstrapped) return;
+        starRevealDoneRef.current = true;
         setIntroReveal({
           introMainOpacity: 1,
           introShootingStarIntensity: 1,
           introStarsOpacity: 1,
         });
+        if (overlay) {
+          gsap.set(overlay, { backgroundColor: "rgba(3, 5, 8, 0)" });
+        }
+      };
+
+      gsap.set(control, { opacity: 1, scale: 1 });
+      gsap.set([upper, lower, sclera, eyeInterior], { opacity: 0 });
+      gsap.set([ring, iconGroup], { opacity: 1 });
+
+      tl.call(() => {
+        runStarRevealRef.current?.();
         syncPlayPauseIcons(soundEnabledRef.current);
         setInteractive(true);
       }, [], 0);
@@ -403,24 +443,27 @@ export function AudioConsentGate() {
         requestMainReveal(t.mainReveal);
       }, [], t.reducedMotionHold);
     } else {
+      runStarRevealRef.current = runStarReveal;
+
+      const openStart = getLidOpenStart(t);
+      const starRevealStart = getStarRevealStart(t);
+
       tl.to(
         control,
         {
           opacity: 1,
           scale: 1,
           duration: t.revealClosedEye,
-          ease: "power1.out",
+          ease: "sine.inOut",
         },
         t.blackHold,
       );
-
-      const openStart = t.blackHold + t.revealClosedEye + t.closedEyeHold;
       tl.to(
         [upper, lower],
         {
           opacity: 1,
           duration: t.revealClosedEye,
-          ease: "power1.out",
+          ease: "sine.inOut",
         },
         t.blackHold,
       );
@@ -429,7 +472,7 @@ export function AudioConsentGate() {
         {
           attr: { d: EYE_LID_PATHS.apertureOpen },
           duration: t.lidOpen,
-          ease: "power3.inOut",
+          ease: "power2.inOut",
         },
         openStart,
       );
@@ -438,7 +481,7 @@ export function AudioConsentGate() {
         {
           attr: { d: EYE_LID_PATHS.upperOpen },
           duration: t.lidOpen,
-          ease: "power3.inOut",
+          ease: "power2.inOut",
         },
         openStart,
       );
@@ -447,7 +490,7 @@ export function AudioConsentGate() {
         {
           attr: { d: EYE_LID_PATHS.lowerOpen },
           duration: t.lidOpen,
-          ease: "power3.inOut",
+          ease: "power2.inOut",
         },
         openStart,
       );
@@ -457,7 +500,9 @@ export function AudioConsentGate() {
         openStart + t.lidOpen * 0.22,
       );
 
-      const isolateStart = openStart + t.lidOpen + t.openEyeHold;
+      tl.call(runStarReveal, [], starRevealStart);
+
+      const isolateStart = starRevealStart + t.openEyeHold;
       tl.to(
         [upper, lower],
         { opacity: 0.5, duration: t.isolateEye, ease: "power2.inOut" },
@@ -502,6 +547,16 @@ export function AudioConsentGate() {
       );
 
       const morphEnd = morphStart + t.morphToPlay;
+      const playFadeStart = morphStart + t.morphToPlay * 0.35;
+      tl.to(
+        [upper, lower, sclera, eyeInterior],
+        {
+          opacity: 0,
+          duration: t.playEyeFade,
+          ease: "sine.inOut",
+        },
+        playFadeStart,
+      );
       tl.call(() => {
         syncPlayPauseIcons(soundEnabledRef.current);
         setInteractive(true);

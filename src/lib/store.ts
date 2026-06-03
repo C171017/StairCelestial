@@ -32,6 +32,10 @@ type PortfolioState = {
   /** Camera scroll index when focus started — scroll delta clears focus */
   focusScrollAnchor: number | null;
   sceneBootstrapped: boolean;
+  /** Wall-clock ms when the consent intro started (scroll + stars stay in sync). */
+  introEpochMs: number | null;
+  /** Seconds since introEpochMs; updated while the scene runs. */
+  introAtmosphereElapsed: number;
   setActiveDoor: (doorId: string | null) => void;
   setOpenedDoor: (doorId: string | null, project: Project | null) => void;
   setScrollProgress: (progress: number) => void;
@@ -45,6 +49,8 @@ type PortfolioState = {
   clearDoorFocus: () => void;
   resetDoors: () => void;
   setSceneBootstrapped: (bootstrapped: boolean) => void;
+  setIntroEpochMs: (epochMs: number) => void;
+  setIntroAtmosphereElapsed: (elapsed: number) => void;
   setIntroReveal: (
     reveal: Partial<
       Pick<
@@ -70,6 +76,8 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   focusVirtualIndex: null,
   focusScrollAnchor: null,
   sceneBootstrapped: false,
+  introEpochMs: null,
+  introAtmosphereElapsed: 0,
   setActiveDoor: (doorId) => set({ activeDoorId: doorId }),
   setOpenedDoor: (doorId, project) =>
     set({
@@ -106,5 +114,8 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
       focusScrollAnchor: null,
     }),
   setSceneBootstrapped: (sceneBootstrapped) => set({ sceneBootstrapped }),
+  setIntroEpochMs: (introEpochMs) => set({ introEpochMs }),
+  setIntroAtmosphereElapsed: (introAtmosphereElapsed) =>
+    set({ introAtmosphereElapsed }),
   setIntroReveal: (reveal) => set(reveal),
 }));

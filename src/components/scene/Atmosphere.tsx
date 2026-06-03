@@ -3,12 +3,17 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { introMotionBlend } from "@/lib/introMotion";
 import { usePortfolioStore } from "@/lib/store";
 
 const STAR_COUNT = 4400;
 const STAR_RADIUS = 135;
 const STAR_DEPTH = 70;
 const STAR_MIN_PIXEL_SIZE = 1.8;
+/** Slow dome yaw so the field reads as already in motion when faded in. */
+const STAR_FIELD_YAW_SPEED = 0.052;
+/** Start intro streaks partway through their cycle before opacity reveals. */
+const INTRO_SHOOTING_STAR_PREWARM = 2.4;
 const SHOOTING_STAR_COUNT = 4;
 const SHOOTING_STAR_DISTANCE = 160;
 
@@ -44,6 +49,10 @@ const INTRO_SHOOTING_STARS: ShootingStarPath[] = [
   },
 ];
 
+const INTRO_SHOOTING_CYCLE = Math.max(
+  ...INTRO_SHOOTING_STARS.map((path) => path.startOffset + path.duration),
+);
+
 function seededRandom(seed: number): () => number {
   let state = seed;
   return () => {
@@ -53,6 +62,7 @@ function seededRandom(seed: number): () => number {
 }
 
 function BrowserSafeStars() {
+  const groupRef = useRef<THREE.Group>(null);
   const materialRef = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -139,14 +149,26 @@ function BrowserSafeStars() {
     return bufferGeometry;
   }, []);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
+    const motionBlend = introMotionBlend(
+      usePortfolioStore.getState().introAtmosphereElapsed,
+    );
+    const group = groupRef.current;
+    if (group) {
+      group.rotation.y += delta * STAR_FIELD_YAW_SPEED * motionBlend;
+    }
+
     materialRef.uniforms.time.value = state.clock.elapsedTime;
     materialRef.uniforms.pixelRatio.value = Math.min(gl.getPixelRatio(), 2);
     materialRef.uniforms.introOpacity.value =
       usePortfolioStore.getState().introStarsOpacity;
   });
 
-  return <points geometry={geometry} material={materialRef} />;
+  return (
+    <group ref={groupRef}>
+      <points geometry={geometry} material={materialRef} />
+    </group>
+  );
 }
 
 function setShootingStarGeometry(
@@ -204,7 +226,6 @@ function makeAmbientShootingStar(random: () => number): ShootingStarPath {
 }
 
 function ShootingStars() {
-  const introStartTimeRef = useRef<number | null>(null);
   const ambientRandomRef = useRef(seededRandom(92017));
   const ambientPathRef = useRef<ShootingStarPath | null>(null);
   const ambientStartTimeRef = useRef(0);
@@ -250,19 +271,16 @@ function ShootingStars() {
     const store = usePortfolioStore.getState();
     const introIntensity = store.introShootingStarIntensity;
 
-    if (introIntensity > 0.01 && introStartTimeRef.current === null) {
-      introStartTimeRef.current = elapsed;
-    }
+    const atmosphereElapsed =
+      store.introAtmosphereElapsed + INTRO_SHOOTING_STAR_PREWARM;
 
     INTRO_SHOOTING_STARS.forEach((path, index) => {
       const line = shootingLines[index];
-      if (introStartTimeRef.current === null) return;
 
-      const progress =
-        (elapsed - introStartTimeRef.current - path.startOffset) /
-        path.duration;
+      const phase = atmosphereElapsed % INTRO_SHOOTING_CYCLE;
+      const progress = (phase - path.startOffset) / path.duration;
       const opacity =
-        progress > 0 && progress < 1
+        introIntensity > 0.01 && progress > 0 && progress < 1
           ? Math.sin(progress * Math.PI) * path.opacity * introIntensity
           : 0;
 
@@ -322,11 +340,23 @@ function ShootingStars() {
   );
 }
 
+function IntroAtmosphereClock() {
+  useFrame(() => {
+    const epochMs = usePortfolioStore.getState().introEpochMs;
+    if (epochMs === null) return;
+    usePortfolioStore
+      .getState()
+      .setIntroAtmosphereElapsed((performance.now() - epochMs) / 1000);
+  });
+  return null;
+}
+
 export function Atmosphere() {
   return (
     <>
       <color attach="background" args={["#030508"]} />
       <fog attach="fog" args={["#030508", 22, 95]} />
+      <IntroAtmosphereClock />
       <BrowserSafeStars />
       <ShootingStars />
     </>

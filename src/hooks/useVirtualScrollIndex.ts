@@ -12,6 +12,7 @@ import {
   LOOP_LENGTH,
   SCROLL_START_OFFSET,
 } from "@/lib/spiral";
+import { introMotionBlend } from "@/lib/introMotion";
 import { usePortfolioStore } from "@/lib/store";
 
 export { CLIMB_SCALE };
@@ -19,7 +20,6 @@ export { CLIMB_SCALE };
 /** Max momentum speed — what camera/geometry consume after user input. */
 const MAX_MOMENTUM_OFFSET_SPEED = 0.55;
 const MAX_FRAME_DELTA = 1 / 30;
-const AUTO_LAUNCH_DURATION = 3.2;
 const AUTO_CRUISE_OFFSET_SPEED = 0.018;
 const INPUT_STEP_THRESHOLD = 0.000025;
 const INPUT_VELOCITY_BLEND = 0.42;
@@ -45,13 +45,8 @@ function clampStep(value: number, max: number): number {
   return Math.max(-max, Math.min(max, value));
 }
 
-function smoothstep(t: number): number {
-  const x = Math.max(0, Math.min(1, t));
-  return x * x * (3 - 2 * x);
-}
-
 function getAutoOffsetSpeed(elapsed: number): number {
-  return AUTO_CRUISE_OFFSET_SPEED * smoothstep(elapsed / AUTO_LAUNCH_DURATION);
+  return AUTO_CRUISE_OFFSET_SPEED * introMotionBlend(elapsed);
 }
 
 function frameLerpAmount(perFrameAmount: number, delta: number): number {
@@ -138,9 +133,14 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
 
     const { focusedDoorId, focusScrollAnchor, resetDoors } =
       usePortfolioStore.getState();
-    const autoScrollPaused = focusedDoorId !== null;
+    const hasScrollInput = Math.abs(scrollStep) > INPUT_STEP_THRESHOLD;
+    const autoScrollPaused = focusedDoorId !== null && !hasScrollInput;
 
-    if (Math.abs(scrollStep) > INPUT_STEP_THRESHOLD) {
+    if (hasScrollInput) {
+      if (focusedDoorId !== null) {
+        resetDoors();
+      }
+
       hasUserInteractedRef.current = true;
       const measuredVelocity = clampStep(
         scrollStep / Math.max(frameDelta, 0.001),
@@ -170,7 +170,12 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
           lastMomentumDirectionRef.current * AUTO_CRUISE_OFFSET_SPEED;
       }
     } else {
-      autoElapsedRef.current += frameDelta;
+      const epochMs = usePortfolioStore.getState().introEpochMs;
+      if (epochMs !== null) {
+        autoElapsedRef.current = (performance.now() - epochMs) / 1000;
+      } else {
+        autoElapsedRef.current += frameDelta;
+      }
       velocityRef.current = getAutoOffsetSpeed(autoElapsedRef.current);
     }
 

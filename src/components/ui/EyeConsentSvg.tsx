@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 
 export type EyeConsentRefs = {
   eyeAperture: RefObject<SVGPathElement | null>;
+  eyeInterior: RefObject<SVGGElement | null>;
   upperLid: RefObject<SVGPathElement | null>;
   lowerLid: RefObject<SVGPathElement | null>;
   scleraExtras: RefObject<SVGGElement | null>;
@@ -151,7 +152,7 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         />
       </g>
 
-      <g clipPath="url(#eye-consent-aperture)">
+      <g ref={refs.eyeInterior} clipPath="url(#eye-consent-aperture)">
         <path
           d={EYE_LID_PATHS.apertureOpen}
           fill="url(#eye-consent-aperture-shadow)"
