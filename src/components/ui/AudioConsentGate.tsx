@@ -319,6 +319,7 @@ export function AudioConsentGate() {
     const highlight = pupilHighlightRef.current;
     const ring = playRingRef.current;
     const play = playIconRef.current;
+    const iconGroup = iconGroupRef.current;
 
     if (
       !control ||
@@ -328,7 +329,8 @@ export function AudioConsentGate() {
       !iris ||
       !pupil ||
       !ring ||
-      !play
+      !play ||
+      !iconGroup
     ) {
       return;
     }
@@ -362,6 +364,7 @@ export function AudioConsentGate() {
     gsap.set(sclera, { opacity: 0 });
     gsap.set([iris, pupil, highlight], { opacity: 1 });
     gsap.set(ring, { opacity: 0 });
+    gsap.set(iconGroup, { opacity: 0 });
     gsap.set(play, { opacity: 0 });
     gsap.set(pauseIconRef.current, { opacity: 0 });
 
@@ -370,8 +373,11 @@ export function AudioConsentGate() {
 
     if (reducedMotion) {
       gsap.set(control, { opacity: 1, scale: 1 });
-      gsap.set([upper, lower, sclera, iris, pupil, highlight], { opacity: 0 });
-      gsap.set(ring, { opacity: 1 });
+      gsap.set([upper, lower], { opacity: 0.5 });
+      gsap.set(sclera, { opacity: 0.32 });
+      gsap.set(iris, { opacity: 0.28 });
+      gsap.set([pupil, highlight], { opacity: 0 });
+      gsap.set([ring, iconGroup], { opacity: 1 });
 
       tl.call(() => {
         setIntroReveal({
@@ -453,8 +459,13 @@ export function AudioConsentGate() {
 
       const isolateStart = openStart + t.lidOpen + t.openEyeHold;
       tl.to(
-        [upper, lower, sclera],
-        { opacity: 0, duration: t.isolateEye, ease: "power2.inOut" },
+        [upper, lower],
+        { opacity: 0.5, duration: t.isolateEye, ease: "power2.inOut" },
+        isolateStart,
+      );
+      tl.to(
+        sclera,
+        { opacity: 0.34, duration: t.isolateEye, ease: "power2.inOut" },
         isolateStart,
       );
 
@@ -466,17 +477,22 @@ export function AudioConsentGate() {
       );
       tl.to(
         pupil,
-        { opacity: 0, duration: t.morphToPlay * 0.6, ease: "power2.inOut" },
+        { opacity: 0.18, duration: t.morphToPlay * 0.6, ease: "power2.inOut" },
         morphStart,
       );
       tl.to(
         iris,
-        { opacity: 0, duration: t.morphToPlay, ease: "power2.inOut" },
+        { opacity: 0.3, duration: t.morphToPlay, ease: "power2.inOut" },
         morphStart,
       );
       tl.to(
         ring,
-        { opacity: 1, duration: t.morphToPlay, ease: "power2.inOut" },
+        { opacity: 0.85, duration: t.morphToPlay, ease: "power2.inOut" },
+        morphStart,
+      );
+      tl.to(
+        iconGroup,
+        { opacity: 1, duration: t.morphToPlay * 0.65, ease: "power2.inOut" },
         morphStart,
       );
       tl.to(
