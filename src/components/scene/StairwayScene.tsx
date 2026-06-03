@@ -7,6 +7,7 @@ import { useVirtualScrollIndex } from "@/hooks/useVirtualScrollIndex";
 import { Atmosphere } from "./Atmosphere";
 import { CameraRig, getScrollPages } from "./CameraRig";
 import { CelestialBackground } from "./CelestialBackground";
+import { IntroSceneReveal } from "./IntroSceneReveal";
 import { Lights } from "./Lights";
 import { SceneReadyMarker } from "./SceneReadyMarker";
 import { SpiralStaircase } from "./SpiralStaircase";
@@ -16,10 +17,11 @@ function SceneContent() {
 
   return (
     <>
-      <Atmosphere />
-      <Lights />
-      <CelestialBackground />
-      <SpiralStaircase virtualIndexRef={virtualIndexRef} />
+      <IntroSceneReveal>
+        <Lights />
+        <CelestialBackground />
+        <SpiralStaircase virtualIndexRef={virtualIndexRef} />
+      </IntroSceneReveal>
       <CameraRig virtualIndexRef={virtualIndexRef} />
       <SceneReadyMarker />
     </>
@@ -34,6 +36,7 @@ export function StairwayScene() {
       gl={{ antialias: true, alpha: false }}
       dpr={[1, 1.5]}
     >
+      <Atmosphere />
       <Suspense fallback={null}>
         <ScrollControls pages={getScrollPages()} damping={0.3} infinite>
           <SceneContent />

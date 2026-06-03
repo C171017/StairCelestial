@@ -4,10 +4,14 @@ export const AUDIO_CONSENT_TIMING = {
   revealClosedEye: 0.22,
   closedEyeHold: 0.12,
   lidOpen: 1.05,
-  openEyeHold: 0.18,
+  openEyeHold: 0.32,
   isolateEye: 0.36,
   morphToPlay: 0.75,
-  hold: 2.5,
+  starCrossfade: 1.48,
+  starOnlyHold: 0.44,
+  mainReveal: 1.05,
+  clickedStarCrossfade: 0.38,
+  clickedMainReveal: 0.72,
   overlayFade: 0.6,
   reducedMotionHold: 0.5,
 } as const;
@@ -25,7 +29,8 @@ export function getIntroDurationSeconds(reducedMotion: boolean): number {
     t.openEyeHold +
     t.isolateEye +
     t.morphToPlay +
-    t.hold +
-    t.overlayFade
+    t.starCrossfade +
+    t.starOnlyHold +
+    t.mainReveal
   );
 }

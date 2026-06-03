@@ -1,13 +1,48 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { usePortfolioStore } from "@/lib/store";
 
-const STAR_COUNT = 3200;
+const STAR_COUNT = 4400;
 const STAR_RADIUS = 135;
 const STAR_DEPTH = 70;
-const STAR_MIN_PIXEL_SIZE = 1.45;
+const STAR_MIN_PIXEL_SIZE = 1.8;
+const SHOOTING_STAR_COUNT = 4;
+const SHOOTING_STAR_DISTANCE = 160;
+
+type ShootingStarPath = {
+  duration: number;
+  from: [number, number];
+  opacity: number;
+  startOffset: number;
+  to: [number, number];
+};
+
+const INTRO_SHOOTING_STARS: ShootingStarPath[] = [
+  {
+    startOffset: 0.12,
+    duration: 0.7,
+    from: [-0.82, 0.64],
+    to: [-0.2, 0.32],
+    opacity: 0.88,
+  },
+  {
+    startOffset: 0.48,
+    duration: 0.82,
+    from: [0.58, 0.72],
+    to: [-0.06, 0.42],
+    opacity: 0.72,
+  },
+  {
+    startOffset: 0.88,
+    duration: 0.76,
+    from: [0.24, -0.08],
+    to: [0.84, -0.42],
+    opacity: 0.66,
+  },
+];
 
 function seededRandom(seed: number): () => number {
   let state = seed;
@@ -22,10 +57,12 @@ function BrowserSafeStars() {
     () =>
       new THREE.ShaderMaterial({
         uniforms: {
+          introOpacity: { value: 0 },
           pixelRatio: { value: 1 },
           time: { value: 0 },
         },
         vertexShader: `
+          uniform float introOpacity;
           uniform float pixelRatio;
           uniform float time;
           attribute float size;
@@ -35,18 +72,20 @@ function BrowserSafeStars() {
           void main() {
             vTwinkle = 0.72 + 0.28 * sin(time * 0.8 + twinkle);
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            float perspectiveSize = size * pixelRatio * (58.0 / -mvPosition.z);
+            float perspectiveSize = size * pixelRatio * (68.0 / -mvPosition.z);
             gl_PointSize = max(${STAR_MIN_PIXEL_SIZE.toFixed(2)}, perspectiveSize);
             gl_Position = projectionMatrix * mvPosition;
           }
         `,
         fragmentShader: `
+          uniform float introOpacity;
           varying float vTwinkle;
 
           void main() {
             float d = distance(gl_PointCoord, vec2(0.5));
-            float alpha = smoothstep(0.5, 0.14, d) * vTwinkle;
-            gl_FragColor = vec4(vec3(0.86, 0.91, 1.0), alpha);
+            float reveal = introOpacity <= 0.0 ? 0.0 : mix(0.12, 1.0, introOpacity);
+            float alpha = smoothstep(0.5, 0.12, d) * vTwinkle * reveal * 1.28;
+            gl_FragColor = vec4(vec3(0.9, 0.95, 1.0), min(alpha, 1.0));
 
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
@@ -81,6 +120,9 @@ function BrowserSafeStars() {
       positions[positionIndex + 1] = vector.y;
       positions[positionIndex + 2] = vector.z;
       sizes[i] = 2.2 + random() * 2.8;
+      if (random() > 0.82) {
+        sizes[i] += 1.8;
+      }
       twinkles[i] = random() * Math.PI * 2;
     }
 
@@ -100,9 +142,184 @@ function BrowserSafeStars() {
   useFrame((state) => {
     materialRef.uniforms.time.value = state.clock.elapsedTime;
     materialRef.uniforms.pixelRatio.value = Math.min(gl.getPixelRatio(), 2);
+    materialRef.uniforms.introOpacity.value =
+      usePortfolioStore.getState().introStarsOpacity;
   });
 
   return <points geometry={geometry} material={materialRef} />;
+}
+
+function setShootingStarGeometry(
+  geometry: THREE.BufferGeometry,
+  camera: THREE.Camera,
+  path: ShootingStarPath,
+  progress: number,
+) {
+  const tailProgress = Math.max(0, progress - 0.2);
+  const headNdc = new THREE.Vector3(
+    THREE.MathUtils.lerp(path.from[0], path.to[0], progress),
+    THREE.MathUtils.lerp(path.from[1], path.to[1], progress),
+    0.5,
+  );
+  const tailNdc = new THREE.Vector3(
+    THREE.MathUtils.lerp(path.from[0], path.to[0], tailProgress),
+    THREE.MathUtils.lerp(path.from[1], path.to[1], tailProgress),
+    0.5,
+  );
+
+  headNdc.unproject(camera);
+  tailNdc.unproject(camera);
+  headNdc.sub(camera.position).normalize();
+  tailNdc.sub(camera.position).normalize();
+
+  const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+  position.setXYZ(
+    0,
+    camera.position.x + tailNdc.x * SHOOTING_STAR_DISTANCE,
+    camera.position.y + tailNdc.y * SHOOTING_STAR_DISTANCE,
+    camera.position.z + tailNdc.z * SHOOTING_STAR_DISTANCE,
+  );
+  position.setXYZ(
+    1,
+    camera.position.x + headNdc.x * SHOOTING_STAR_DISTANCE,
+    camera.position.y + headNdc.y * SHOOTING_STAR_DISTANCE,
+    camera.position.z + headNdc.z * SHOOTING_STAR_DISTANCE,
+  );
+  position.needsUpdate = true;
+  geometry.computeBoundingSphere();
+}
+
+function makeAmbientShootingStar(random: () => number): ShootingStarPath {
+  const fromLeft = random() > 0.5;
+  const startY = 0.55 - random() * 0.95;
+  const drift = 0.18 + random() * 0.32;
+
+  return {
+    startOffset: 0,
+    duration: 0.82 + random() * 0.48,
+    from: [fromLeft ? -0.92 : 0.92, startY],
+    to: [fromLeft ? -0.16 + random() * 0.68 : 0.16 - random() * 0.68, startY - drift],
+    opacity: 0.48 + random() * 0.34,
+  };
+}
+
+function ShootingStars() {
+  const introStartTimeRef = useRef<number | null>(null);
+  const ambientRandomRef = useRef(seededRandom(92017));
+  const ambientPathRef = useRef<ShootingStarPath | null>(null);
+  const ambientStartTimeRef = useRef(0);
+  const nextAmbientTimeRef = useRef(0);
+  const { camera } = useThree();
+
+  const geometries = useMemo(
+    () =>
+      Array.from({ length: SHOOTING_STAR_COUNT }, () => {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute(
+          "position",
+          new THREE.BufferAttribute(new Float32Array(6), 3),
+        );
+        return geometry;
+      }),
+    [],
+  );
+
+  const shootingLines = useMemo(
+    () =>
+      geometries.map((geometry) => {
+        const material = new THREE.LineBasicMaterial({
+          blending: THREE.AdditiveBlending,
+          color: "#edf6ff",
+          depthTest: true,
+          depthWrite: false,
+          opacity: 0,
+          transparent: true,
+          toneMapped: false,
+        });
+        const line = new THREE.Line(geometry, material);
+        line.frustumCulled = false;
+        line.renderOrder = -20;
+        line.visible = false;
+        return line;
+      }),
+    [geometries],
+  );
+
+  useFrame((state) => {
+    const elapsed = state.clock.elapsedTime;
+    const store = usePortfolioStore.getState();
+    const introIntensity = store.introShootingStarIntensity;
+
+    if (introIntensity > 0.01 && introStartTimeRef.current === null) {
+      introStartTimeRef.current = elapsed;
+    }
+
+    INTRO_SHOOTING_STARS.forEach((path, index) => {
+      const line = shootingLines[index];
+      if (introStartTimeRef.current === null) return;
+
+      const progress =
+        (elapsed - introStartTimeRef.current - path.startOffset) /
+        path.duration;
+      const opacity =
+        progress > 0 && progress < 1
+          ? Math.sin(progress * Math.PI) * path.opacity * introIntensity
+          : 0;
+
+      line.visible = opacity > 0.01;
+      const material = line.material as THREE.LineBasicMaterial;
+      material.opacity = opacity;
+
+      if (line.visible) {
+        setShootingStarGeometry(geometries[index], camera, path, progress);
+      }
+    });
+
+    const ambientIndex = INTRO_SHOOTING_STARS.length;
+    const ambientLine = shootingLines[ambientIndex];
+    if (store.introMainOpacity < 0.98) {
+      ambientLine.visible = false;
+      return;
+    }
+
+    const random = ambientRandomRef.current;
+    if (!ambientPathRef.current && elapsed >= nextAmbientTimeRef.current) {
+      ambientPathRef.current = makeAmbientShootingStar(random);
+      ambientStartTimeRef.current = elapsed;
+    }
+
+    const ambientPath = ambientPathRef.current;
+    if (!ambientPath) return;
+
+    const ambientProgress =
+      (elapsed - ambientStartTimeRef.current) / ambientPath.duration;
+    if (ambientProgress >= 1) {
+      ambientPathRef.current = null;
+      nextAmbientTimeRef.current = elapsed + 3.8 + random() * 5.8;
+      ambientLine.visible = false;
+      return;
+    }
+
+    const ambientOpacity =
+      Math.sin(ambientProgress * Math.PI) * ambientPath.opacity;
+    ambientLine.visible = ambientOpacity > 0.01;
+    const ambientMaterial = ambientLine.material as THREE.LineBasicMaterial;
+    ambientMaterial.opacity = ambientOpacity;
+    setShootingStarGeometry(
+      geometries[ambientIndex],
+      camera,
+      ambientPath,
+      ambientProgress,
+    );
+  });
+
+  return (
+    <group renderOrder={-20}>
+      {shootingLines.map((line, index) => (
+        <primitive key={`shooting-star-${index}`} object={line} />
+      ))}
+    </group>
+  );
 }
 
 export function Atmosphere() {
@@ -111,6 +328,7 @@ export function Atmosphere() {
       <color attach="background" args={["#030508"]} />
       <fog attach="fog" args={["#030508", 22, 95]} />
       <BrowserSafeStars />
+      <ShootingStars />
     </>
   );
 }

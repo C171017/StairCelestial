@@ -20,6 +20,9 @@ type PortfolioState = {
   currentProject: Project | null;
   scrollProgress: number;
   virtualStairIndex: number;
+  introStarsOpacity: number;
+  introMainOpacity: number;
+  introShootingStarIntensity: number;
   /** Per pool slot: virtual stair index for door, or -1 if hidden */
   doorPoolVirtualIndices: number[];
   focusedDoorId: string | null;
@@ -42,6 +45,14 @@ type PortfolioState = {
   clearDoorFocus: () => void;
   resetDoors: () => void;
   setSceneBootstrapped: (bootstrapped: boolean) => void;
+  setIntroReveal: (
+    reveal: Partial<
+      Pick<
+        PortfolioState,
+        "introStarsOpacity" | "introMainOpacity" | "introShootingStarIntensity"
+      >
+    >,
+  ) => void;
 };
 
 export const usePortfolioStore = create<PortfolioState>((set) => ({
@@ -50,6 +61,9 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   currentProject: null,
   scrollProgress: INITIAL_SCROLL_PROGRESS,
   virtualStairIndex: INITIAL_VIRTUAL_STAIR_INDEX,
+  introStarsOpacity: 0,
+  introMainOpacity: 0,
+  introShootingStarIntensity: 0,
   doorPoolVirtualIndices: Array.from({ length: DOOR_POOL_SIZE }, () => -1),
   focusedDoorId: null,
   doorFocusTarget: null,
@@ -92,4 +106,5 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
       focusScrollAnchor: null,
     }),
   setSceneBootstrapped: (sceneBootstrapped) => set({ sceneBootstrapped }),
+  setIntroReveal: (reveal) => set(reveal),
 }));
