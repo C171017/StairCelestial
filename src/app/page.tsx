@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { AudioConsentGate } from "@/components/ui/AudioConsentGate";
-import { ProjectOverlay } from "@/components/ui/ProjectOverlay";
 import { SiteAudioProvider } from "@/hooks/useSiteAudio";
 
 const StairwayScene = dynamic(
@@ -21,7 +20,6 @@ export default function HomePage() {
         <div className="relative z-0 h-full w-full">
           <StairwayScene />
         </div>
-        <ProjectOverlay />
         <AudioConsentGate />
       </main>
     </SiteAudioProvider>
