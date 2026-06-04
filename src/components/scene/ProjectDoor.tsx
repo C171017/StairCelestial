@@ -185,11 +185,10 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
     : {};
 
   return (
-    <group ref={groupRef} {...(isOpen ? {} : openPointerHandlers)}>
+    <group ref={groupRef} {...(isOpen ? closePointerHandlers : openPointerHandlers)}>
       <primitive
         object={doorClone}
-        {...(isOpen ? {} : openPointerHandlers)}
-        raycast={isOpen ? () => null : undefined}
+        {...(isOpen ? closePointerHandlers : openPointerHandlers)}
       />
       {project ? (
         <DoorPortalContent
@@ -200,23 +199,10 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
       ) : null}
       <mesh
         position={[0, 1.1, 0.35]}
-        raycast={doorInteractive && !isOpen ? undefined : () => null}
-        {...(isOpen ? {} : openPointerHandlers)}
+        raycast={doorInteractive ? undefined : () => null}
+        {...(isOpen ? closePointerHandlers : openPointerHandlers)}
       >
         <boxGeometry args={[1.5, 2.6, 0.35]} />
-        <meshBasicMaterial
-          transparent
-          opacity={0}
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh
-        position={[-0.72, 1.05, 0.22]}
-        raycast={doorInteractive && isOpen ? undefined : () => null}
-        {...(isOpen ? closePointerHandlers : {})}
-      >
-        <boxGeometry args={[0.42, 2.5, 0.55]} />
         <meshBasicMaterial
           transparent
           opacity={0}
