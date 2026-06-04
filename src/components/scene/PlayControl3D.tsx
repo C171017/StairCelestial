@@ -26,6 +26,10 @@ import {
   PLAY_INTRO_VIEW_DISTANCE,
 } from "@/lib/playControlLayout";
 import { usePortfolioStore } from "@/lib/store";
+import {
+  setInteractiveHoverScale,
+  setPointerCursor,
+} from "@/lib/interactiveHoverZoom";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
 
 function prefersReducedMotion(): boolean {
@@ -100,6 +104,8 @@ type FlyPose = {
 
 export function PlayControl3D() {
   const groupRef = useRef<THREE.Group>(null);
+  const hoverVisualRef = useRef<THREE.Group>(null);
+  const hoverTweenRef = useRef<gsap.core.Tween | null>(null);
   const hitRef = useRef<THREE.Mesh>(null);
   const chromeGroupRef = useRef<THREE.Group>(null);
   const playMeshRef = useRef<THREE.Mesh>(null);
@@ -523,11 +529,14 @@ export function PlayControl3D() {
 
   const pointerHandlers = {
     onPointerDown: handlePointerDown,
-    onPointerOver: () => {
-      document.body.style.cursor = "pointer";
+    onPointerOver: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      setPointerCursor(true);
+      setInteractiveHoverScale(hoverVisualRef.current, true, hoverTweenRef);
     },
     onPointerOut: () => {
-      document.body.style.cursor = "";
+      setPointerCursor(false);
+      setInteractiveHoverScale(hoverVisualRef.current, false, hoverTweenRef);
     },
   };
 
@@ -539,23 +548,25 @@ export function PlayControl3D() {
         distance={12}
         color="#f3ecd4"
       />
-      <group ref={chromeGroupRef}>
-        <mesh geometry={softRingGeometry} material={softRingMaterial} />
-        <mesh geometry={innerRingGeometry} material={innerRingMaterial} />
+      <group ref={hoverVisualRef}>
+        <group ref={chromeGroupRef}>
+          <mesh geometry={softRingGeometry} material={softRingMaterial} />
+          <mesh geometry={innerRingGeometry} material={innerRingMaterial} />
+        </group>
+
+        <mesh
+          ref={playMeshRef}
+          geometry={tetrahedronGeometry}
+          material={tetrahedronMaterial}
+        />
+
+        <mesh
+          ref={cubeMeshRef}
+          geometry={cubeGeometry}
+          material={cubeMaterial}
+          visible={false}
+        />
       </group>
-
-      <mesh
-        ref={playMeshRef}
-        geometry={tetrahedronGeometry}
-        material={tetrahedronMaterial}
-      />
-
-      <mesh
-        ref={cubeMeshRef}
-        geometry={cubeGeometry}
-        material={cubeMaterial}
-        visible={false}
-      />
 
       <mesh ref={hitRef} geometry={hitGeometry} {...pointerHandlers}>
         <meshBasicMaterial

@@ -1,14 +1,22 @@
 "use client";
 
 import { useGLTF, useTexture } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import gsap from "gsap";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Group, Object3D } from "three";
-import { Mesh, MeshBasicMaterial, Vector3 } from "three";
+import { DoubleSide, Mesh, MeshBasicMaterial, Vector3 } from "three";
+import {
+  setInteractiveHoverScale,
+  setPointerCursor,
+} from "@/lib/interactiveHoverZoom";
 import { MODEL_PATHS } from "@/lib/models";
+import { isPortfolioSceneInteractive, usePortfolioStore } from "@/lib/store";
 import { SATURN_TEXTURES } from "@/lib/textures";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
 import { applySaturnMaterials } from "./saturnMaterials";
+
+export const SATURN_VIDEO_URL = "https://youtu.be/RKF_uDYrnuk";
 
 /** Fixed viewport anchor (NDC): right side, upper area */
 const RINGED_NDC = { x: 0.72, y: 0.24 };
@@ -78,11 +86,17 @@ function SaturnLights() {
   );
 }
 
+const SATURN_HIT_RADIUS = 1.15;
+
 function FixedRingedPlanet() {
   const groupRef = useRef<Group>(null);
+  const hoverVisualRef = useRef<Group>(null);
+  const hoverTweenRef = useRef<gsap.core.Tween | null>(null);
   const ndcAnchor = useMemo(() => new Vector3(), []);
   const viewRay = useMemo(() => new Vector3(), []);
   const { camera } = useThree();
+  const introPlayPhase = usePortfolioStore((s) => s.introPlayPhase);
+  const saturnInteractive = isPortfolioSceneInteractive(introPlayPhase);
   const ringed = useGLTF(MODEL_PATHS.ringed);
   const textures = useTexture({
     body: SATURN_TEXTURES.body,
@@ -110,12 +124,62 @@ function FixedRingedPlanet() {
     );
   });
 
+  useEffect(() => {
+    if (saturnInteractive) return;
+    setPointerCursor(false);
+    setInteractiveHoverScale(hoverVisualRef.current, false, hoverTweenRef);
+  }, [saturnInteractive]);
+
+  const handleSaturnClick = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (!saturnInteractive) return;
+      event.stopPropagation();
+      window.open(SATURN_VIDEO_URL, "_blank", "noopener,noreferrer");
+    },
+    [saturnInteractive],
+  );
+
+  const handleSaturnPointerOver = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (!saturnInteractive) return;
+      event.stopPropagation();
+      setPointerCursor(true);
+      setInteractiveHoverScale(hoverVisualRef.current, true, hoverTweenRef);
+    },
+    [saturnInteractive],
+  );
+
+  const handleSaturnPointerOut = useCallback(() => {
+    if (!saturnInteractive) return;
+    setPointerCursor(false);
+    setInteractiveHoverScale(hoverVisualRef.current, false, hoverTweenRef);
+  }, [saturnInteractive]);
+
+  const saturnPointerHandlers = saturnInteractive
+    ? {
+        onPointerDown: handleSaturnClick,
+        onPointerOver: handleSaturnPointerOver,
+        onPointerOut: handleSaturnPointerOut,
+      }
+    : {};
+
   return (
     <group ref={groupRef}>
       <SaturnLights />
-      <group rotation={SATURN_TILT}>
-        <SaturnAtmosphere />
-        <primitive object={ringedClone} scale={RINGED_SCALE} />
+      <group ref={hoverVisualRef}>
+        <group rotation={SATURN_TILT}>
+          <SaturnAtmosphere />
+          <primitive object={ringedClone} scale={RINGED_SCALE} />
+        </group>
+        <mesh scale={RINGED_SCALE} {...saturnPointerHandlers}>
+          <sphereGeometry args={[SATURN_HIT_RADIUS, 20, 16]} />
+          <meshBasicMaterial
+            transparent
+            opacity={0}
+            depthWrite={false}
+            side={DoubleSide}
+          />
+        </mesh>
       </group>
     </group>
   );

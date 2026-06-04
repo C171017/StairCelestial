@@ -1,8 +1,13 @@
 "use client";
 
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import gsap from "gsap";
 import { useCallback, useMemo, useRef } from "react";
 import * as THREE from "three";
+import {
+  setInteractiveHoverScale,
+  setPointerCursor,
+} from "@/lib/interactiveHoverZoom";
 import type { Project } from "@/lib/projects";
 
 /** Door frame center from project_door_portal.glb bounds; behind frame on −Z. */
@@ -26,6 +31,9 @@ function noRaycast() {
   return null;
 }
 
+/** Pitch portal content toward the viewer (+Z through the door) for a clearer top-down read. */
+const RECORD_PLAYER_VIEW_TILT_X = -0.4;
+
 function RecordPlayerPortal({ active }: { active: boolean }) {
   const platterRef = useRef<THREE.Group>(null);
 
@@ -35,7 +43,11 @@ function RecordPlayerPortal({ active }: { active: boolean }) {
   });
 
   return (
-    <group position={[0, 0.1, 0]} scale={0.88}>
+    <group
+      position={[0, 0.1, 0]}
+      scale={0.88}
+      rotation={[RECORD_PLAYER_VIEW_TILT_X, 0, 0]}
+    >
       {/* Cabinet base */}
       <mesh position={[0, -0.28, 0]}>
         <boxGeometry args={[0.88, 0.14, 0.62]} />
@@ -241,6 +253,20 @@ function NetworkPortal({ active }: { active: boolean }) {
 
 function MapPortal() {
   const mapTexture = useMemo(() => createStylizedMapTexture(), []);
+  const borderGeometry = useMemo(() => {
+    const w = 1.05;
+    const h = 0.78;
+    const hw = w / 2;
+    const hh = h / 2;
+    const points = [
+      new THREE.Vector3(-hw, -hh, 0),
+      new THREE.Vector3(hw, -hh, 0),
+      new THREE.Vector3(hw, hh, 0),
+      new THREE.Vector3(-hw, hh, 0),
+      new THREE.Vector3(-hw, -hh, 0),
+    ];
+    return new THREE.BufferGeometry().setFromPoints(points);
+  }, []);
 
   return (
     <group scale={0.8}>
@@ -248,8 +274,6 @@ function MapPortal() {
         <planeGeometry args={[1.05, 0.78]} />
         <meshStandardMaterial
           map={mapTexture}
-          emissive="#0ea5e9"
-          emissiveIntensity={0.12}
           roughness={0.92}
           metalness={0.05}
         />
@@ -258,15 +282,13 @@ function MapPortal() {
         <boxGeometry args={[1.08, 0.82, 0.04]} />
         <meshStandardMaterial color={GRAPHITE} roughness={0.7} metalness={0.2} />
       </mesh>
-      <mesh position={[0, 0, 0.02]}>
-        <boxGeometry args={[1.12, 0.86, 0.02]} />
-        <meshStandardMaterial
-          color="#0f172a"
-          emissive={CYAN_DIM}
-          emissiveIntensity={0.08}
-          wireframe
-        />
-      </mesh>
+      <lineLoop
+        geometry={borderGeometry}
+        position={[0, 0, 0.03]}
+        raycast={noRaycast}
+      >
+        <lineBasicMaterial color={CYAN} transparent opacity={0.45} />
+      </lineLoop>
     </group>
   );
 }
@@ -297,6 +319,9 @@ export function DoorPortalContent({
   visible,
   onNavigate,
 }: DoorPortalContentProps) {
+  const portalVisualRef = useRef<THREE.Group>(null);
+  const hoverTweenRef = useRef<gsap.core.Tween | null>(null);
+
   const handlePointerDown = useCallback(
     (event: ThreeEvent<PointerEvent>) => {
       event.stopPropagation();
@@ -307,12 +332,14 @@ export function DoorPortalContent({
 
   const handlePointerOver = useCallback((event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
-    document.body.style.cursor = "pointer";
+    setPointerCursor(true);
+    setInteractiveHoverScale(portalVisualRef.current, true, hoverTweenRef);
   }, []);
 
   const handlePointerOut = useCallback((event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
-    document.body.style.cursor = "";
+    setPointerCursor(false);
+    setInteractiveHoverScale(portalVisualRef.current, false, hoverTweenRef);
   }, []);
 
   if (!visible) return null;
@@ -325,7 +352,7 @@ export function DoorPortalContent({
 
   return (
     <group position={PORTAL_LOCAL_POSITION}>
-      <group raycast={noRaycast}>
+      <group ref={portalVisualRef} raycast={noRaycast}>
         <PortalByProject projectId={project.id} active={visible} />
       </group>
       <mesh position={[0, 0, 0.06]} {...portalPointerHandlers}>
