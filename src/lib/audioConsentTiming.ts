@@ -6,14 +6,15 @@ export const AUDIO_CONSENT_TIMING = {
   /** Lid motion begins this far into revealClosedEye (overlap = mysterious open). */
   lidOpenOverlap: 0.38,
   lidOpen: 1.18,
-  openEyeHold: 0.22,
-  isolateEye: 0.36,
-  morphToPlay: 0.75,
+  openEyeHold: 0.28,
+  /** After the eye is fully open, eye artwork fades out (not instant). */
+  eyeVanishAfterOpen: 0.58,
+  /** Play ring + icon fade in after the eye begins to recede. */
+  playControlReveal: 0.48,
+  playControlRevealDelay: 0.16,
   starCrossfade: 1.2,
   /** Play phase: crossfade control out while stairs/doors fade in. */
   playSceneCrossfade: 5.75,
-  /** Fade iris, lids, and sclera while the play control is shown. */
-  playEyeFade: 4.2,
   mainReveal: 1.05,
   /** Tap during play phase: finish the scene crossfade. */
   clickedSceneCrossfade: 0.82,
@@ -42,8 +43,8 @@ export function getIntroDurationSeconds(reducedMotion: boolean): number {
     t.closedEyeHold +
     t.lidOpen +
     t.openEyeHold +
-    t.isolateEye +
-    t.morphToPlay +
+    t.playControlRevealDelay +
+    Math.max(t.eyeVanishAfterOpen, t.playControlReveal) +
     t.playSceneCrossfade
   );
 }

@@ -502,66 +502,59 @@ export function AudioConsentGate() {
 
       tl.call(runStarReveal, [], starRevealStart);
 
-      const isolateStart = starRevealStart + t.openEyeHold;
-      tl.to(
-        [upper, lower],
-        { opacity: 0.5, duration: t.isolateEye, ease: "power2.inOut" },
-        isolateStart,
-      );
-      tl.to(
-        sclera,
-        { opacity: 0.34, duration: t.isolateEye, ease: "power2.inOut" },
-        isolateStart,
-      );
+      const vanishStart = starRevealStart + t.openEyeHold;
+      const eyeArtwork = [upper, lower, sclera, eyeInterior, iris, pupil, highlight];
 
-      const morphStart = isolateStart + t.isolateEye * 0.45;
+      const playRevealStart = vanishStart + t.playControlRevealDelay;
+
       tl.to(
-        highlight,
-        { opacity: 0, duration: t.morphToPlay * 0.5, ease: "power2.inOut" },
-        morphStart,
-      );
-      tl.to(
-        pupil,
-        { opacity: 0.18, duration: t.morphToPlay * 0.6, ease: "power2.inOut" },
-        morphStart,
-      );
-      tl.to(
-        iris,
-        { opacity: 0.3, duration: t.morphToPlay, ease: "power2.inOut" },
-        morphStart,
+        eyeArtwork,
+        {
+          opacity: 0,
+          duration: t.eyeVanishAfterOpen,
+          ease: "sine.inOut",
+        },
+        vanishStart,
       );
       tl.to(
         ring,
-        { opacity: 0.85, duration: t.morphToPlay, ease: "power2.inOut" },
-        morphStart,
+        {
+          opacity: 0.85,
+          duration: t.playControlReveal,
+          ease: "sine.inOut",
+        },
+        playRevealStart,
       );
       tl.to(
         iconGroup,
-        { opacity: 1, duration: t.morphToPlay * 0.65, ease: "power2.inOut" },
-        morphStart,
+        {
+          opacity: 1,
+          duration: t.playControlReveal * 0.75,
+          ease: "sine.inOut",
+        },
+        playRevealStart,
       );
       tl.to(
         play,
-        { opacity: 1, duration: t.morphToPlay * 0.7, ease: "power2.inOut" },
-        morphStart + t.morphToPlay * 0.25,
-      );
-
-      const morphEnd = morphStart + t.morphToPlay;
-      const playFadeStart = morphStart + t.morphToPlay * 0.35;
-      tl.to(
-        [upper, lower, sclera, eyeInterior],
         {
-          opacity: 0,
-          duration: t.playEyeFade,
+          opacity: 1,
+          duration: t.playControlReveal * 0.7,
           ease: "sine.inOut",
         },
-        playFadeStart,
+        playRevealStart + t.playControlReveal * 0.1,
       );
+
+      const playPhaseEnd =
+        playRevealStart +
+        Math.max(
+          t.eyeVanishAfterOpen - t.playControlRevealDelay,
+          t.playControlReveal,
+        );
       tl.call(() => {
         syncPlayPauseIcons(soundEnabledRef.current);
         setInteractive(true);
         startPlayToSceneTransition();
-      }, [], morphEnd);
+      }, [], playPhaseEnd);
     }
 
     return () => {
