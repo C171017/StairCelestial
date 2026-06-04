@@ -1,21 +1,27 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { introMotionBlend } from "@/lib/introMotion";
 import { usePortfolioStore } from "@/lib/store";
+import { syncGroupToCamera } from "@/lib/viewportAnchor";
 
-const STAR_COUNT = 4400;
-const STAR_RADIUS = 135;
-const STAR_DEPTH = 70;
+/** Fixed viewport shell — always centered on the camera, not world scroll Y. */
+const STAR_COUNT = 1500;
+const STAR_RADIUS = 88;
+const STAR_DEPTH = 42;
 const STAR_MIN_PIXEL_SIZE = 1.8;
 /** Slow dome yaw so the field reads as already in motion when faded in. */
 const STAR_FIELD_YAW_SPEED = 0.052;
 /** Start intro streaks partway through their cycle before opacity reveals. */
 const INTRO_SHOOTING_STAR_PREWARM = 2.4;
 const SHOOTING_STAR_COUNT = 4;
-const SHOOTING_STAR_DISTANCE = 160;
+const SHOOTING_STAR_DISTANCE = 118;
+
+const DUST_PUFF_COUNT = 9;
+const DUST_PUFF_MIN_RADIUS = 52;
+const DUST_PUFF_DEPTH = 38;
 
 type ShootingStarPath = {
   duration: number;
@@ -59,6 +65,20 @@ function seededRandom(seed: number): () => number {
     state = (state * 1664525 + 1013904223) >>> 0;
     return state / 4294967296;
   };
+}
+
+/** Stars, streaks, and dust share one camera-centered rig (infinite scroll safe). */
+function CameraViewportAtmosphere({ children }: { children: ReactNode }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const { camera } = useThree();
+
+  useFrame(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    syncGroupToCamera(group, camera);
+  });
+
+  return <group ref={groupRef}>{children}</group>;
 }
 
 function BrowserSafeStars() {
@@ -166,7 +186,102 @@ function BrowserSafeStars() {
 
   return (
     <group ref={groupRef}>
-      <points geometry={geometry} material={materialRef} />
+      <points
+        geometry={geometry}
+        material={materialRef}
+        frustumCulled={false}
+        renderOrder={-30}
+      />
+    </group>
+  );
+}
+
+type DustPuff = {
+  basePosition: THREE.Vector3;
+  driftPhase: number;
+  scale: number;
+};
+
+function SpaceDustPuffs() {
+  const groupRef = useRef<THREE.Group>(null);
+  const material = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        blending: THREE.AdditiveBlending,
+        color: "#8aa8e8",
+        depthWrite: false,
+        fog: false,
+        opacity: 0.09,
+        transparent: true,
+        toneMapped: false,
+      }),
+    [],
+  );
+
+  const puffs = useMemo(() => {
+    const random = seededRandom(44017);
+    const spherical = new THREE.Spherical();
+    const vector = new THREE.Vector3();
+    const items: DustPuff[] = [];
+
+    for (let i = 0; i < DUST_PUFF_COUNT; i += 1) {
+      spherical.radius =
+        DUST_PUFF_MIN_RADIUS + random() * DUST_PUFF_DEPTH;
+      spherical.phi = Math.acos(1 - random() * 2);
+      spherical.theta = random() * Math.PI * 2;
+      vector.setFromSpherical(spherical);
+      items.push({
+        basePosition: vector.clone(),
+        driftPhase: random() * Math.PI * 2,
+        scale: 9 + random() * 14,
+      });
+    }
+
+    return items;
+  }, []);
+
+  useFrame((state, delta) => {
+    const motionBlend = introMotionBlend(
+      usePortfolioStore.getState().introAtmosphereElapsed,
+    );
+    const group = groupRef.current;
+    if (!group) return;
+
+    const t = state.clock.elapsedTime;
+    group.rotation.y += delta * 0.018 * motionBlend;
+
+    group.children.forEach((child, index) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const puff = puffs[index];
+      if (!puff) return;
+
+      const drift = Math.sin(t * 0.14 + puff.driftPhase) * 1.8;
+      child.position
+        .copy(puff.basePosition)
+        .multiplyScalar(1 + drift * 0.012);
+      child.rotation.z = t * 0.05 + puff.driftPhase;
+      const breathe = 1 + Math.sin(t * 0.22 + puff.driftPhase) * 0.06;
+      child.scale.setScalar(puff.scale * breathe);
+      material.opacity =
+        0.07 *
+        motionBlend *
+        usePortfolioStore.getState().introStarsOpacity;
+    });
+  });
+
+  return (
+    <group ref={groupRef} renderOrder={-28}>
+      {puffs.map((puff, index) => (
+        <mesh
+          key={`dust-puff-${index}`}
+          position={puff.basePosition}
+          scale={puff.scale}
+          material={material}
+          frustumCulled={false}
+        >
+          <sphereGeometry args={[1, 10, 8]} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -197,15 +312,15 @@ function setShootingStarGeometry(
   const position = geometry.getAttribute("position") as THREE.BufferAttribute;
   position.setXYZ(
     0,
-    camera.position.x + tailNdc.x * SHOOTING_STAR_DISTANCE,
-    camera.position.y + tailNdc.y * SHOOTING_STAR_DISTANCE,
-    camera.position.z + tailNdc.z * SHOOTING_STAR_DISTANCE,
+    tailNdc.x * SHOOTING_STAR_DISTANCE,
+    tailNdc.y * SHOOTING_STAR_DISTANCE,
+    tailNdc.z * SHOOTING_STAR_DISTANCE,
   );
   position.setXYZ(
     1,
-    camera.position.x + headNdc.x * SHOOTING_STAR_DISTANCE,
-    camera.position.y + headNdc.y * SHOOTING_STAR_DISTANCE,
-    camera.position.z + headNdc.z * SHOOTING_STAR_DISTANCE,
+    headNdc.x * SHOOTING_STAR_DISTANCE,
+    headNdc.y * SHOOTING_STAR_DISTANCE,
+    headNdc.z * SHOOTING_STAR_DISTANCE,
   );
   position.needsUpdate = true;
   geometry.computeBoundingSphere();
@@ -357,8 +472,11 @@ export function Atmosphere() {
       <color attach="background" args={["#030508"]} />
       <fog attach="fog" args={["#030508", 22, 95]} />
       <IntroAtmosphereClock />
-      <BrowserSafeStars />
-      <ShootingStars />
+      <CameraViewportAtmosphere>
+        <BrowserSafeStars />
+        <SpaceDustPuffs />
+        <ShootingStars />
+      </CameraViewportAtmosphere>
     </>
   );
 }

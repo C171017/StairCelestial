@@ -1,9 +1,14 @@
-import { Vector3, type Camera } from "three";
+import { Vector3, type Camera, type Object3D } from "three";
 
 export type NdcAnchor = {
   x: number;
   y: number;
 };
+
+/** Keep a group centered on the camera so viewport-local shells never drift on scroll. */
+export function syncGroupToCamera(group: Object3D, camera: Camera): void {
+  group.position.copy(camera.position);
+}
 
 /**
  * World position on a ray from the camera through normalized device coords (z=0.5 unproject).
