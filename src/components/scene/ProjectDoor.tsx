@@ -15,6 +15,7 @@ import {
 import { getDoorPlacement, getProjectForStairIndex } from "@/lib/spiral";
 import { isPortfolioSceneInteractive, usePortfolioStore } from "@/lib/store";
 import { MODEL_PATHS } from "@/lib/models";
+import { openExternalUrl } from "@/lib/openExternalUrl";
 import { DoorPortalContent } from "./DoorPortalContent";
 import { findChildByNamePart } from "./cloneScene";
 
@@ -124,25 +125,29 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
 
   const isOpen = openedDoorId === doorId;
 
-  const handlePointerDown = useCallback(
+  const handleOpenPointerDown = useCallback(
     (event: ThreeEvent<PointerEvent>) => {
-      if (!doorInteractive) return;
+      if (!doorInteractive || isOpenRef.current) return;
       event.stopPropagation();
       setActiveDoor(doorId);
-
-      if (isOpenRef.current) {
-        closeDoor();
-        return;
-      }
-
       openDoor();
     },
-    [closeDoor, doorId, doorInteractive, openDoor, setActiveDoor],
+    [doorId, doorInteractive, openDoor, setActiveDoor],
+  );
+
+  const handleClosePointerDown = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (!doorInteractive || !isOpenRef.current) return;
+      event.stopPropagation();
+      setActiveDoor(doorId);
+      closeDoor();
+    },
+    [closeDoor, doorId, doorInteractive, setActiveDoor],
   );
 
   const handlePortalNavigate = useCallback(() => {
     if (!project) return;
-    window.open(project.url, "_blank", "noopener,noreferrer");
+    openExternalUrl(project.url);
   }, [project]);
 
   const handlePointerOver = useCallback(
@@ -163,22 +168,28 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
     }
   }, [doorId, doorInteractive, setActiveDoor]);
 
-  const pointerHandlers = doorInteractive
+  const openPointerHandlers = doorInteractive
     ? {
-        onPointerDown: handlePointerDown,
+        onPointerDown: handleOpenPointerDown,
+        onPointerOver: handlePointerOver,
+        onPointerOut: handlePointerOut,
+      }
+    : {};
+
+  const closePointerHandlers = doorInteractive
+    ? {
+        onPointerDown: handleClosePointerDown,
         onPointerOver: handlePointerOver,
         onPointerOut: handlePointerOut,
       }
     : {};
 
   return (
-    <group
-      ref={groupRef}
-      {...pointerHandlers}
-    >
+    <group ref={groupRef} {...(isOpen ? {} : openPointerHandlers)}>
       <primitive
         object={doorClone}
-        {...pointerHandlers}
+        {...(isOpen ? {} : openPointerHandlers)}
+        raycast={isOpen ? () => null : undefined}
       />
       {project ? (
         <DoorPortalContent
@@ -189,12 +200,23 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
       ) : null}
       <mesh
         position={[0, 1.1, 0.35]}
-        raycast={
-          doorInteractive && !isOpen ? undefined : () => null
-        }
-        {...pointerHandlers}
+        raycast={doorInteractive && !isOpen ? undefined : () => null}
+        {...(isOpen ? {} : openPointerHandlers)}
       >
         <boxGeometry args={[1.5, 2.6, 0.35]} />
+        <meshBasicMaterial
+          transparent
+          opacity={0}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      <mesh
+        position={[-0.72, 1.05, 0.22]}
+        raycast={doorInteractive && isOpen ? undefined : () => null}
+        {...(isOpen ? closePointerHandlers : {})}
+      >
+        <boxGeometry args={[0.42, 2.5, 0.55]} />
         <meshBasicMaterial
           transparent
           opacity={0}

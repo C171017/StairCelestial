@@ -6,11 +6,13 @@ import gsap from "gsap";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Group, Object3D } from "three";
 import { DoubleSide, Mesh, MeshBasicMaterial, Vector3 } from "three";
+import { createExternalLinkPointerHandlers } from "@/lib/externalLinkPointerHandlers";
 import {
   setInteractiveHoverScale,
   setPointerCursor,
 } from "@/lib/interactiveHoverZoom";
 import { MODEL_PATHS } from "@/lib/models";
+import { openExternalUrl } from "@/lib/openExternalUrl";
 import { isPortfolioSceneInteractive, usePortfolioStore } from "@/lib/store";
 import { SATURN_TEXTURES } from "@/lib/textures";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
@@ -130,12 +132,12 @@ function FixedRingedPlanet() {
     setInteractiveHoverScale(hoverVisualRef.current, false, hoverTweenRef);
   }, [saturnInteractive]);
 
-  const handleSaturnClick = useCallback(
-    (event: ThreeEvent<PointerEvent>) => {
-      if (!saturnInteractive) return;
-      event.stopPropagation();
-      window.open(SATURN_VIDEO_URL, "_blank", "noopener,noreferrer");
-    },
+  const saturnLinkHandlers = useMemo(
+    () =>
+      createExternalLinkPointerHandlers(() => {
+        if (!saturnInteractive) return;
+        openExternalUrl(SATURN_VIDEO_URL);
+      }),
     [saturnInteractive],
   );
 
@@ -157,7 +159,7 @@ function FixedRingedPlanet() {
 
   const saturnPointerHandlers = saturnInteractive
     ? {
-        onPointerDown: handleSaturnClick,
+        ...saturnLinkHandlers,
         onPointerOver: handleSaturnPointerOver,
         onPointerOut: handleSaturnPointerOut,
       }

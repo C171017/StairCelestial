@@ -4,6 +4,7 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import gsap from "gsap";
 import { useCallback, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { createExternalLinkPointerHandlers } from "@/lib/externalLinkPointerHandlers";
 import {
   setInteractiveHoverScale,
   setPointerCursor,
@@ -21,6 +22,21 @@ type DoorPortalContentProps = {
 
 /** Invisible pick target over the portal (door hit box is disabled while open). */
 const PORTAL_HIT_SIZE: [number, number, number] = [1.05, 1.0, 0.22];
+const PORTAL_HIT_POSITION: [number, number, number] = [0, 0, 0.42];
+
+/** Record player is tilted — use a taller, deeper pick volume in front of the frame. */
+const RECORD_PLAYER_HIT_SIZE: [number, number, number] = [1.2, 1.2, 0.38];
+const RECORD_PLAYER_HIT_POSITION: [number, number, number] = [0, 0.06, 0.48];
+
+function getPortalHitBox(projectId: string): {
+  size: [number, number, number];
+  position: [number, number, number];
+} {
+  if (projectId === "music") {
+    return { size: RECORD_PLAYER_HIT_SIZE, position: RECORD_PLAYER_HIT_POSITION };
+  }
+  return { size: PORTAL_HIT_SIZE, position: PORTAL_HIT_POSITION };
+}
 
 const CYAN = "#7dd3fc";
 const CYAN_DIM = "#38bdf8";
@@ -321,12 +337,10 @@ export function DoorPortalContent({
 }: DoorPortalContentProps) {
   const portalVisualRef = useRef<THREE.Group>(null);
   const hoverTweenRef = useRef<gsap.core.Tween | null>(null);
+  const { size: hitSize, position: hitPosition } = getPortalHitBox(project.id);
 
-  const handlePointerDown = useCallback(
-    (event: ThreeEvent<PointerEvent>) => {
-      event.stopPropagation();
-      onNavigate();
-    },
+  const linkPointerHandlers = useMemo(
+    () => createExternalLinkPointerHandlers(onNavigate),
     [onNavigate],
   );
 
@@ -345,7 +359,7 @@ export function DoorPortalContent({
   if (!visible) return null;
 
   const portalPointerHandlers = {
-    onPointerDown: handlePointerDown,
+    ...linkPointerHandlers,
     onPointerOver: handlePointerOver,
     onPointerOut: handlePointerOut,
   };
@@ -355,8 +369,8 @@ export function DoorPortalContent({
       <group ref={portalVisualRef} raycast={noRaycast}>
         <PortalByProject projectId={project.id} active={visible} />
       </group>
-      <mesh position={[0, 0, 0.06]} {...portalPointerHandlers}>
-        <boxGeometry args={PORTAL_HIT_SIZE} />
+      <mesh position={hitPosition} {...portalPointerHandlers}>
+        <boxGeometry args={hitSize} />
         <meshBasicMaterial
           transparent
           opacity={0}
