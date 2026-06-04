@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { useSiteAudio } from "@/hooks/useSiteAudio";
 import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
 import {
+  getDynamicViewportSize,
   getPlayCubeEdgeLength,
   getPlayDockScale,
   getPlayIntroScale,
@@ -261,17 +262,22 @@ export function PlayControl3D() {
 
   const syncScaleFromViewport = useCallback(() => {
     const cam = camera as THREE.PerspectiveCamera;
+    const controlViewport = getDynamicViewportSize(size.width, size.height);
     introScaleRef.current = getPlayIntroScale(
       cam,
       PLAY_INTRO_VIEW_DISTANCE,
       size.width,
       size.height,
+      controlViewport.width,
+      controlViewport.height,
     );
     dockScaleRef.current = getPlayDockScale(
       cam,
       PLAY_DOCK_VIEW_DISTANCE,
       size.width,
       size.height,
+      controlViewport.width,
+      controlViewport.height,
     );
     const phase = usePortfolioStore.getState().introPlayPhase;
     if (phase === "hidden" || phase === "awaitClick") {
@@ -282,6 +288,25 @@ export function PlayControl3D() {
   useLayoutEffect(() => {
     syncScaleFromViewport();
   }, [syncScaleFromViewport, introPlayPhase, size.width, size.height]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const viewport = window.visualViewport;
+    const handleViewportChange = () => {
+      syncScaleFromViewport();
+    };
+
+    window.addEventListener("resize", handleViewportChange);
+    viewport?.addEventListener("resize", handleViewportChange);
+    viewport?.addEventListener("scroll", handleViewportChange);
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      viewport?.removeEventListener("resize", handleViewportChange);
+      viewport?.removeEventListener("scroll", handleViewportChange);
+    };
+  }, [syncScaleFromViewport]);
 
   const runFlyTween = useCallback((duration: number) => {
     const pose = flyPoseRef.current;

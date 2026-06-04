@@ -3,7 +3,10 @@
  * 1 local unit = 1 SVG pixel / 100 (half viewBox extent).
  */
 import type { PerspectiveCamera } from "three";
-import { EYE_CONTROL_VMIN } from "@/lib/eyeConsentLayout";
+import {
+  EYE_CONTROL_MARGIN_PX,
+  EYE_CONTROL_VIEWPORT_FRACTION,
+} from "@/lib/eyeConsentLayout";
 
 export const EYE_VIEWBOX = 200;
 export const EYE_VIEWBOX_HALF = EYE_VIEWBOX / 2;
@@ -45,16 +48,33 @@ export function getPlayCubeEdgeLength(): number {
   return svgRadiusToLocal(EYE_INNER_RING_RADIUS_PX * 0.92);
 }
 
-/** Matches eyeConsentLayout: min(90vmin, 100vw - 2rem, 100vh - 2rem). */
+export function getDynamicViewportSize(
+  fallbackWidth: number,
+  fallbackHeight: number,
+): { width: number; height: number } {
+  if (typeof window === "undefined" || !window.visualViewport) {
+    return { width: fallbackWidth, height: fallbackHeight };
+  }
+
+  return {
+    width: window.visualViewport.width,
+    height: window.visualViewport.height,
+  };
+}
+
+/**
+ * Matches eyeConsentLayout:
+ * min(90dvw, 90dvh, 100dvw - 32px, 100dvh - 32px).
+ */
 export function getEyeControlSidePx(
   viewportWidth: number,
   viewportHeight: number,
 ): number {
-  const vmin = Math.min(viewportWidth, viewportHeight);
   return Math.min(
-    EYE_CONTROL_VMIN * vmin,
-    Math.max(0, viewportWidth - 32),
-    Math.max(0, viewportHeight - 32),
+    EYE_CONTROL_VIEWPORT_FRACTION * viewportWidth,
+    EYE_CONTROL_VIEWPORT_FRACTION * viewportHeight,
+    Math.max(0, viewportWidth - EYE_CONTROL_MARGIN_PX),
+    Math.max(0, viewportHeight - EYE_CONTROL_MARGIN_PX),
   );
 }
 
@@ -65,29 +85,43 @@ export function getEyeControlSidePx(
 export function getPlayIntroScale(
   camera: PerspectiveCamera,
   viewDistance: number,
-  viewportWidth: number,
-  viewportHeight: number,
+  renderViewportWidth: number,
+  renderViewportHeight: number,
+  controlViewportWidth = renderViewportWidth,
+  controlViewportHeight = renderViewportHeight,
 ): number {
-  const controlSide = getEyeControlSidePx(viewportWidth, viewportHeight);
+  const controlSide = getEyeControlSidePx(
+    controlViewportWidth,
+    controlViewportHeight,
+  );
   const irisScreenRadius = (EYE_IRIS_RADIUS_PX / EYE_VIEWBOX_HALF) * (controlSide / 2);
   const visibleHalfHeight =
-    viewportHeight / (2 * Math.tan((camera.fov * Math.PI) / 180 / 2));
+    renderViewportHeight / (2 * Math.tan((camera.fov * Math.PI) / 180 / 2));
   const worldRadiusNeeded =
     (irisScreenRadius / visibleHalfHeight) * viewDistance;
   return worldRadiusNeeded / PLAY_IRIS_LOCAL_RADIUS;
 }
 
 /** Docked widget: fraction of intro angular size on screen (larger = easier to tap). */
-export const PLAY_DOCK_ANGULAR_FRACTION = 0.42;
+export const PLAY_DOCK_ANGULAR_FRACTION = 0.63;
 
 export function getPlayDockScale(
   camera: PerspectiveCamera,
   viewDistance: number,
-  viewportWidth: number,
-  viewportHeight: number,
+  renderViewportWidth: number,
+  renderViewportHeight: number,
+  controlViewportWidth = renderViewportWidth,
+  controlViewportHeight = renderViewportHeight,
 ): number {
   return (
-    getPlayIntroScale(camera, viewDistance, viewportWidth, viewportHeight) *
+    getPlayIntroScale(
+      camera,
+      viewDistance,
+      renderViewportWidth,
+      renderViewportHeight,
+      controlViewportWidth,
+      controlViewportHeight,
+    ) *
     PLAY_DOCK_ANGULAR_FRACTION
   );
 }

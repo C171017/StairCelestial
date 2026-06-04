@@ -16,7 +16,7 @@ const StairwayScene = dynamic(
 export default function HomePage() {
   return (
     <SiteAudioProvider>
-      <main className="relative h-screen w-screen overflow-hidden bg-[#030508]">
+      <main className="relative h-dvh w-dvw overflow-hidden bg-[#030508]">
         <div className="relative z-0 h-full w-full">
           <StairwayScene />
         </div>

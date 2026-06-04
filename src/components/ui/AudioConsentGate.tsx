@@ -4,12 +4,22 @@
  * Eye intro overlay (SVG). 3D play control + enter transition live in PlayControl3D.
  */
 import gsap from "gsap";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   AUDIO_CONSENT_TIMING,
   getLidOpenStart,
   getStarRevealStart,
 } from "@/lib/audioConsentTiming";
+import {
+  getDynamicViewportSize,
+  getEyeControlSidePx,
+} from "@/lib/eyeControlMetrics";
 import { EYE_CONTROL_SIZE_CLASS } from "@/lib/eyeConsentLayout";
 import { usePortfolioStore } from "@/lib/store";
 import { EYE_LID_PATHS, EyeConsentSvg } from "./EyeConsentSvg";
@@ -44,6 +54,34 @@ export function AudioConsentGate() {
   const introPlayPhase = usePortfolioStore((s) => s.introPlayPhase);
 
   const sceneBootstrapped = usePortfolioStore((s) => s.sceneBootstrapped);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    const syncControlSide = () => {
+      const { width, height } = getDynamicViewportSize(
+        window.innerWidth,
+        window.innerHeight,
+      );
+      root.style.setProperty(
+        "--eye-control-side",
+        `${getEyeControlSidePx(width, height)}px`,
+      );
+    };
+
+    syncControlSide();
+    window.addEventListener("resize", syncControlSide);
+    viewport?.addEventListener("resize", syncControlSide);
+    viewport?.addEventListener("scroll", syncControlSide);
+
+    return () => {
+      window.removeEventListener("resize", syncControlSide);
+      viewport?.removeEventListener("resize", syncControlSide);
+      viewport?.removeEventListener("scroll", syncControlSide);
+    };
+  }, []);
 
   const setIntroReveal = useCallback(
     (reveal: {
@@ -332,7 +370,7 @@ export function AudioConsentGate() {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 grid place-items-center bg-[#030508]"
+      className="fixed inset-0 z-50 grid h-dvh w-dvw place-items-center bg-[#030508]"
       role="dialog"
       aria-label="Site intro"
       aria-modal={introPlayPhase !== "active"}
