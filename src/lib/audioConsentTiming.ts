@@ -12,12 +12,9 @@ export const AUDIO_CONSENT_TIMING = {
   starCrossfade: 1.2,
   /** Wait for click before auto-enter (3D play control). */
   clickAwaitDuration: 5,
-  countdownDotCount: 24,
   /** Triangle flies to viewport dock while main scene reveals. */
   flyDuration: 1.05,
   mainRevealDuration: 1.05,
-  dotDismissDuration: 0.45,
-  dotDismissDurationClick: 0.28,
   /** Idle motion during awaitClick (radians / scale). */
   idleRotateAmplitude: 0.052,
   idleScalePulse: 0.028,
@@ -39,14 +36,6 @@ export function getStarRevealStart(
   t: typeof AUDIO_CONSENT_TIMING = AUDIO_CONSENT_TIMING,
 ) {
   return getLidOpenStart(t) + t.lidOpen;
-}
-
-export function getClickAwaitSliceDuration(
-  t: typeof AUDIO_CONSENT_TIMING = AUDIO_CONSENT_TIMING,
-  reducedMotion = false,
-) {
-  const duration = reducedMotion ? t.reducedClickAwait : t.clickAwaitDuration;
-  return duration / t.countdownDotCount;
 }
 
 export function getIntroDurationSeconds(reducedMotion: boolean): number {

@@ -246,15 +246,6 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
           stroke="rgba(224, 225, 204, 0.12)"
           strokeWidth={0.7}
         />
-        <circle
-          cx={CX}
-          cy={CY}
-          r={28}
-          fill="transparent"
-          stroke="rgba(224, 225, 204, 0.09)"
-          strokeWidth={0.65}
-          strokeDasharray="2 8"
-        />
         <polygon
           ref={refs.playIcon}
           points={`${CX - 5},${CY - 7} ${CX - 5},${CY + 7} ${CX + 8},${CY}`}

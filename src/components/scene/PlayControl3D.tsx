@@ -5,15 +5,11 @@ import gsap from "gsap";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useSiteAudio } from "@/hooks/useSiteAudio";
-import {
-  AUDIO_CONSENT_TIMING,
-  getClickAwaitSliceDuration,
-} from "@/lib/audioConsentTiming";
+import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
 import {
   getPlayDockScale,
   getPlayIntroScale,
   getPlayTetrahedronRadius,
-  PLAY_DOT_RING_LOCAL_RADIUS,
   PLAY_INNER_RING_LOCAL_RADIUS,
   PLAY_IRIS_LOCAL_RADIUS,
   PLAY_PRIMARY_RING_LOCAL_RADIUS,
@@ -40,30 +36,34 @@ const _faceC = new THREE.Vector3();
 const _faceAb = new THREE.Vector3();
 const _faceAc = new THREE.Vector3();
 const _faceNormal = new THREE.Vector3();
-const _faceTarget = new THREE.Vector3(0, 0, 1);
+const _faceTarget = new THREE.Vector3(0, 0, -1);
 
 /**
- * Rotate geometry so one equilateral face lies in XY (normal +Z).
- * Parent `lookAt(camera)` then shows that face head-on as a triangle.
+ * Rotate geometry so one equilateral face lies in XY (normal -Z).
+ * Parent `lookAt(camera)` points local -Z at the camera, so the play state
+ * shows that real tetrahedron face head-on as a triangle.
  */
 function alignTetrahedronFaceToBillboard(geo: THREE.BufferGeometry) {
   const index = geo.getIndex();
   const pos = geo.getAttribute("position");
-  if (!index || !pos) return;
+  if (!pos) return;
 
-  let bestDot = -Infinity;
-  const bestNormal = new THREE.Vector3(0, 0, -1);
+  let bestDot = Infinity;
+  const bestNormal = new THREE.Vector3(0, 0, 1);
 
-  const faceCount = index.count / 3;
+  const faceCount = (index?.count ?? pos.count) / 3;
   for (let f = 0; f < faceCount; f++) {
-    _faceA.fromBufferAttribute(pos, index.getX(f * 3));
-    _faceB.fromBufferAttribute(pos, index.getX(f * 3 + 1));
-    _faceC.fromBufferAttribute(pos, index.getX(f * 3 + 2));
+    const a = index ? index.getX(f * 3) : f * 3;
+    const b = index ? index.getX(f * 3 + 1) : f * 3 + 1;
+    const c = index ? index.getX(f * 3 + 2) : f * 3 + 2;
+    _faceA.fromBufferAttribute(pos, a);
+    _faceB.fromBufferAttribute(pos, b);
+    _faceC.fromBufferAttribute(pos, c);
     _faceAb.subVectors(_faceB, _faceA);
     _faceAc.subVectors(_faceC, _faceA);
     _faceNormal.crossVectors(_faceAb, _faceAc).normalize();
     const dot = _faceNormal.z;
-    if (dot > bestDot) {
+    if (dot < bestDot) {
       bestDot = dot;
       bestNormal.copy(_faceNormal);
     }
@@ -83,29 +83,6 @@ function createPlayTetrahedronGeometry() {
   return geo;
 }
 
-function createCountdownDots(count: number, radius: number) {
-  const group = new THREE.Group();
-  const dotGeo = new THREE.SphereGeometry(svgRadiusToLocal(1.6), 8, 8);
-  const dotMat = new THREE.MeshStandardMaterial({
-    color: "#e0e1cc",
-    emissive: "#c8c9b4",
-    emissiveIntensity: 0.35,
-    transparent: true,
-    opacity: 0.55,
-    roughness: 0.45,
-    metalness: 0.1,
-  });
-
-  for (let i = 0; i < count; i++) {
-    const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
-    const dot = new THREE.Mesh(dotGeo, dotMat.clone());
-    dot.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
-    dot.userData.dotIndex = i;
-    group.add(dot);
-  }
-  return group;
-}
-
 type FlyPose = {
   ndcX: number;
   ndcY: number;
@@ -120,7 +97,6 @@ type FlyPose = {
 export function PlayControl3D() {
   const groupRef = useRef<THREE.Group>(null);
   const hitRef = useRef<THREE.Mesh>(null);
-  const dotsGroupRef = useRef<THREE.Group>(null);
   const chromeGroupRef = useRef<THREE.Group>(null);
   const playMeshRef = useRef<THREE.Mesh>(null);
   const pauseGroupRef = useRef<THREE.Group | null>(null);
@@ -138,7 +114,6 @@ export function PlayControl3D() {
   });
   const enterStartedRef = useRef(false);
   const awaitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const visibleDotCountRef = useRef<number>(AUDIO_CONSENT_TIMING.countdownDotCount);
   const awaitStartMsRef = useRef(0);
   const reducedMotionRef = useRef(prefersReducedMotion());
 
@@ -146,6 +121,9 @@ export function PlayControl3D() {
   const rayScratch = useMemo(() => new THREE.Vector3(), []);
   const worldPos = useMemo(() => new THREE.Vector3(), []);
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
+  const faceOnQuaternion = useMemo(() => new THREE.Quaternion(), []);
+  const dockQuaternion = useMemo(() => new THREE.Quaternion(), []);
+  const dockEuler = useMemo(() => new THREE.Euler(), []);
 
   const { camera, size } = useThree();
   const introPlayPhase = usePortfolioStore((s) => s.introPlayPhase);
@@ -214,15 +192,6 @@ export function PlayControl3D() {
     [],
   );
 
-  const countdownDots = useMemo(
-    () =>
-      createCountdownDots(
-        AUDIO_CONSENT_TIMING.countdownDotCount,
-        PLAY_DOT_RING_LOCAL_RADIUS,
-      ),
-    [],
-  );
-
   const pauseBarGeometry = useMemo(
     () =>
       new THREE.BoxGeometry(
@@ -242,38 +211,6 @@ export function PlayControl3D() {
       }),
     [],
   );
-
-  const updateDotVisibility = useCallback((count: number) => {
-    const dots = dotsGroupRef.current;
-    if (!dots) return;
-    dots.children.forEach((child, i) => {
-      const visible = i < count;
-      child.visible = visible;
-      if (child instanceof THREE.Mesh) {
-        child.scale.setScalar(visible ? 1 : 0.001);
-      }
-    });
-    visibleDotCountRef.current = count;
-  }, []);
-
-  const dismissDots = useCallback((duration: number) => {
-    const dots = dotsGroupRef.current;
-    if (!dots) return;
-    dots.children.forEach((child, i) => {
-      gsap.to(child.scale, {
-        x: 0.001,
-        y: 0.001,
-        z: 0.001,
-        duration,
-        delay: i * 0.012,
-        ease: "power2.in",
-      });
-      if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
-        const mat = child.material as THREE.MeshStandardMaterial;
-        gsap.to(mat, { opacity: 0, duration, delay: i * 0.012, ease: "power2.in" });
-      }
-    });
-  }, []);
 
   const runMainReveal = useCallback(
     (duration: number, onComplete: () => void) => {
@@ -368,8 +305,6 @@ export function PlayControl3D() {
       const reduced = reducedMotionRef.current;
       const flyDur = reduced ? t.reducedFlyDuration : t.flyDuration;
       const mainDur = reduced ? t.reducedMainReveal : t.mainRevealDuration;
-      const dotDur = byClick ? t.dotDismissDurationClick : t.dotDismissDuration;
-
       usePortfolioStore.getState().setIntroPlayPhase("entering", {
         enteredByClick: byClick,
       });
@@ -380,7 +315,6 @@ export function PlayControl3D() {
         setSoundEnabled(true);
       }
 
-      dismissDots(dotDur);
       if (reduced) {
         const pose = flyPoseRef.current;
         pose.ndcX = PLAY_DOCK_NDC.x;
@@ -401,7 +335,6 @@ export function PlayControl3D() {
       });
     },
     [
-      dismissDots,
       playConsentSting,
       runFlyTween,
       runMainReveal,
@@ -414,29 +347,16 @@ export function PlayControl3D() {
   const startAwaitTimer = useCallback(() => {
     const t = AUDIO_CONSENT_TIMING;
     const reduced = reducedMotionRef.current;
-    const awaitDuration = reduced ? t.reducedClickAwait : t.clickAwaitDuration;
-    const sliceMs = getClickAwaitSliceDuration(t, reduced) * 1000;
-    const dotCount = t.countdownDotCount;
+    const awaitDurationMs =
+      (reduced ? t.reducedClickAwait : t.clickAwaitDuration) * 1000;
 
     awaitStartMsRef.current = performance.now();
-    updateDotVisibility(dotCount);
     enterStartedRef.current = false;
 
-    const tick = () => {
-      const elapsed = performance.now() - awaitStartMsRef.current;
-      const remaining = Math.max(0, awaitDuration - elapsed / 1000);
-      const visible = Math.ceil(remaining / (awaitDuration / dotCount));
-      updateDotVisibility(visible);
-
-      if (remaining <= 0) {
-        beginEnter(false);
-        return;
-      }
-      awaitTimeoutRef.current = setTimeout(tick, sliceMs);
-    };
-
-    awaitTimeoutRef.current = setTimeout(tick, sliceMs);
-  }, [beginEnter, updateDotVisibility]);
+    awaitTimeoutRef.current = setTimeout(() => {
+      beginEnter(false);
+    }, awaitDurationMs);
+  }, [beginEnter]);
 
   useEffect(() => {
     if (introPlayPhase !== "awaitClick") return;
@@ -545,15 +465,20 @@ export function PlayControl3D() {
 
     group.scale.setScalar(baseScale * motionScale);
 
-    if (pose.billboard > 0.001) {
-      // Face-on to camera: one tetrahedron face reads as a flat play triangle.
-      lookTarget.copy(camera.position);
-      group.lookAt(lookTarget);
-      if (phase === "awaitClick" && !reducedMotionRef.current) {
-        group.rotateZ(motionRotZ);
-      }
-    } else {
-      group.rotation.set(pose.tiltX, pose.tiltY, pose.tiltZ);
+    // Face-on to camera: one actual tetrahedron face reads as the play triangle.
+    lookTarget.copy(camera.position);
+    group.lookAt(lookTarget);
+    if (phase === "awaitClick" && !reducedMotionRef.current) {
+      group.rotateZ(motionRotZ);
+    }
+    faceOnQuaternion.copy(group.quaternion);
+
+    if (phase !== "awaitClick") {
+      dockEuler.set(pose.tiltX, pose.tiltY, pose.tiltZ);
+      dockQuaternion.setFromEuler(dockEuler);
+      group.quaternion
+        .copy(faceOnQuaternion)
+        .slerp(dockQuaternion, 1 - pose.billboard);
     }
   });
 
@@ -578,9 +503,6 @@ export function PlayControl3D() {
       <group ref={chromeGroupRef}>
         <mesh geometry={softRingGeometry} material={softRingMaterial} />
         <mesh geometry={innerRingGeometry} material={innerRingMaterial} />
-        <group ref={dotsGroupRef}>
-          <primitive object={countdownDots} />
-        </group>
       </group>
 
       <mesh

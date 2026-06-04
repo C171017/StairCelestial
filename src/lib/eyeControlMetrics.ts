@@ -13,8 +13,6 @@ export const EYE_IRIS_RADIUS_PX = 29;
 export const EYE_PLAY_RING_RADIUS_PX = 23;
 /** Inner guide stroke in iconGroup. */
 export const EYE_INNER_RING_RADIUS_PX = 17.5;
-/** Outer dashed countdown ring in iconGroup. */
-export const EYE_OUTER_DASH_RING_RADIUS_PX = 28;
 
 /** Play icon polygon in SVG px (relative to center). */
 export const EYE_PLAY_TRIANGLE_HALF_HEIGHT_PX = 7;
@@ -25,11 +23,6 @@ export function svgRadiusToLocal(radiusPx: number): number {
 }
 
 export const PLAY_IRIS_LOCAL_RADIUS = svgRadiusToLocal(EYE_IRIS_RADIUS_PX);
-/** Countdown dots sit on the iris / eyeball edge for a seamless handoff. */
-export const PLAY_DOT_RING_LOCAL_RADIUS = PLAY_IRIS_LOCAL_RADIUS;
-export const PLAY_OUTER_DASH_LOCAL_RADIUS = svgRadiusToLocal(
-  EYE_OUTER_DASH_RING_RADIUS_PX,
-);
 export const PLAY_INNER_RING_LOCAL_RADIUS = svgRadiusToLocal(
   EYE_INNER_RING_RADIUS_PX,
 );
