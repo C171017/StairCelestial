@@ -30,6 +30,7 @@ declare global {
       pendingDelta: number;
       lastDirection: number;
       idleStep: number;
+      scrollInteractionActive: boolean;
       userInteracted: boolean;
       virtualIndex: number;
       maxDisplayIndexDelta: number;
@@ -44,10 +45,12 @@ function getAutoOffsetSpeed(elapsed: number): number {
 
 /**
  * Integrates GSAP Observer scroll deltas into an unbounded virtual stair index.
- * Intro ramp and idle cruise advance offset when the user is not scrolling.
+ * Intro ramp and idle cruise advance offset when the user is not scrolling
+ * and has released pointer/touch or wheel/trackpad input.
  */
 export function useVirtualScrollIndex(): MutableRefObject<number> {
-  const { pendingOffsetDeltaRef } = useScrollObserver();
+  const { pendingOffsetDeltaRef, scrollInteractionActiveRef } =
+    useScrollObserver();
   const virtualIndexRef = useRef(SCROLL_START_OFFSET * CLIMB_SCALE);
   const unboundedOffsetRef = useRef(SCROLL_START_OFFSET);
   const autoElapsedRef = useRef(0);
@@ -69,6 +72,7 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
     const hasScrollInput =
       Math.abs(pendingDelta) > SCROLL_INPUT_THRESHOLD && scrollInteractive;
     const autoScrollPaused = focusedDoorId !== null && !hasScrollInput;
+    const scrollInteractionActive = scrollInteractionActiveRef.current;
 
     let idleStep = 0;
 
@@ -81,7 +85,7 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
       const step = clampOffsetStep(pendingDelta);
       lastScrollDirectionRef.current = Math.sign(step) || lastScrollDirectionRef.current;
       unboundedOffsetRef.current += step;
-    } else if (!autoScrollPaused) {
+    } else if (!autoScrollPaused && !scrollInteractionActive) {
       if (!hasUserInteractedRef.current) {
         const epochMs = usePortfolioStore.getState().introEpochMs;
         if (epochMs !== null) {
@@ -118,6 +122,7 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
         pendingDelta,
         lastDirection: lastScrollDirectionRef.current,
         idleStep,
+        scrollInteractionActive,
         userInteracted: hasUserInteractedRef.current,
         virtualIndex: index,
         maxDisplayIndexDelta: maxDisplayIndexDeltaRef.current,

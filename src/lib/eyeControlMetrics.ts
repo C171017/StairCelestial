@@ -102,6 +102,20 @@ export function getPlayIntroScale(
   return worldRadiusNeeded / PLAY_IRIS_LOCAL_RADIUS;
 }
 
+/** Shorter viewport side below this → play tetrahedron / cube render at 2× local scale. */
+export const PLAY_CONTROL_MOBILE_MIN_SIDE_PX = 768;
+export const PLAY_CONTROL_MOBILE_SIZE_SCALE = 2;
+
+export function getPlayControlMobileSizeScale(
+  viewportWidth: number,
+  viewportHeight: number,
+): number {
+  return Math.min(viewportWidth, viewportHeight) <
+    PLAY_CONTROL_MOBILE_MIN_SIDE_PX
+    ? PLAY_CONTROL_MOBILE_SIZE_SCALE
+    : 1;
+}
+
 /** Docked widget: fraction of intro angular size on screen (larger = easier to tap). */
 export const PLAY_DOCK_ANGULAR_FRACTION = 0.63;
 

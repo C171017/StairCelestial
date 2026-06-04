@@ -8,6 +8,7 @@ import { useSiteAudio } from "@/hooks/useSiteAudio";
 import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
 import {
   getDynamicViewportSize,
+  getPlayControlMobileSizeScale,
   getPlayCubeEdgeLength,
   getPlayDockScale,
   getPlayIntroScale,
@@ -105,6 +106,7 @@ export function PlayControl3D() {
   const cubeMeshRef = useRef<THREE.Mesh>(null);
   const introScaleRef = useRef(1);
   const dockScaleRef = useRef(0.4);
+  const mobileShapeScaleRef = useRef(1);
   const flyPoseRef = useRef<FlyPose>({
     ndcX: PLAY_INTRO_NDC.x,
     ndcY: PLAY_INTRO_NDC.y,
@@ -221,6 +223,13 @@ export function PlayControl3D() {
     }
   }, []);
 
+  const applyMobileShapeScale = useCallback(() => {
+    const scale = mobileShapeScaleRef.current;
+    if (playMeshRef.current) playMeshRef.current.scale.setScalar(scale);
+    if (cubeMeshRef.current) cubeMeshRef.current.scale.setScalar(scale);
+    if (hitRef.current) hitRef.current.scale.setScalar(scale);
+  }, []);
+
   const runMainReveal = useCallback(
     (duration: number, onComplete: () => void) => {
       const run = () => {
@@ -279,11 +288,16 @@ export function PlayControl3D() {
       controlViewport.width,
       controlViewport.height,
     );
+    mobileShapeScaleRef.current = getPlayControlMobileSizeScale(
+      controlViewport.width,
+      controlViewport.height,
+    );
+    applyMobileShapeScale();
     const phase = usePortfolioStore.getState().introPlayPhase;
     if (phase === "hidden" || phase === "awaitClick") {
       flyPoseRef.current.scale = introScaleRef.current;
     }
-  }, [camera, size.height, size.width]);
+  }, [applyMobileShapeScale, camera, size.height, size.width]);
 
   useLayoutEffect(() => {
     syncScaleFromViewport();
