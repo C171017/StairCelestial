@@ -89,13 +89,6 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
-        <filter id="eye-consent-rim-glow" x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="2.2" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
       </defs>
 
       <g ref={refs.scleraExtras} opacity={0}>
@@ -112,29 +105,26 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         <path
           d="M 12 101 C 43 58 127 31 189 93"
           fill="none"
-          stroke="rgba(245, 239, 214, 0.18)"
-          strokeWidth={8}
+          stroke="rgba(245, 239, 214, 0.28)"
+          strokeWidth={5}
           strokeLinecap="round"
-          filter="url(#eye-consent-rim-glow)"
-          opacity={0.42}
+          opacity={0.5}
         />
         <path
           d="M 13 101 C 44 56 127 32 188 93"
           fill="none"
           stroke="url(#eye-consent-upper-lid)"
-          strokeWidth={3.4}
+          strokeWidth={3.2}
           strokeLinecap="round"
-          filter="url(#eye-consent-rim-glow)"
-          opacity={0.94}
+          opacity={0.88}
         />
         <path
           d="M 13 104 C 58 153 157 144 189 94"
           fill="none"
           stroke="url(#eye-consent-lower-lid)"
-          strokeWidth={2.5}
+          strokeWidth={2.4}
           strokeLinecap="round"
-          filter="url(#eye-consent-rim-glow)"
-          opacity={0.84}
+          opacity={0.8}
         />
         <path
           d="M 27 102 C 63 83 131 77 171 96"
@@ -231,9 +221,8 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         cy={CY}
         r={23}
         fill="transparent"
-        stroke="rgba(220, 218, 196, 0.26)"
+        stroke="rgba(220, 218, 196, 0.3)"
         strokeWidth={0.9}
-        filter="url(#eye-consent-soft-glow)"
         opacity={0}
       />
 
@@ -279,18 +268,18 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         d={EYE_LID_PATHS.upperClosed}
         fill="none"
         stroke="url(#eye-consent-upper-lid)"
-        strokeWidth={1.55}
+        strokeWidth={1.65}
         strokeLinecap="round"
-        filter="url(#eye-consent-rim-glow)"
+        opacity={0.92}
       />
       <path
         ref={refs.lowerLid}
         d={EYE_LID_PATHS.lowerClosed}
         fill="none"
         stroke="url(#eye-consent-lower-lid)"
-        strokeWidth={1.15}
+        strokeWidth={1.2}
         strokeLinecap="round"
-        filter="url(#eye-consent-soft-glow)"
+        opacity={0.88}
       />
     </svg>
   );
