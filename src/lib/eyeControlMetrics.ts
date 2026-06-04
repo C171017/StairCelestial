@@ -3,6 +3,7 @@
  * 1 local unit = 1 SVG pixel / 100 (half viewBox extent).
  */
 import type { PerspectiveCamera } from "three";
+import { EYE_CONTROL_VMIN } from "@/lib/eyeConsentLayout";
 
 export const EYE_VIEWBOX = 200;
 export const EYE_VIEWBOX_HALF = EYE_VIEWBOX / 2;
@@ -39,14 +40,14 @@ export function getPlayTetrahedronRadius(): number {
   return Math.max(halfH, depth * 0.65) * 1.25;
 }
 
-/** Matches eyeConsentLayout: min(120vmin, 100vw - 2rem, 100vh - 2rem). */
+/** Matches eyeConsentLayout: min(90vmin, 100vw - 2rem, 100vh - 2rem). */
 export function getEyeControlSidePx(
   viewportWidth: number,
   viewportHeight: number,
 ): number {
   const vmin = Math.min(viewportWidth, viewportHeight);
   return Math.min(
-    1.2 * vmin,
+    EYE_CONTROL_VMIN * vmin,
     Math.max(0, viewportWidth - 32),
     Math.max(0, viewportHeight - 32),
   );
