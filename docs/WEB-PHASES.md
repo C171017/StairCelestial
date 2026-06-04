@@ -37,7 +37,7 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 
 **Implemented:**
 
-- `ScrollControls` with `infinite`, `pages={3}`, `damping={0.3}`
+- GSAP Observer on `#portfolio-scroll-surface` + `useVirtualScrollIndex` (unified wheel/touch)
 - `useVirtualScrollIndex` — wrap-aware offset integration (see [ARCHITECTURE.md](./ARCHITECTURE.md))
 - `CameraRig` — orbit + **door-focus zoom blend** (`doorCameraFocus.ts`)
 - Fog in `Atmosphere.tsx` — `near: 14`, `far: 85`
@@ -47,7 +47,7 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 
 - `CameraRig` `CAMERA_LERP` / `FOCUS_BLEND_LERP`, FOV in `StairwayScene.tsx`
 - `doorCameraFocus.ts` — `DOOR_LOOK_AT_HEIGHT`, `getViewportFrameBias()` for vertical centering
-- `MAX_TRACKER_STEP` / `MAX_DISPLAY_STEP` in `useVirtualScrollIndex.ts` if scroll feels slow/fast
+- `SCROLL_SENSITIVITY` / `MAX_OFFSET_STEP_PER_FRAME` in `src/lib/scrollInput.ts` if scroll feels slow/fast
 
 ---
 
@@ -116,7 +116,7 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 | Task | Status |
 |------|--------|
 | Segment pool (14 stairs, 4 doors) + `spiralPool.ts` | **Done** |
-| Seamless scroll / lap wraps (`useVirtualScrollIndex`) | **Done** |
+| Unified scroll input (`useScrollObserver` + `useVirtualScrollIndex`) | **Done** |
 | Mobile: DPR cap, star count, touch door taps | **Todo** |
 | `npm run build` + Vercel deploy | **Todo** |
 
@@ -132,7 +132,7 @@ Mark phase status in [PROJECT.md](./PROJECT.md) when done.
 | “zoom wrong / door low on screen” | W3 — `doorCameraFocus.ts` |
 | “zoom only works on first door” | W3 — use `focusScrollAnchor`, not door index |
 | “stairs floating / wrong layout” | W2 |
-| “scroll jumps / stutter at lap” | W3 — read `useVirtualScrollIndex.ts` |
+| “scroll jumps / stutter” | W3 — tune `src/lib/scrollInput.ts` sensitivity / caps |
 | “looks flat / lighting” | W5 |
 | “slow on phone / deploy” | W6 |
 | “new GLB from Blender” | W2 after re-export |

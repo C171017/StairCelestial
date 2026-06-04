@@ -1,11 +1,10 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { ScrollControls } from "@react-three/drei";
 import { Suspense } from "react";
 import { useVirtualScrollIndex } from "@/hooks/useVirtualScrollIndex";
 import { Atmosphere } from "./Atmosphere";
-import { CameraRig, getScrollPages } from "./CameraRig";
+import { CameraRig } from "./CameraRig";
 import { CelestialBackground } from "./CelestialBackground";
 import { IntroSceneReveal } from "./IntroSceneReveal";
 import { Lights } from "./Lights";
@@ -40,9 +39,7 @@ export function StairwayScene() {
     >
       <Atmosphere />
       <Suspense fallback={null}>
-        <ScrollControls pages={getScrollPages()} damping={0.3} infinite>
-          <SceneContent />
-        </ScrollControls>
+        <SceneContent />
       </Suspense>
     </Canvas>
   );

@@ -1,38 +1,35 @@
 "use client";
 
-import { useScroll } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import type { MutableRefObject } from "react";
-import { computeTrackerStep } from "@/hooks/scrollLapIntegration";
-import { useCenteredScrollInit } from "@/hooks/useCenteredScrollInit";
+import { useScrollObserver } from "@/hooks/useScrollObserver";
 import { SCROLL_FOCUS_RELEASE_THRESHOLD } from "@/lib/doorCameraFocus";
+import { introMotionBlend } from "@/lib/introMotion";
+import {
+  clampOffsetStep,
+  SCROLL_INPUT_THRESHOLD,
+} from "@/lib/scrollInput";
 import {
   CLIMB_SCALE,
   LOOP_LENGTH,
   SCROLL_START_OFFSET,
 } from "@/lib/spiral";
-import { introMotionBlend } from "@/lib/introMotion";
 import { isPortfolioSceneInteractive, usePortfolioStore } from "@/lib/store";
 
 export { CLIMB_SCALE };
 
-/** Max momentum speed — what camera/geometry consume after user input. */
-const MAX_MOMENTUM_OFFSET_SPEED = 0.55;
 const MAX_FRAME_DELTA = 1 / 30;
 const AUTO_CRUISE_OFFSET_SPEED = 0.018;
-const INPUT_STEP_THRESHOLD = 0.000025;
-const INPUT_VELOCITY_BLEND = 0.42;
-const INPUT_REVERSAL_BLEND = 0.74;
-const MOMENTUM_FRICTION = 0.27;
-const STOPPED_SPEED_EPSILON = 0.00035;
+const MAX_CRUISE_STEP_PER_FRAME = 0.55;
 
 declare global {
   interface Window {
     __scrollDebug?: {
-      offset: number;
-      displayUnbounded: number;
-      velocity: number;
+      unboundedOffset: number;
+      pendingDelta: number;
+      lastDirection: number;
+      idleStep: number;
       userInteracted: boolean;
       virtualIndex: number;
       maxDisplayIndexDelta: number;
@@ -41,174 +38,73 @@ declare global {
   }
 }
 
-function clampStep(value: number, max: number): number {
-  return Math.max(-max, Math.min(max, value));
-}
-
 function getAutoOffsetSpeed(elapsed: number): number {
   return AUTO_CRUISE_OFFSET_SPEED * introMotionBlend(elapsed);
 }
 
-function frameLerpAmount(perFrameAmount: number, delta: number): number {
-  return 1 - Math.pow(1 - perFrameAmount, delta * 60);
-}
-
-function decayTowardCruise(
-  velocity: number,
-  direction: number,
-  delta: number,
-): number {
-  const cruise = direction * AUTO_CRUISE_OFFSET_SPEED;
-  const friction = Math.exp(-MOMENTUM_FRICTION * delta);
-  return cruise + (velocity - cruise) * friction;
-}
-
 /**
- * Integrates Drei scroll.offset into an unbounded virtual stair index.
- * Tracker keeps lap accounting; display layer is always capped for steady motion.
+ * Integrates GSAP Observer scroll deltas into an unbounded virtual stair index.
+ * Intro ramp and idle cruise advance offset when the user is not scrolling.
  */
 export function useVirtualScrollIndex(): MutableRefObject<number> {
-  const scroll = useScroll();
+  const { pendingOffsetDeltaRef } = useScrollObserver();
   const virtualIndexRef = useRef(SCROLL_START_OFFSET * CLIMB_SCALE);
+  const unboundedOffsetRef = useRef(SCROLL_START_OFFSET);
   const autoElapsedRef = useRef(0);
   const hasUserInteractedRef = useRef(false);
-  const lastOffsetRef = useRef(SCROLL_START_OFFSET);
-  const targetUnboundedOffsetRef = useRef(SCROLL_START_OFFSET);
-  const displayUnboundedOffsetRef = useRef(SCROLL_START_OFFSET);
-  const velocityRef = useRef(0);
-  const lastMomentumDirectionRef = useRef(1);
-  const userHoldingStillRef = useRef(false);
+  const lastScrollDirectionRef = useRef(1);
   const maxDisplayIndexDeltaRef = useRef(0);
   const lastDisplayIndexRef = useRef(SCROLL_START_OFFSET * CLIMB_SCALE);
 
-  const scrollRefs = {
-    targetUnboundedOffsetRef,
-    displayUnboundedOffsetRef,
-    lastOffsetRef,
-  };
-
-  useCenteredScrollInit(scrollRefs);
-
-  useEffect(() => {
-    const el = scroll.el;
-    if (!el) return;
-
-    const syncScrollPointerEvents = () => {
-      const phase = usePortfolioStore.getState().introPlayPhase;
-      el.style.pointerEvents =
-        phase === "awaitClick" || isPortfolioSceneInteractive(phase)
-        ? "auto"
-        : "none";
-    };
-
-    syncScrollPointerEvents();
-    return usePortfolioStore.subscribe(syncScrollPointerEvents);
-  }, [scroll.el]);
-
-  useEffect(() => {
-    const el = scroll.el;
-    if (!el) return;
-
-    const holdStill = () => {
-      userHoldingStillRef.current = true;
-      velocityRef.current = 0;
-    };
-    const releaseStill = () => {
-      userHoldingStillRef.current = false;
-    };
-
-    el.addEventListener("pointerdown", holdStill, { passive: true });
-    el.addEventListener("pointermove", releaseStill, { passive: true });
-    el.addEventListener("touchstart", holdStill, { passive: true });
-    el.addEventListener("touchmove", releaseStill, { passive: true });
-    el.addEventListener("mousedown", holdStill, { passive: true });
-    window.addEventListener("pointerup", releaseStill);
-    window.addEventListener("touchend", releaseStill);
-    window.addEventListener("mouseup", releaseStill);
-
-    return () => {
-      el.removeEventListener("pointerdown", holdStill);
-      el.removeEventListener("pointermove", releaseStill);
-      el.removeEventListener("touchstart", holdStill);
-      el.removeEventListener("touchmove", releaseStill);
-      el.removeEventListener("mousedown", holdStill);
-      window.removeEventListener("pointerup", releaseStill);
-      window.removeEventListener("touchend", releaseStill);
-      window.removeEventListener("mouseup", releaseStill);
-    };
-  }, [scroll.el]);
-
   useFrame((_, delta) => {
-    const o = scroll.offset;
-    const last = lastOffsetRef.current;
     const frameDelta = Math.min(delta, MAX_FRAME_DELTA);
-    const scrollStep = computeTrackerStep(last, o);
-
-    const target = targetUnboundedOffsetRef;
-    target.current += scrollStep;
+    const pendingDelta = pendingOffsetDeltaRef.current;
+    pendingOffsetDeltaRef.current = 0;
 
     const { focusedDoorId, focusScrollAnchor, resetDoors } =
       usePortfolioStore.getState();
-    const hasScrollInput = Math.abs(scrollStep) > INPUT_STEP_THRESHOLD;
     const scrollInteractive = isPortfolioSceneInteractive(
       usePortfolioStore.getState().introPlayPhase,
     );
+    const hasScrollInput =
+      Math.abs(pendingDelta) > SCROLL_INPUT_THRESHOLD && scrollInteractive;
     const autoScrollPaused = focusedDoorId !== null && !hasScrollInput;
 
-    if (hasScrollInput && scrollInteractive) {
+    let idleStep = 0;
+
+    if (hasScrollInput) {
       if (focusedDoorId !== null) {
         resetDoors();
       }
 
       hasUserInteractedRef.current = true;
-      const measuredVelocity = clampStep(
-        scrollStep / Math.max(frameDelta, 0.001),
-        MAX_MOMENTUM_OFFSET_SPEED,
-      );
-      lastMomentumDirectionRef.current = Math.sign(measuredVelocity) || 1;
-      const currentVelocity = velocityRef.current;
-      const reversing =
-        Math.sign(measuredVelocity) !== Math.sign(currentVelocity) &&
-        Math.abs(currentVelocity) > STOPPED_SPEED_EPSILON;
-      const blend = frameLerpAmount(
-        reversing ? INPUT_REVERSAL_BLEND : INPUT_VELOCITY_BLEND,
-        frameDelta,
-      );
-      velocityRef.current =
-        currentVelocity + (measuredVelocity - currentVelocity) * blend;
-    } else if (userHoldingStillRef.current || autoScrollPaused) {
-      velocityRef.current = 0;
-    } else if (hasUserInteractedRef.current) {
-      velocityRef.current = decayTowardCruise(
-        velocityRef.current,
-        lastMomentumDirectionRef.current,
-        frameDelta,
-      );
-      if (Math.abs(velocityRef.current) < STOPPED_SPEED_EPSILON) {
-        velocityRef.current =
-          lastMomentumDirectionRef.current * AUTO_CRUISE_OFFSET_SPEED;
-      }
-    } else {
-      const epochMs = usePortfolioStore.getState().introEpochMs;
-      if (epochMs !== null) {
-        autoElapsedRef.current = (performance.now() - epochMs) / 1000;
+      const step = clampOffsetStep(pendingDelta);
+      lastScrollDirectionRef.current = Math.sign(step) || lastScrollDirectionRef.current;
+      unboundedOffsetRef.current += step;
+    } else if (!autoScrollPaused) {
+      if (!hasUserInteractedRef.current) {
+        const epochMs = usePortfolioStore.getState().introEpochMs;
+        if (epochMs !== null) {
+          autoElapsedRef.current = (performance.now() - epochMs) / 1000;
+        } else {
+          autoElapsedRef.current += frameDelta;
+        }
+        idleStep = getAutoOffsetSpeed(autoElapsedRef.current) * frameDelta;
       } else {
-        autoElapsedRef.current += frameDelta;
+        idleStep =
+          lastScrollDirectionRef.current *
+          AUTO_CRUISE_OFFSET_SPEED *
+          frameDelta;
       }
-      velocityRef.current = getAutoOffsetSpeed(autoElapsedRef.current);
+
+      idleStep = clampOffsetStep(
+        idleStep,
+        MAX_CRUISE_STEP_PER_FRAME * frameDelta,
+      );
+      unboundedOffsetRef.current += idleStep;
     }
 
-    lastOffsetRef.current = o;
-
-    const currentDisplay = displayUnboundedOffsetRef.current;
-    const displayStep = clampStep(
-      velocityRef.current * frameDelta,
-      MAX_MOMENTUM_OFFSET_SPEED * frameDelta,
-    );
-    displayUnboundedOffsetRef.current = currentDisplay + displayStep;
-    target.current = displayUnboundedOffsetRef.current;
-
-    const index = displayUnboundedOffsetRef.current * CLIMB_SCALE;
+    const index = unboundedOffsetRef.current * CLIMB_SCALE;
     const displayDelta = Math.abs(index - lastDisplayIndexRef.current);
     if (displayDelta > maxDisplayIndexDeltaRef.current) {
       maxDisplayIndexDeltaRef.current = displayDelta;
@@ -218,9 +114,10 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
 
     if (typeof window !== "undefined") {
       window.__scrollDebug = {
-        offset: o,
-        displayUnbounded: displayUnboundedOffsetRef.current,
-        velocity: velocityRef.current,
+        unboundedOffset: unboundedOffsetRef.current,
+        pendingDelta,
+        lastDirection: lastScrollDirectionRef.current,
+        idleStep,
         userInteracted: hasUserInteractedRef.current,
         virtualIndex: index,
         maxDisplayIndexDelta: maxDisplayIndexDeltaRef.current,

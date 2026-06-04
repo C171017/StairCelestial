@@ -80,8 +80,3 @@ export function CameraRig({ virtualIndexRef }: CameraRigProps) {
 
   return null;
 }
-
-/** Small fixed pages — travel is driven by accumulated scroll offset. */
-export function getScrollPages(): number {
-  return 3;
-}

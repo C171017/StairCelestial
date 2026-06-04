@@ -11,7 +11,7 @@ src/app/
   globals.css           — Full-viewport, dark background
 
 src/components/scene/
-  StairwayScene.tsx     — <Canvas>, ScrollControls infinite; SceneContent runs `useVirtualScrollIndex`, passes ref to `SpiralStaircase` + `CameraRig`
+  StairwayScene.tsx     — <Canvas>; SceneContent runs `useVirtualScrollIndex`, passes ref to `SpiralStaircase` + `CameraRig`
   SpiralStaircase.tsx   — Pooled stairs + door/platform groups (useFrame); reads `virtualIndexRef` (same float as camera)
   StairSegment.tsx      — Renders one pre-cloned stair Object3D
   PlatformLanding.tsx   — Renders one pre-cloned platform Object3D
@@ -23,9 +23,8 @@ src/components/scene/
   cloneScene.ts         — findChildByNamePart() helper
 
 src/hooks/
-  useVirtualScrollIndex.ts — wrap-aware scroll.offset → virtualStairIndex (store + smoothing)
-  scrollLapIntegration.ts — `computeTrackerStep` (Drei lap teleports vs capped delta); `npm run test:scroll`
-  useCenteredScrollInit.ts — center scroll DOM; seed refs; sync `lastOffsetRef` from damped `scroll.offset`
+  useVirtualScrollIndex.ts — Observer deltas + intro/cruise → virtualStairIndex (store)
+  useScrollObserver.ts     — GSAP Observer on `#portfolio-scroll-surface` (wheel/touch)
 
 src/components/ui/
   ProjectOverlay.tsx    — HTML overlay, scroll %, open project card
@@ -38,6 +37,7 @@ src/lib/
   models.ts             — MODEL_PATHS for all GLBs
   projects.ts           — Project[] (data-only growth)
   store.ts              — usePortfolioStore (Zustand)
+  scrollInput.ts        — SCROLL_SENSITIVITY, climb sign, per-frame caps
 ```
 
 ## GLB assets
@@ -85,38 +85,31 @@ Functions:
 ## Infinite illusion (pool + fog)
 
 ```txt
-Drei ScrollControls infinite
-scroll.offset → computeTrackerStep (lap vs capped delta) → unboundedOffset → virtualStairIndex
-64 pooled stairs + 12 pooled door slots reposition each frame
+GSAP Observer on #portfolio-scroll-surface → unboundedOffset → virtualStairIndex
+64 pooled stairs + door pool slots reposition each frame
 XZ repeats every LOOP_LENGTH; Y keeps climbing
 Fog (#030508, near 22, far 95) softens distant geometry and recycled segments
 ```
 
 **Add a project (no Blender):** append to `projects` in `src/lib/projects.ts` + preview under `public/previews/`. `DOOR_STEP` auto-adjusts from project count (min 6 steps apart).
 
-## Scroll integration (`useVirtualScrollIndex.ts` + `scrollLapIntegration.ts`)
+## Scroll integration (`useScrollObserver.ts` + `useVirtualScrollIndex.ts`)
 
-Do **not** drive climb from raw `scroll.delta` — it spikes when Drei resets offset.
+Unified wheel/touch/pointer via GSAP **Observer** on [`page.tsx`](../src/app/page.tsx) `#portfolio-scroll-surface` (`touch-action: none`). Tuning in [`scrollInput.ts`](../src/lib/scrollInput.ts).
 
-Lap math lives in [`scrollLapIntegration.ts`](src/hooks/scrollLapIntegration.ts) (`computeTrackerStep`) so it stays testable; the hook wires it to the store and display smoothing.
+1. **Seed** `unboundedOffset` at `SCROLL_START_OFFSET` (0.5) — symmetric climb/descend runway.
+2. **User input** (only when `introPlayPhase === "active"`): Observer `onChange` accumulates `pixelsToOffsetDelta(deltaY)` into a pending ref; each frame applies a capped step (`MAX_OFFSET_STEP_PER_FRAME` ≈ 0.06) to `unboundedOffset`.
+3. **Idle motion** when no user delta: intro ramp via `introEpochMs` + `introMotionBlend` before first scroll; after first scroll, slow **cruise** along `lastScrollDirection` at `AUTO_CRUISE_OFFSET_SPEED`. Paused while a door is focused and user is not scrolling.
+4. `virtualStairIndex = unboundedOffset × CLIMB_SCALE` (28 steps per full offset range); index may go negative.
+5. Door focus release: if `|virtualStairIndex - focusScrollAnchor| > SCROLL_FOCUS_RELEASE_THRESHOLD`, call `resetDoors()`.
 
-Two-layer integration (tracker + display):
+**Scene wiring:** `useVirtualScrollIndex()` runs once in `StairwayScene` `SceneContent`; the returned ref is passed to `SpiralStaircase` and `CameraRig`.
 
-1. On mount, `useCenteredScrollInit` sets `scrollTop` to half the track and seeds **target** and **display** unbounded offsets at `SCROLL_START_OFFSET` (0.5). After layout, `lastOffsetRef` is synced from damped `scroll.offset` (double `requestAnimationFrame`) so the first integration step matches Drei, not a stale 0.5 guess.
-2. **Tracker** (`targetUnboundedOffset`): each frame adds `computeTrackerStep(last, offset)` — capped normal diffs (`±0.06` per frame) unless a Drei infinite teleport is detected.
-3. **Forward / bottom teleport** (`|Δoffset| > 0.45`, `last > 0.7`, `offset < 0.25`): add `SCROLL_CLIMB_SIGN * (1 - last + offset)` (~0 when Drei snaps high → low).
-4. **Backward / top teleport** (`|Δoffset| > 0.45`, `last < 0.12`, `offset > 0.75`): add `SCROLL_CLIMB_SIGN * (offset - 1 - last)` so the tracker keeps only the short wrapped distance, not a full-loop jump. `last < 0.12` keeps this branch off normal damp motion in the 0.2–0.3 band.
-5. **Display** (`displayUnboundedOffset`): each frame moves toward the tracker with `±0.04` max step — this value drives the store/camera so lap teleports never lurch in one frame.
-6. `virtualStairIndex = displayUnbounded × CLIMB_SCALE` (28 steps per full scroll range); index may go negative (stairs below start elevation).
-7. While a door is focused: if `|virtualStairIndex - focusScrollAnchor| > SCROLL_FOCUS_RELEASE_THRESHOLD` (~0.35 steps), call `resetDoors()` (zoom out + close door). Uses **display** index so release matches visible motion.
-
-**Scene wiring:** `useVirtualScrollIndex()` runs once in `StairwayScene` `SceneContent`; the returned ref is passed to `SpiralStaircase` and `CameraRig` so geometry reads the same float index as the camera without waiting on Zustand per frame.
-
-Dev: `window.__scrollDebug` (development only) exposes per-frame `maxDisplayIndexDelta` for profiling. CI/local: `npm run test:scroll` exercises lap detection edge cases.
+Dev: `window.__scrollDebug` exposes `unboundedOffset`, `pendingDelta`, `virtualIndex`, `maxDisplayIndexDelta`.
 
 ## Scroll camera
 
-- `StairwayScene`: `<ScrollControls pages={3} damping={0.3} infinite>`
+- `StairwayScene`: `<Canvas>` only (no Drei scroll DOM)
 - **Orbit mode:** `getContinuousOrbitAngle` + fixed `CAMERA_ORBIT_RADIUS`; looks at void center
 - **Focus mode:** blends toward `getFocusCameraPose()` when `doorFocusTarget` is set (see below)
 - Canvas FOV `58`; `scrollProgress` in UI = position within current loop (0–1)
@@ -191,11 +184,11 @@ npm run build  # must pass before PR
 
 - Merging all stairs into one mesh export
 - Center pivot on door panel
-- Using `scroll.delta` directly for climb index (causes lap-boundary jumps)
+- Driving climb from uncapped per-frame scroll deltas (spikes on mobile — use `clampOffsetStep`)
 - Applying modulo to camera orbit angle (360° snap each lap)
 - Thousands of star meshes instead of `Stars` or instanced points
 - Putting infinite loop logic inside GLB instead of recycling transforms
-- Breaking `ScrollControls` by moving `CameraRig` outside its provider
+- Attaching Observer to the wrong element (must be `#portfolio-scroll-surface` on `main`)
 - Cloning GLB per frame instead of reusing pool clones + updating transforms
 - Releasing door focus when `|index - focusVirtualIndex| > threshold` (use `focusScrollAnchor` instead)
 - Forgetting to update `docs/` after changing door/zoom/scroll UX (see [README.md](./README.md) § Keeping docs in sync)
