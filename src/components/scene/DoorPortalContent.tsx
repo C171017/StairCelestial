@@ -5,8 +5,8 @@ import { useCallback, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { Project } from "@/lib/projects";
 
-/** Door frame center (matches invisible hit box at y=1.1); behind frame on −Z. */
-export const PORTAL_LOCAL_POSITION: [number, number, number] = [0, 1.1, -0.16];
+/** Door frame center from project_door_portal.glb bounds; behind frame on −Z. */
+export const PORTAL_LOCAL_POSITION: [number, number, number] = [0, 0, -0.16];
 
 type DoorPortalContentProps = {
   project: Project;
