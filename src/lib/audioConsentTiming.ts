@@ -21,6 +21,14 @@ export const AUDIO_CONSENT_TIMING = {
   idleMotionPeriod: 2.4,
   mainReveal: 1.05,
   overlayFade: 0.6,
+  /** BGM swell during fly-away + scene reveal (seconds). */
+  ambientIntroFadeIn: 3.4,
+  /** BGM when re-enabling from the docked play control (seconds). */
+  ambientToggleFadeIn: 2.2,
+  /** BGM when muting from the docked play control (seconds). */
+  ambientFadeOut: 1.5,
+  /** Play tetrahedron ↔ pause cube crossfade (seconds). */
+  playShapeCrossfade: 0.52,
   reducedMotionHold: 0.5,
   /** Reduced-motion shortcuts */
   reducedClickAwait: 0.35,

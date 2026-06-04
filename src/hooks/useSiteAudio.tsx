@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { mediaVolumeControlWorks } from "@/lib/mediaVolumeControl";
 import {
   AUDIO_PATHS,
   pickAmbientLoopSrc,
@@ -37,7 +38,17 @@ function createAudio(src: string, loop: boolean, volume: number): HTMLAudioEleme
   audio.loop = loop;
   audio.volume = volume;
   audio.preload = "auto";
+  audio.setAttribute("playsinline", "");
   return audio;
+}
+
+function getAudioContextCtor(): typeof AudioContext | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (
+    window.AudioContext ??
+    (window as Window & { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext
+  );
 }
 
 export function SiteAudioProvider({ children }: { children: ReactNode }) {
@@ -51,10 +62,59 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
     gen: 0,
   });
   const soundEnabledRef = useRef(false);
+  const usesGainRef = useRef(false);
+  const gainRef = useRef<GainNode | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const setSoundEnabled = useCallback((enabled: boolean) => {
     soundEnabledRef.current = enabled;
     setSoundEnabledState(enabled);
+  }, []);
+
+  const ensureAmbientGain = useCallback((ambient: HTMLAudioElement): boolean => {
+    if (usesGainRef.current && gainRef.current) return true;
+    if (mediaVolumeControlWorks()) return false;
+
+    const Ctx = getAudioContextCtor();
+    if (!Ctx) return false;
+
+    const ctx = new Ctx();
+    const source = ctx.createMediaElementSource(ambient);
+    const gain = ctx.createGain();
+    source.connect(gain);
+    gain.connect(ctx.destination);
+    ambient.volume = 1;
+    gain.gain.value = AMBIENT_VOLUME;
+
+    audioCtxRef.current = ctx;
+    gainRef.current = gain;
+    usesGainRef.current = true;
+    return true;
+  }, []);
+
+  const getAmbientLevel = useCallback((ambient: HTMLAudioElement): number => {
+    if (usesGainRef.current && gainRef.current) {
+      return gainRef.current.gain.value;
+    }
+    return ambient.volume;
+  }, []);
+
+  const setAmbientLevel = useCallback(
+    (ambient: HTMLAudioElement, level: number) => {
+      if (ensureAmbientGain(ambient) && gainRef.current) {
+        gainRef.current.gain.value = level;
+        return;
+      }
+      ambient.volume = level;
+    },
+    [ensureAmbientGain],
+  );
+
+  const resumeAmbientAudio = useCallback(async () => {
+    const ctx = audioCtxRef.current;
+    if (ctx?.state === "suspended") {
+      await ctx.resume();
+    }
   }, []);
 
   useEffect(() => {
@@ -91,6 +151,10 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
       ambient.src = "";
       stingRef.current = null;
       ambientRef.current = null;
+      void audioCtxRef.current?.close();
+      audioCtxRef.current = null;
+      gainRef.current = null;
+      usesGainRef.current = false;
     };
   }, []);
 
@@ -113,7 +177,7 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
 
         cancelAmbientFade();
         const gen = fadeRef.current.gen;
-        const startVolume = ambient.volume;
+        const startVolume = getAmbientLevel(ambient);
         const startTime = performance.now();
 
         const tick = () => {
@@ -124,7 +188,10 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
 
           const t = Math.min(1, (performance.now() - startTime) / durationMs);
           const eased = t * t * (3 - 2 * t);
-          ambient.volume = startVolume + (targetVolume - startVolume) * eased;
+          setAmbientLevel(
+            ambient,
+            startVolume + (targetVolume - startVolume) * eased,
+          );
 
           if (t < 1) {
             fadeRef.current.raf = requestAnimationFrame(tick);
@@ -137,24 +204,27 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
 
         fadeRef.current.raf = requestAnimationFrame(tick);
       }),
-    [cancelAmbientFade],
+    [cancelAmbientFade, getAmbientLevel, setAmbientLevel],
   );
+
+  const primeAmbientFromGesture = useCallback(async () => {
+    const ambient = ambientRef.current;
+    if (!ambient) return;
+    ensureAmbientGain(ambient);
+    setAmbientLevel(ambient, 0);
+    await resumeAmbientAudio();
+    try {
+      await ambient.play();
+    } catch {
+      /* unlock may fail until a user gesture; unmute click will retry */
+    }
+  }, [ensureAmbientGain, resumeAmbientAudio, setAmbientLevel]);
 
   const unlockFromGesture = useCallback(() => {
     if (unlockedRef.current) return;
     unlockedRef.current = true;
-    const ambient = ambientRef.current;
-    if (!ambient) return;
-    ambient
-      .play()
-      .then(() => {
-        ambient.pause();
-        ambient.currentTime = 0;
-      })
-      .catch(() => {
-        /* unlock may fail until a user gesture; unmute click will retry */
-      });
-  }, []);
+    void primeAmbientFromGesture();
+  }, [primeAmbientFromGesture]);
 
   const playConsentSting = useCallback(() => {
     const sting = stingRef.current;
@@ -171,8 +241,8 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
     if (!ambient) return;
     ambient.pause();
     ambient.currentTime = 0;
-    ambient.volume = AMBIENT_VOLUME;
-  }, [cancelAmbientFade]);
+    setAmbientLevel(ambient, AMBIENT_VOLUME);
+  }, [cancelAmbientFade, setAmbientLevel]);
 
   const fadeAmbientIn = useCallback(() => {
     if (!soundEnabledRef.current) return;
@@ -180,14 +250,31 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
     if (!ambient) return;
 
     cancelAmbientFade();
-    ambient.volume = 0;
-    void ambient
-      .play()
-      .then(() => fadeAmbientVolume(AMBIENT_VOLUME, AMBIENT_FADE_MS))
-      .catch(() => {
-        /* missing file or autoplay blocked */
-      });
-  }, [cancelAmbientFade, fadeAmbientVolume]);
+    ensureAmbientGain(ambient);
+    setAmbientLevel(ambient, 0);
+
+    const startFade = () => {
+      void fadeAmbientVolume(AMBIENT_VOLUME, AMBIENT_FADE_MS);
+    };
+
+    void resumeAmbientAudio().then(async () => {
+      if (ambient.paused) {
+        try {
+          await ambient.play();
+        } catch {
+          /* missing file or autoplay blocked */
+          return;
+        }
+      }
+      startFade();
+    });
+  }, [
+    cancelAmbientFade,
+    ensureAmbientGain,
+    fadeAmbientVolume,
+    resumeAmbientAudio,
+    setAmbientLevel,
+  ]);
 
   const fadeAmbientOut = useCallback(() => {
     const ambient = ambientRef.current;

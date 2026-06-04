@@ -435,13 +435,13 @@ export function PlayControl3D() {
 
       const next = !soundEnabled;
       setSoundEnabled(next);
+      syncShapeVisibility(next);
       if (next) {
         unlockFromGesture();
         fadeAmbientIn();
       } else {
         fadeAmbientOut();
       }
-      syncShapeVisibility(next);
     },
     [
       beginEnter,
@@ -548,7 +548,6 @@ export function PlayControl3D() {
         ref={playMeshRef}
         geometry={tetrahedronGeometry}
         material={tetrahedronMaterial}
-        {...pointerHandlers}
       />
 
       <mesh
@@ -556,14 +555,9 @@ export function PlayControl3D() {
         geometry={cubeGeometry}
         material={cubeMaterial}
         visible={false}
-        {...pointerHandlers}
       />
 
-      <mesh
-        ref={hitRef}
-        geometry={hitGeometry}
-        {...pointerHandlers}
-      >
+      <mesh ref={hitRef} geometry={hitGeometry} {...pointerHandlers}>
         <meshBasicMaterial
           transparent
           opacity={0}

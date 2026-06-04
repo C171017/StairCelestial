@@ -1,3 +1,5 @@
+import { isAppleMobile } from "@/lib/mediaVolumeControl";
+
 /** Public paths for site audio (served from /public/audio). */
 
 export const AUDIO_PATHS = {
@@ -13,6 +15,9 @@ export const AUDIO_PATHS = {
 export function pickAmbientLoopSrc(): string {
   if (typeof document === "undefined") {
     return AUDIO_PATHS.ambientLoopWebm;
+  }
+  if (isAppleMobile()) {
+    return AUDIO_PATHS.ambientLoopM4a;
   }
   const probe = document.createElement("audio");
   const webm = probe.canPlayType('audio/webm; codecs="opus"');
