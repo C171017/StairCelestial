@@ -67,6 +67,10 @@ export function AudioConsentGate() {
 
   const showPlayControl = useCallback(() => {
     usePortfolioStore.getState().setIntroPlayPhase("awaitClick");
+    const overlay = overlayRef.current;
+    if (overlay) {
+      overlay.style.pointerEvents = "none";
+    }
   }, []);
 
   const finishPlayControlHandoff = useCallback(() => {

@@ -40,6 +40,11 @@ export function getPlayTetrahedronRadius(): number {
   return Math.max(halfH, depth * 0.65) * 1.25;
 }
 
+/** Cube edge when BGM is playing (fits the iconGroup inner ring). */
+export function getPlayCubeEdgeLength(): number {
+  return svgRadiusToLocal(EYE_INNER_RING_RADIUS_PX * 0.92);
+}
+
 /** Matches eyeConsentLayout: min(90vmin, 100vw - 2rem, 100vh - 2rem). */
 export function getEyeControlSidePx(
   viewportWidth: number,

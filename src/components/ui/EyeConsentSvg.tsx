@@ -245,20 +245,14 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         />
         <g ref={refs.pauseIcon} opacity={0}>
           <rect
-            x={CX - 8}
-            y={CY - 9}
-            width={4.5}
-            height={18}
-            rx={1}
+            x={CX - 7}
+            y={CY - 7}
+            width={14}
+            height={14}
+            rx={0.6}
             fill="rgba(216, 222, 202, 0.62)"
-          />
-          <rect
-            x={CX + 3.5}
-            y={CY - 9}
-            width={4.5}
-            height={18}
-            rx={1}
-            fill="rgba(216, 222, 202, 0.62)"
+            stroke="rgba(246, 239, 212, 0.2)"
+            strokeWidth={0.45}
           />
         </g>
       </g>

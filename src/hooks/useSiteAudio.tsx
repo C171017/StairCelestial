@@ -17,6 +17,7 @@ import {
 
 const STING_VOLUME = 0.6;
 const AMBIENT_VOLUME = 0.35;
+const AMBIENT_FADE_MS = 900;
 
 type SiteAudioContextValue = {
   soundEnabled: boolean;
@@ -24,7 +25,8 @@ type SiteAudioContextValue = {
   toggleSound: () => boolean;
   unlockFromGesture: () => void;
   playConsentSting: () => void;
-  startAmbientIfEnabled: () => void;
+  fadeAmbientIn: () => void;
+  fadeAmbientOut: () => void;
   stopAmbient: () => void;
 };
 
@@ -39,11 +41,21 @@ function createAudio(src: string, loop: boolean, volume: number): HTMLAudioEleme
 }
 
 export function SiteAudioProvider({ children }: { children: ReactNode }) {
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabledState] = useState(false);
   const unlockedRef = useRef(false);
   const stingRef = useRef<HTMLAudioElement | null>(null);
   const ambientRef = useRef<HTMLAudioElement | null>(null);
   const warnedRef = useRef({ sting: false, ambient: false });
+  const fadeRef = useRef<{ raf: number | null; gen: number }>({
+    raf: null,
+    gen: 0,
+  });
+  const soundEnabledRef = useRef(false);
+
+  const setSoundEnabled = useCallback((enabled: boolean) => {
+    soundEnabledRef.current = enabled;
+    setSoundEnabledState(enabled);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -69,6 +81,10 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
     ambientRef.current = ambient;
 
     return () => {
+      if (fadeRef.current.raf !== null) {
+        cancelAnimationFrame(fadeRef.current.raf);
+        fadeRef.current.raf = null;
+      }
       sting.pause();
       ambient.pause();
       sting.src = "";
@@ -77,6 +93,52 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
       ambientRef.current = null;
     };
   }, []);
+
+  const cancelAmbientFade = useCallback(() => {
+    if (fadeRef.current.raf !== null) {
+      cancelAnimationFrame(fadeRef.current.raf);
+      fadeRef.current.raf = null;
+    }
+    fadeRef.current.gen += 1;
+  }, []);
+
+  const fadeAmbientVolume = useCallback(
+    (targetVolume: number, durationMs: number): Promise<void> =>
+      new Promise((resolve) => {
+        const ambient = ambientRef.current;
+        if (!ambient) {
+          resolve();
+          return;
+        }
+
+        cancelAmbientFade();
+        const gen = fadeRef.current.gen;
+        const startVolume = ambient.volume;
+        const startTime = performance.now();
+
+        const tick = () => {
+          if (fadeRef.current.gen !== gen) {
+            resolve();
+            return;
+          }
+
+          const t = Math.min(1, (performance.now() - startTime) / durationMs);
+          const eased = t * t * (3 - 2 * t);
+          ambient.volume = startVolume + (targetVolume - startVolume) * eased;
+
+          if (t < 1) {
+            fadeRef.current.raf = requestAnimationFrame(tick);
+            return;
+          }
+
+          fadeRef.current.raf = null;
+          resolve();
+        };
+
+        fadeRef.current.raf = requestAnimationFrame(tick);
+      }),
+    [cancelAmbientFade],
+  );
 
   const unlockFromGesture = useCallback(() => {
     if (unlockedRef.current) return;
@@ -104,25 +166,44 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const stopAmbient = useCallback(() => {
+    cancelAmbientFade();
     const ambient = ambientRef.current;
     if (!ambient) return;
     ambient.pause();
     ambient.currentTime = 0;
-  }, []);
+    ambient.volume = AMBIENT_VOLUME;
+  }, [cancelAmbientFade]);
 
-  const startAmbientIfEnabled = useCallback(() => {
-    if (!soundEnabled) return;
+  const fadeAmbientIn = useCallback(() => {
+    if (!soundEnabledRef.current) return;
     const ambient = ambientRef.current;
     if (!ambient) return;
-    void ambient.play().catch(() => {
-      /* missing file */
+
+    cancelAmbientFade();
+    ambient.volume = 0;
+    void ambient
+      .play()
+      .then(() => fadeAmbientVolume(AMBIENT_VOLUME, AMBIENT_FADE_MS))
+      .catch(() => {
+        /* missing file or autoplay blocked */
+      });
+  }, [cancelAmbientFade, fadeAmbientVolume]);
+
+  const fadeAmbientOut = useCallback(() => {
+    const ambient = ambientRef.current;
+    if (!ambient) return;
+
+    void fadeAmbientVolume(0, AMBIENT_FADE_MS).then(() => {
+      if (soundEnabledRef.current) return;
+      ambient.pause();
     });
-  }, [soundEnabled]);
+  }, [fadeAmbientVolume]);
 
   const toggleSound = useCallback(() => {
     let next = false;
-    setSoundEnabled((prev) => {
+    setSoundEnabledState((prev) => {
       next = !prev;
+      soundEnabledRef.current = next;
       return next;
     });
     return next;
@@ -135,15 +216,18 @@ export function SiteAudioProvider({ children }: { children: ReactNode }) {
       toggleSound,
       unlockFromGesture,
       playConsentSting,
-      startAmbientIfEnabled,
+      fadeAmbientIn,
+      fadeAmbientOut,
       stopAmbient,
     }),
     [
       soundEnabled,
+      setSoundEnabled,
       toggleSound,
       unlockFromGesture,
       playConsentSting,
-      startAmbientIfEnabled,
+      fadeAmbientIn,
+      fadeAmbientOut,
       stopAmbient,
     ],
   );

@@ -94,9 +94,9 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
     if (!el) return;
 
     const syncScrollPointerEvents = () => {
-      el.style.pointerEvents = isPortfolioSceneInteractive(
-        usePortfolioStore.getState().introPlayPhase,
-      )
+      const phase = usePortfolioStore.getState().introPlayPhase;
+      el.style.pointerEvents =
+        phase === "awaitClick" || isPortfolioSceneInteractive(phase)
         ? "auto"
         : "none";
     };

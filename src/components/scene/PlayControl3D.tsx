@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { useSiteAudio } from "@/hooks/useSiteAudio";
 import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
 import {
+  getPlayCubeEdgeLength,
   getPlayDockScale,
   getPlayIntroScale,
   getPlayTetrahedronRadius,
@@ -37,6 +38,7 @@ const _faceAb = new THREE.Vector3();
 const _faceAc = new THREE.Vector3();
 const _faceNormal = new THREE.Vector3();
 const _faceTarget = new THREE.Vector3(0, 0, -1);
+const PLAY_FACE_ICON_ROTATION = -Math.PI / 2 + 0.22;
 
 /**
  * Rotate geometry so one equilateral face lies in XY (normal -Z).
@@ -72,7 +74,7 @@ function alignTetrahedronFaceToBillboard(geo: THREE.BufferGeometry) {
   const q = new THREE.Quaternion().setFromUnitVectors(bestNormal, _faceTarget);
   geo.applyQuaternion(q);
   // Vertex toward +X so the silhouette reads as play ▶.
-  geo.rotateZ(-Math.PI / 2);
+  geo.rotateZ(-Math.PI / 2 + PLAY_FACE_ICON_ROTATION);
   geo.computeVertexNormals();
 }
 
@@ -99,7 +101,7 @@ export function PlayControl3D() {
   const hitRef = useRef<THREE.Mesh>(null);
   const chromeGroupRef = useRef<THREE.Group>(null);
   const playMeshRef = useRef<THREE.Mesh>(null);
-  const pauseGroupRef = useRef<THREE.Group | null>(null);
+  const cubeMeshRef = useRef<THREE.Mesh>(null);
   const introScaleRef = useRef(1);
   const dockScaleRef = useRef(0.4);
   const flyPoseRef = useRef<FlyPose>({
@@ -132,8 +134,8 @@ export function PlayControl3D() {
     setSoundEnabled,
     unlockFromGesture,
     playConsentSting,
-    startAmbientIfEnabled,
-    stopAmbient,
+    fadeAmbientIn,
+    fadeAmbientOut,
   } = useSiteAudio();
 
   const tetrahedronGeometry = useMemo(() => createPlayTetrahedronGeometry(), []);
@@ -150,7 +152,7 @@ export function PlayControl3D() {
     [],
   );
   const hitGeometry = useMemo(
-    () => new THREE.CircleGeometry(PLAY_IRIS_LOCAL_RADIUS, 32),
+    () => new THREE.SphereGeometry(PLAY_IRIS_LOCAL_RADIUS, 12, 8),
     [],
   );
   const innerRingGeometry = useMemo(
@@ -192,25 +194,31 @@ export function PlayControl3D() {
     [],
   );
 
-  const pauseBarGeometry = useMemo(
-    () =>
-      new THREE.BoxGeometry(
-        svgRadiusToLocal(4.5),
-        svgRadiusToLocal(18),
-        svgRadiusToLocal(2),
-      ),
-    [],
-  );
-  const pauseBarMaterial = useMemo(
+  const cubeGeometry = useMemo(() => {
+    const edge = getPlayCubeEdgeLength();
+    return new THREE.BoxGeometry(edge, edge, edge);
+  }, []);
+  const cubeMaterial = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#d8dec8",
-        emissive: "#e8e6d0",
-        emissiveIntensity: 0.15,
-        roughness: 0.4,
+        color: "#dee1cd",
+        emissive: "#f6efd4",
+        emissiveIntensity: 0.22,
+        roughness: 0.38,
+        metalness: 0.08,
+        flatShading: true,
       }),
     [],
   );
+
+  const syncShapeVisibility = useCallback((playing: boolean) => {
+    if (playMeshRef.current) {
+      playMeshRef.current.visible = !playing;
+    }
+    if (cubeMeshRef.current) {
+      cubeMeshRef.current.visible = playing;
+    }
+  }, []);
 
   const runMainReveal = useCallback(
     (duration: number, onComplete: () => void) => {
@@ -313,6 +321,7 @@ export function PlayControl3D() {
         unlockFromGesture();
         playConsentSting();
         setSoundEnabled(true);
+        syncShapeVisibility(true);
       }
 
       if (reduced) {
@@ -331,15 +340,16 @@ export function PlayControl3D() {
 
       runMainReveal(mainDur, () => {
         usePortfolioStore.getState().setIntroPlayPhase("active");
-        startAmbientIfEnabled();
+        fadeAmbientIn();
       });
     },
     [
+      fadeAmbientIn,
       playConsentSting,
       runFlyTween,
       runMainReveal,
       setSoundEnabled,
-      startAmbientIfEnabled,
+      syncShapeVisibility,
       unlockFromGesture,
     ],
   );
@@ -370,15 +380,9 @@ export function PlayControl3D() {
   }, [introPlayPhase, startAwaitTimer]);
 
   useEffect(() => {
-    if (introPlayPhase !== "active") return;
-    pauseGroupRef.current?.scale.set(1, 1, 1);
-    if (playMeshRef.current) {
-      playMeshRef.current.visible = !soundEnabled;
-    }
-    if (pauseGroupRef.current) {
-      pauseGroupRef.current.visible = soundEnabled;
-    }
-  }, [introPlayPhase, soundEnabled]);
+    if (introPlayPhase === "hidden") return;
+    syncShapeVisibility(soundEnabled);
+  }, [introPlayPhase, soundEnabled, syncShapeVisibility]);
 
   const handlePointerDown = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
@@ -394,23 +398,19 @@ export function PlayControl3D() {
       setSoundEnabled(next);
       if (next) {
         unlockFromGesture();
-        startAmbientIfEnabled();
+        fadeAmbientIn();
       } else {
-        stopAmbient();
+        fadeAmbientOut();
       }
-      if (playMeshRef.current) {
-        playMeshRef.current.visible = !next;
-      }
-      if (pauseGroupRef.current) {
-        pauseGroupRef.current.visible = next;
-      }
+      syncShapeVisibility(next);
     },
     [
       beginEnter,
+      fadeAmbientIn,
+      fadeAmbientOut,
       setSoundEnabled,
       soundEnabled,
-      startAmbientIfEnabled,
-      stopAmbient,
+      syncShapeVisibility,
       unlockFromGesture,
     ],
   );
@@ -512,30 +512,25 @@ export function PlayControl3D() {
         {...pointerHandlers}
       />
 
-      <group
-        ref={pauseGroupRef}
+      <mesh
+        ref={cubeMeshRef}
+        geometry={cubeGeometry}
+        material={cubeMaterial}
         visible={false}
         {...pointerHandlers}
-      >
-        <mesh
-          geometry={pauseBarGeometry}
-          material={pauseBarMaterial}
-          position={[-svgRadiusToLocal(6.25), 0, 0.01]}
-        />
-        <mesh
-          geometry={pauseBarGeometry}
-          material={pauseBarMaterial}
-          position={[svgRadiusToLocal(6.25), 0, 0.01]}
-        />
-      </group>
+      />
 
       <mesh
         ref={hitRef}
         geometry={hitGeometry}
-        visible={false}
         {...pointerHandlers}
       >
-        <meshBasicMaterial transparent opacity={0} />
+        <meshBasicMaterial
+          transparent
+          opacity={0}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
       </mesh>
     </group>
   );

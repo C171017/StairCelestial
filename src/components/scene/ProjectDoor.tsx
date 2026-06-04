@@ -121,7 +121,7 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
     });
   }, [doorId, project, resetDoors, setDoorFocus, setOpenedDoor, virtualIndex]);
 
-  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+  const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
     if (!doorInteractive) return;
     event.stopPropagation();
     setActiveDoor(doorId);
@@ -132,31 +132,55 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
     }
 
     openDoor();
-  };
+  }, [doorId, doorInteractive, openDoor, project, setActiveDoor]);
+
+  const handlePointerOver = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (!doorInteractive) return;
+      event.stopPropagation();
+      document.body.style.cursor = "pointer";
+      setActiveDoor(doorId);
+    },
+    [doorId, doorInteractive, setActiveDoor],
+  );
+
+  const handlePointerOut = useCallback(() => {
+    if (!doorInteractive) return;
+    document.body.style.cursor = "";
+    if (usePortfolioStore.getState().openedDoorId !== doorId) {
+      setActiveDoor(null);
+    }
+  }, [doorId, doorInteractive, setActiveDoor]);
+
+  const pointerHandlers = doorInteractive
+    ? {
+        onPointerDown: handlePointerDown,
+        onPointerOver: handlePointerOver,
+        onPointerOut: handlePointerOut,
+      }
+    : {};
 
   return (
-    <group ref={groupRef}>
-      <primitive object={doorClone} />
+    <group
+      ref={groupRef}
+      {...pointerHandlers}
+    >
+      <primitive
+        object={doorClone}
+        {...pointerHandlers}
+      />
       <mesh
         position={[0, 1.1, 0.35]}
         raycast={doorInteractive ? undefined : () => null}
-        onPointerDown={handlePointerDown}
-        onPointerOver={(e) => {
-          if (!doorInteractive) return;
-          e.stopPropagation();
-          document.body.style.cursor = "pointer";
-          setActiveDoor(doorId);
-        }}
-        onPointerOut={() => {
-          if (!doorInteractive) return;
-          document.body.style.cursor = "default";
-          if (usePortfolioStore.getState().openedDoorId !== doorId) {
-            setActiveDoor(null);
-          }
-        }}
+        {...pointerHandlers}
       >
         <boxGeometry args={[1.5, 2.6, 0.35]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        <meshBasicMaterial
+          transparent
+          opacity={0}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
       </mesh>
     </group>
   );
