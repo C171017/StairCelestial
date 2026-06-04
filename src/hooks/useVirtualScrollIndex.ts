@@ -13,7 +13,7 @@ import {
   SCROLL_START_OFFSET,
 } from "@/lib/spiral";
 import { introMotionBlend } from "@/lib/introMotion";
-import { usePortfolioStore } from "@/lib/store";
+import { isPortfolioSceneInteractive, usePortfolioStore } from "@/lib/store";
 
 export { CLIMB_SCALE };
 
@@ -93,6 +93,22 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
     const el = scroll.el;
     if (!el) return;
 
+    const syncScrollPointerEvents = () => {
+      el.style.pointerEvents = isPortfolioSceneInteractive(
+        usePortfolioStore.getState().introPlayPhase,
+      )
+        ? "auto"
+        : "none";
+    };
+
+    syncScrollPointerEvents();
+    return usePortfolioStore.subscribe(syncScrollPointerEvents);
+  }, [scroll.el]);
+
+  useEffect(() => {
+    const el = scroll.el;
+    if (!el) return;
+
     const holdStill = () => {
       userHoldingStillRef.current = true;
       velocityRef.current = 0;
@@ -134,9 +150,12 @@ export function useVirtualScrollIndex(): MutableRefObject<number> {
     const { focusedDoorId, focusScrollAnchor, resetDoors } =
       usePortfolioStore.getState();
     const hasScrollInput = Math.abs(scrollStep) > INPUT_STEP_THRESHOLD;
+    const scrollInteractive = isPortfolioSceneInteractive(
+      usePortfolioStore.getState().introPlayPhase,
+    );
     const autoScrollPaused = focusedDoorId !== null && !hasScrollInput;
 
-    if (hasScrollInput) {
+    if (hasScrollInput && scrollInteractive) {
       if (focusedDoorId !== null) {
         resetDoors();
       }

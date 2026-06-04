@@ -16,6 +16,11 @@ const INITIAL_SCROLL_PROGRESS =
 
 export type IntroPlayPhase = "hidden" | "awaitClick" | "entering" | "active";
 
+/** Stairs, doors, and scroll input unlock only after the main reveal finishes. */
+export function isPortfolioSceneInteractive(phase: IntroPlayPhase): boolean {
+  return phase === "active";
+}
+
 type PortfolioState = {
   activeDoorId: string | null;
   openedDoorId: string | null;

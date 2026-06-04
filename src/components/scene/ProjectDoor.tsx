@@ -13,7 +13,7 @@ import {
   worldRootToFocusTarget,
 } from "@/lib/doorCameraFocus";
 import { getDoorPlacement, getProjectForStairIndex } from "@/lib/spiral";
-import { usePortfolioStore } from "@/lib/store";
+import { isPortfolioSceneInteractive, usePortfolioStore } from "@/lib/store";
 import { MODEL_PATHS } from "@/lib/models";
 import { findChildByNamePart } from "./cloneScene";
 
@@ -36,6 +36,7 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   const virtualIndex = usePortfolioStore(
     (s) => s.doorPoolVirtualIndices[poolId] ?? -1,
   );
+  const introPlayPhase = usePortfolioStore((s) => s.introPlayPhase);
   const openedDoorId = usePortfolioStore((s) => s.openedDoorId);
   const setOpenedDoor = usePortfolioStore((s) => s.setOpenedDoor);
   const setActiveDoor = usePortfolioStore((s) => s.setActiveDoor);
@@ -45,6 +46,8 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   const doorClone = useMemo(() => doorScene.clone(true), [doorScene]);
 
   const project = getProjectForStairIndex(virtualIndex);
+  const doorInteractive =
+    isPortfolioSceneInteractive(introPlayPhase) && virtualIndex >= 0;
 
   const closeDoor = useCallback(() => {
     if (!isOpenRef.current) return;
@@ -119,6 +122,7 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   }, [doorId, project, resetDoors, setDoorFocus, setOpenedDoor, virtualIndex]);
 
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    if (!doorInteractive) return;
     event.stopPropagation();
     setActiveDoor(doorId);
 
@@ -135,13 +139,16 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
       <primitive object={doorClone} />
       <mesh
         position={[0, 1.1, 0.35]}
+        raycast={doorInteractive ? undefined : () => null}
         onPointerDown={handlePointerDown}
         onPointerOver={(e) => {
+          if (!doorInteractive) return;
           e.stopPropagation();
           document.body.style.cursor = "pointer";
           setActiveDoor(doorId);
         }}
         onPointerOut={() => {
+          if (!doorInteractive) return;
           document.body.style.cursor = "default";
           if (usePortfolioStore.getState().openedDoorId !== doorId) {
             setActiveDoor(null);
