@@ -15,6 +15,7 @@ import {
 import { getDoorPlacement, getProjectForStairIndex } from "@/lib/spiral";
 import { isPortfolioSceneInteractive, usePortfolioStore } from "@/lib/store";
 import { MODEL_PATHS } from "@/lib/models";
+import { DoorPortalContent } from "./DoorPortalContent";
 import { findChildByNamePart } from "./cloneScene";
 
 type ProjectDoorProps = {
@@ -121,18 +122,28 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
     });
   }, [doorId, project, resetDoors, setDoorFocus, setOpenedDoor, virtualIndex]);
 
-  const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
-    if (!doorInteractive) return;
-    event.stopPropagation();
-    setActiveDoor(doorId);
+  const isOpen = openedDoorId === doorId;
 
-    if (isOpenRef.current && project) {
-      window.open(project.url, "_blank", "noopener,noreferrer");
-      return;
-    }
+  const handlePointerDown = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (!doorInteractive) return;
+      event.stopPropagation();
+      setActiveDoor(doorId);
 
-    openDoor();
-  }, [doorId, doorInteractive, openDoor, project, setActiveDoor]);
+      if (isOpenRef.current) {
+        closeDoor();
+        return;
+      }
+
+      openDoor();
+    },
+    [closeDoor, doorId, doorInteractive, openDoor, setActiveDoor],
+  );
+
+  const handlePortalNavigate = useCallback(() => {
+    if (!project) return;
+    window.open(project.url, "_blank", "noopener,noreferrer");
+  }, [project]);
 
   const handlePointerOver = useCallback(
     (event: ThreeEvent<PointerEvent>) => {
@@ -169,9 +180,18 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
         object={doorClone}
         {...pointerHandlers}
       />
+      {project ? (
+        <DoorPortalContent
+          project={project}
+          visible={isOpen}
+          onNavigate={handlePortalNavigate}
+        />
+      ) : null}
       <mesh
         position={[0, 1.1, 0.35]}
-        raycast={doorInteractive ? undefined : () => null}
+        raycast={
+          doorInteractive && !isOpen ? undefined : () => null
+        }
         {...pointerHandlers}
       >
         <boxGeometry args={[1.5, 2.6, 0.35]} />

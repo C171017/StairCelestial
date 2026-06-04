@@ -19,7 +19,8 @@ Site audio lives in [`public/audio/`](public/audio/): `consent-sting.m4a` (short
 
 - **Scroll** — ascend the spiral (seamless infinite scroll)
 - **Click door once** — zoom in, open door + preview
-- **Click door again** — open project URL in a new tab
+- **Click portal object** — open project URL in a new tab
+- **Click door again (while open)** — close door; auto-drift resumes
 - **Scroll away** — zoom back to the spiral path (door closes)
 
 ## Project data
