@@ -9,17 +9,26 @@ export const AUDIO_CONSENT_TIMING = {
   openEyeHold: 0.28,
   /** After the eye is fully open, eye artwork fades out (not instant). */
   eyeVanishAfterOpen: 0.58,
-  /** Play ring + icon fade in after the eye begins to recede. */
-  playControlReveal: 0.48,
-  playControlRevealDelay: 0.16,
   starCrossfade: 1.2,
-  /** Play phase: crossfade control out while stairs/doors fade in. */
-  playSceneCrossfade: 5.75,
+  /** Wait for click before auto-enter (3D play control). */
+  clickAwaitDuration: 5,
+  countdownDotCount: 24,
+  /** Triangle flies to viewport dock while main scene reveals. */
+  flyDuration: 1.05,
+  mainRevealDuration: 1.05,
+  dotDismissDuration: 0.45,
+  dotDismissDurationClick: 0.28,
+  /** Idle motion during awaitClick (radians / scale). */
+  idleRotateAmplitude: 0.052,
+  idleScalePulse: 0.028,
+  idleMotionPeriod: 2.4,
   mainReveal: 1.05,
-  /** Tap during play phase: finish the scene crossfade. */
-  clickedSceneCrossfade: 0.82,
   overlayFade: 0.6,
   reducedMotionHold: 0.5,
+  /** Reduced-motion shortcuts */
+  reducedClickAwait: 0.35,
+  reducedFlyDuration: 0.2,
+  reducedMainReveal: 0.35,
 } as const;
 
 export function getLidOpenStart(t: typeof AUDIO_CONSENT_TIMING = AUDIO_CONSENT_TIMING) {
@@ -32,10 +41,18 @@ export function getStarRevealStart(
   return getLidOpenStart(t) + t.lidOpen;
 }
 
+export function getClickAwaitSliceDuration(
+  t: typeof AUDIO_CONSENT_TIMING = AUDIO_CONSENT_TIMING,
+  reducedMotion = false,
+) {
+  const duration = reducedMotion ? t.reducedClickAwait : t.clickAwaitDuration;
+  return duration / t.countdownDotCount;
+}
+
 export function getIntroDurationSeconds(reducedMotion: boolean): number {
   const t = AUDIO_CONSENT_TIMING;
   if (reducedMotion) {
-    return t.reducedMotionHold + t.overlayFade;
+    return t.reducedMotionHold + t.reducedMainReveal;
   }
   return (
     t.blackHold +
@@ -43,8 +60,8 @@ export function getIntroDurationSeconds(reducedMotion: boolean): number {
     t.closedEyeHold +
     t.lidOpen +
     t.openEyeHold +
-    t.playControlRevealDelay +
-    Math.max(t.eyeVanishAfterOpen, t.playControlReveal) +
-    t.playSceneCrossfade
+    t.eyeVanishAfterOpen +
+    t.clickAwaitDuration +
+    Math.max(t.flyDuration, t.mainRevealDuration)
   );
 }

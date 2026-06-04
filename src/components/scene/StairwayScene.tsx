@@ -9,6 +9,7 @@ import { CameraRig, getScrollPages } from "./CameraRig";
 import { CelestialBackground } from "./CelestialBackground";
 import { IntroSceneReveal } from "./IntroSceneReveal";
 import { Lights } from "./Lights";
+import { PlayControl3D } from "./PlayControl3D";
 import { SceneReadyMarker } from "./SceneReadyMarker";
 import { SpiralStaircase } from "./SpiralStaircase";
 
@@ -22,6 +23,7 @@ function SceneContent() {
         <CelestialBackground />
         <SpiralStaircase virtualIndexRef={virtualIndexRef} />
       </IntroSceneReveal>
+      <PlayControl3D />
       <CameraRig virtualIndexRef={virtualIndexRef} />
       <SceneReadyMarker />
     </>

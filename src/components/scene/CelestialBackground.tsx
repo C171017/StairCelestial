@@ -7,6 +7,7 @@ import type { Group, Object3D } from "three";
 import { Mesh, MeshBasicMaterial, Vector3 } from "three";
 import { MODEL_PATHS } from "@/lib/models";
 import { SATURN_TEXTURES } from "@/lib/textures";
+import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
 import { applySaturnMaterials } from "./saturnMaterials";
 
 /** Fixed viewport anchor (NDC): right side, upper area */
@@ -99,9 +100,14 @@ function FixedRingedPlanet() {
     const group = groupRef.current;
     if (!group) return;
 
-    ndcAnchor.set(RINGED_NDC.x, RINGED_NDC.y, 0.5).unproject(camera);
-    viewRay.copy(ndcAnchor).sub(camera.position).normalize();
-    group.position.copy(camera.position).addScaledVector(viewRay, RINGED_VIEW_DISTANCE);
+    getViewportAnchorPosition(
+      camera,
+      RINGED_NDC,
+      RINGED_VIEW_DISTANCE,
+      group.position,
+      ndcAnchor,
+      viewRay,
+    );
   });
 
   return (

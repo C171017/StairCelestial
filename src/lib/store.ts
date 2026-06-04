@@ -14,6 +14,8 @@ const INITIAL_SCROLL_PROGRESS =
   LOOP_LENGTH /
   LOOP_LENGTH;
 
+export type IntroPlayPhase = "hidden" | "awaitClick" | "entering" | "active";
+
 type PortfolioState = {
   activeDoorId: string | null;
   openedDoorId: string | null;
@@ -36,6 +38,8 @@ type PortfolioState = {
   introEpochMs: number | null;
   /** Seconds since introEpochMs; updated while the scene runs. */
   introAtmosphereElapsed: number;
+  introPlayPhase: IntroPlayPhase;
+  introPlayEnteredByClick: boolean;
   setActiveDoor: (doorId: string | null) => void;
   setOpenedDoor: (doorId: string | null, project: Project | null) => void;
   setScrollProgress: (progress: number) => void;
@@ -59,6 +63,10 @@ type PortfolioState = {
       >
     >,
   ) => void;
+  setIntroPlayPhase: (
+    phase: IntroPlayPhase,
+    options?: { enteredByClick?: boolean },
+  ) => void;
 };
 
 export const usePortfolioStore = create<PortfolioState>((set) => ({
@@ -78,6 +86,8 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   sceneBootstrapped: false,
   introEpochMs: null,
   introAtmosphereElapsed: 0,
+  introPlayPhase: "hidden",
+  introPlayEnteredByClick: false,
   setActiveDoor: (doorId) => set({ activeDoorId: doorId }),
   setOpenedDoor: (doorId, project) =>
     set({
@@ -118,4 +128,11 @@ export const usePortfolioStore = create<PortfolioState>((set) => ({
   setIntroAtmosphereElapsed: (introAtmosphereElapsed) =>
     set({ introAtmosphereElapsed }),
   setIntroReveal: (reveal) => set(reveal),
+  setIntroPlayPhase: (phase, options) =>
+    set({
+      introPlayPhase: phase,
+      ...(options?.enteredByClick !== undefined
+        ? { introPlayEnteredByClick: options.enteredByClick }
+        : {}),
+    }),
 }));
