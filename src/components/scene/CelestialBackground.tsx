@@ -5,7 +5,7 @@ import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import gsap from "gsap";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Group, Object3D } from "three";
-import { DoubleSide, Mesh, MeshBasicMaterial, Vector3 } from "three";
+import { DoubleSide, Vector3 } from "three";
 import { createExternalLinkPointerHandlers } from "@/lib/externalLinkPointerHandlers";
 import {
   setInteractiveHoverScale,
@@ -16,6 +16,7 @@ import { openExternalUrl } from "@/lib/openExternalUrl";
 import { isPortfolioSceneInteractive, usePortfolioStore } from "@/lib/store";
 import { SATURN_TEXTURES } from "@/lib/textures";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
+import { applyJupiterMaterials } from "./jupiterMaterials";
 import { applySaturnMaterials } from "./saturnMaterials";
 
 export const SATURN_VIDEO_URL = "https://youtu.be/RKF_uDYrnuk";
@@ -25,68 +26,15 @@ const RINGED_NDC = { x: 0.72, y: 0.24 };
 /** Closer than fog far so stairs keep depth while Saturn stays clear */
 const RINGED_VIEW_DISTANCE = 62;
 const RINGED_SCALE = 4.2;
-const ATMOSPHERE_SCALE = 1.06;
 
-/** World-fixed tilt — rings read from typical camera angles without copying camera rotation */
-const SATURN_TILT: [number, number, number] = [0.35, 0.55, 0.08];
+/** Slight screen-space cant; the ring texture already supplies its ellipse. */
+const SATURN_TILT: [number, number, number] = [0, 0, -0.08];
 
-/**
- * Jupiter backdrop placement (derived from camera helix vs GLB bounds).
- * Camera orbits at CAMERA_ORBIT_RADIUS (25) around Y, climbing STAIR_HEIGHT_STEP per scroll.
- * GLB mesh radius ≈ 9.45; world radius = scale × 9.45.
- * Sampled min distance camera→center ≈ 313 at [110, 40, -320] → margin ≈ 6.6× radius (never inside).
- * Apparent diameter ≈ 2×atan(R/minDist) ≈ 17° (reference: large right backdrop, not filling FOV).
- */
-const JUPITER_POSITION: [number, number, number] = [110, 40, -320];
-const JUPITER_SCALE = 5;
-
-function applyJupiterBackgroundMaterial(root: Object3D) {
-  root.traverse((child) => {
-    if (!(child instanceof Mesh)) return;
-    child.material = new MeshBasicMaterial({
-      color: "#c8b498",
-      fog: false,
-    });
-  });
-}
-
-function SaturnAtmosphere() {
-  const material = useMemo(
-    () =>
-      new MeshBasicMaterial({
-        color: "#7a9ad8",
-        transparent: true,
-        opacity: 0.14,
-        depthWrite: false,
-        fog: false,
-      }),
-    [],
-  );
-
-  return (
-    <mesh scale={RINGED_SCALE * ATMOSPHERE_SCALE} material={material}>
-      <sphereGeometry args={[1, 32, 32]} />
-    </mesh>
-  );
-}
-
-function SaturnLights() {
-  return (
-    <>
-      <directionalLight
-        position={[-22, 26, 18]}
-        intensity={1.85}
-        color="#ffe8d0"
-      />
-      <pointLight
-        position={[14, 10, 20]}
-        intensity={1.15}
-        color="#c8d4f8"
-        distance={200}
-      />
-    </>
-  );
-}
+/** Large, distant counterweight parked opposite Saturn. */
+const JUPITER_NDC = { x: -0.76, y: 0.34 };
+const JUPITER_VIEW_DISTANCE = 82;
+const JUPITER_SCALE = 1.6;
+const JUPITER_YAW_SPEED = 0.01;
 
 const SATURN_HIT_RADIUS = 1.15;
 
@@ -124,6 +72,7 @@ function FixedRingedPlanet() {
       ndcAnchor,
       viewRay,
     );
+    group.quaternion.copy(camera.quaternion);
   });
 
   useEffect(() => {
@@ -167,10 +116,8 @@ function FixedRingedPlanet() {
 
   return (
     <group ref={groupRef}>
-      <SaturnLights />
       <group ref={hoverVisualRef}>
         <group rotation={SATURN_TILT}>
-          <SaturnAtmosphere />
           <primitive object={ringedClone} scale={RINGED_SCALE} />
         </group>
         <mesh scale={RINGED_SCALE} {...saturnPointerHandlers}>
@@ -187,21 +134,52 @@ function FixedRingedPlanet() {
   );
 }
 
-export function CelestialBackground() {
+function FixedJupiter() {
+  const groupRef = useRef<Group>(null);
+  const visualRef = useRef<Object3D>(null);
+  const ndcAnchor = useMemo(() => new Vector3(), []);
+  const viewRay = useMemo(() => new Vector3(), []);
+  const { camera } = useThree();
   const jupiter = useGLTF(MODEL_PATHS.jupiter);
   const jupiterClone = useMemo(() => {
     const clone = jupiter.scene.clone(true);
-    applyJupiterBackgroundMaterial(clone);
+    applyJupiterMaterials(clone);
     return clone;
   }, [jupiter.scene]);
 
+  useFrame((_, delta) => {
+    const group = groupRef.current;
+    if (!group) return;
+
+    getViewportAnchorPosition(
+      camera,
+      JUPITER_NDC,
+      JUPITER_VIEW_DISTANCE,
+      group.position,
+      ndcAnchor,
+      viewRay,
+    );
+
+    if (visualRef.current) {
+      visualRef.current.rotation.y += delta * JUPITER_YAW_SPEED;
+    }
+  });
+
   return (
-    <group>
+    <group ref={groupRef}>
       <primitive
+        ref={visualRef}
         object={jupiterClone}
-        position={JUPITER_POSITION}
         scale={JUPITER_SCALE}
       />
+    </group>
+  );
+}
+
+export function CelestialBackground() {
+  return (
+    <group>
+      <FixedJupiter />
       <FixedRingedPlanet />
     </group>
   );

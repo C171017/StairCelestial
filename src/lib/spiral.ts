@@ -36,7 +36,7 @@ export const DOOR_Y_OFFSET_ABOVE_PLATFORM =
   STAIR_MESH_TOP_Y - DOOR_MESH_BOTTOM_Y + 0.02;
 
 /** Same-size landing, nudged slightly outward so the door has a small pad. */
-export const PLATFORM_OUTWARD_OFFSET = 0.32;
+export const PLATFORM_OUTWARD_OFFSET = 0.08;
 /** Keep the landing flush with the stair tread. */
 export const PLATFORM_Y_OFFSET = 0;
 

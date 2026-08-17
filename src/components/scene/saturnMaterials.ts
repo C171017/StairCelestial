@@ -10,7 +10,7 @@ import {
 
 function isRingMesh(mesh: Mesh): boolean {
   const name = mesh.name.toLowerCase();
-  return name.includes("ring");
+  return name.includes("planet_ring") || name.endsWith("_ring");
 }
 
 export type SaturnTextureSet = {
@@ -30,27 +30,34 @@ export function applySaturnMaterials(
     if (!(child instanceof Mesh)) return;
 
     if (isRingMesh(child)) {
-      const ringMaterial = new MeshStandardMaterial({
+      // The authored ring is an elliptical image on an XZ plane. Face that
+      // plane toward the camera-relative planet rig and restore its intended
+      // ellipse after the 4:1 image is mapped onto the square GLB plane.
+      child.rotation.set(Math.PI / 2, 0, 0);
+      child.scale.set(1, 1, 0.72);
+      const ringMaterial = new MeshBasicMaterial({
         map: textures.ringColor,
         alphaMap: textures.ringAlpha,
         transparent: true,
-        opacity: 0.95,
-        metalness: 0,
-        roughness: 0.7,
+        opacity: 0.9,
         side: DoubleSide,
         depthWrite: false,
-        emissive: new Color("#2a2418"),
-        emissiveIntensity: 0.2,
+        toneMapped: false,
       });
       ringMaterial.fog = false;
       child.material = ringMaterial;
       return;
     }
 
-    const bodyMaterial = new MeshBasicMaterial({
+    const bodyMaterial = new MeshStandardMaterial({
       map: textures.body,
-      fog: false,
+      metalness: 0,
+      roughness: 0.94,
+      emissive: new Color("#6b4f39"),
+      emissiveMap: textures.body,
+      emissiveIntensity: 0.2,
     });
+    bodyMaterial.fog = false;
     child.material = bodyMaterial;
   });
 }

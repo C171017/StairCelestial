@@ -8,20 +8,16 @@ import { usePortfolioStore } from "@/lib/store";
 import { syncGroupToCamera } from "@/lib/viewportAnchor";
 
 /** Fixed viewport shell — always centered on the camera, not world scroll Y. */
-const STAR_COUNT = 1500;
+const STAR_COUNT = 700;
 const STAR_RADIUS = 88;
 const STAR_DEPTH = 42;
-const STAR_MIN_PIXEL_SIZE = 1.8;
+const STAR_MIN_PIXEL_SIZE = 0.6;
 /** Slow dome yaw so the field reads as already in motion when faded in. */
 const STAR_FIELD_YAW_SPEED = 0.052;
 /** Start intro streaks partway through their cycle before opacity reveals. */
 const INTRO_SHOOTING_STAR_PREWARM = 2.4;
 const SHOOTING_STAR_COUNT = 4;
 const SHOOTING_STAR_DISTANCE = 118;
-
-const DUST_PUFF_COUNT = 9;
-const DUST_PUFF_MIN_RADIUS = 52;
-const DUST_PUFF_DEPTH = 38;
 
 type ShootingStarPath = {
   duration: number;
@@ -67,7 +63,7 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-/** Stars, streaks, and dust share one camera-centered rig (infinite scroll safe). */
+/** Stars and streaks share one camera-centered rig (infinite scroll safe). */
 function CameraViewportAtmosphere({ children }: { children: ReactNode }) {
   const groupRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
@@ -95,12 +91,15 @@ function BrowserSafeStars() {
           uniform float introOpacity;
           uniform float pixelRatio;
           uniform float time;
+          attribute float brightness;
           attribute float size;
           attribute float twinkle;
+          varying float vBrightness;
           varying float vTwinkle;
 
           void main() {
-            vTwinkle = 0.72 + 0.28 * sin(time * 0.8 + twinkle);
+            vBrightness = brightness;
+            vTwinkle = 0.88 + 0.12 * sin(time * 0.55 + twinkle);
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             float perspectiveSize = size * pixelRatio * (68.0 / -mvPosition.z);
             gl_PointSize = max(${STAR_MIN_PIXEL_SIZE.toFixed(2)}, perspectiveSize);
@@ -109,13 +108,14 @@ function BrowserSafeStars() {
         `,
         fragmentShader: `
           uniform float introOpacity;
+          varying float vBrightness;
           varying float vTwinkle;
 
           void main() {
             float d = distance(gl_PointCoord, vec2(0.5));
             float reveal = introOpacity <= 0.0 ? 0.0 : mix(0.12, 1.0, introOpacity);
-            float alpha = smoothstep(0.5, 0.12, d) * vTwinkle * reveal * 1.28;
-            gl_FragColor = vec4(vec3(0.9, 0.95, 1.0), min(alpha, 1.0));
+            float alpha = smoothstep(0.5, 0.12, d) * vBrightness * vTwinkle * reveal * 0.95;
+            gl_FragColor = vec4(vec3(0.88, 0.93, 1.0), min(alpha, 1.0));
 
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
@@ -134,6 +134,7 @@ function BrowserSafeStars() {
   const geometry = useMemo(() => {
     const random = seededRandom(17017);
     const positions = new Float32Array(STAR_COUNT * 3);
+    const brightnesses = new Float32Array(STAR_COUNT);
     const sizes = new Float32Array(STAR_COUNT);
     const twinkles = new Float32Array(STAR_COUNT);
     const spherical = new THREE.Spherical();
@@ -149,9 +150,17 @@ function BrowserSafeStars() {
       positions[positionIndex] = vector.x;
       positions[positionIndex + 1] = vector.y;
       positions[positionIndex + 2] = vector.z;
-      sizes[i] = 2.2 + random() * 2.8;
-      if (random() > 0.82) {
-        sizes[i] += 1.8;
+
+      const tier = random();
+      if (tier < 0.72) {
+        sizes[i] = 0.8 + random() * 0.8;
+        brightnesses[i] = 0.32 + random() * 0.2;
+      } else if (tier < 0.96) {
+        sizes[i] = 1.4 + random() * 1.2;
+        brightnesses[i] = 0.54 + random() * 0.22;
+      } else {
+        sizes[i] = 2.6 + random() * 1.8;
+        brightnesses[i] = 0.82 + random() * 0.18;
       }
       twinkles[i] = random() * Math.PI * 2;
     }
@@ -160,6 +169,10 @@ function BrowserSafeStars() {
     bufferGeometry.setAttribute(
       "position",
       new THREE.BufferAttribute(positions, 3),
+    );
+    bufferGeometry.setAttribute(
+      "brightness",
+      new THREE.BufferAttribute(brightnesses, 1),
     );
     bufferGeometry.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
     bufferGeometry.setAttribute(
@@ -192,96 +205,6 @@ function BrowserSafeStars() {
         frustumCulled={false}
         renderOrder={-30}
       />
-    </group>
-  );
-}
-
-type DustPuff = {
-  basePosition: THREE.Vector3;
-  driftPhase: number;
-  scale: number;
-};
-
-function SpaceDustPuffs() {
-  const groupRef = useRef<THREE.Group>(null);
-  const material = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        blending: THREE.AdditiveBlending,
-        color: "#8aa8e8",
-        depthWrite: false,
-        fog: false,
-        opacity: 0.09,
-        transparent: true,
-        toneMapped: false,
-      }),
-    [],
-  );
-
-  const puffs = useMemo(() => {
-    const random = seededRandom(44017);
-    const spherical = new THREE.Spherical();
-    const vector = new THREE.Vector3();
-    const items: DustPuff[] = [];
-
-    for (let i = 0; i < DUST_PUFF_COUNT; i += 1) {
-      spherical.radius =
-        DUST_PUFF_MIN_RADIUS + random() * DUST_PUFF_DEPTH;
-      spherical.phi = Math.acos(1 - random() * 2);
-      spherical.theta = random() * Math.PI * 2;
-      vector.setFromSpherical(spherical);
-      items.push({
-        basePosition: vector.clone(),
-        driftPhase: random() * Math.PI * 2,
-        scale: 9 + random() * 14,
-      });
-    }
-
-    return items;
-  }, []);
-
-  useFrame((state, delta) => {
-    const motionBlend = introMotionBlend(
-      usePortfolioStore.getState().introAtmosphereElapsed,
-    );
-    const group = groupRef.current;
-    if (!group) return;
-
-    const t = state.clock.elapsedTime;
-    group.rotation.y += delta * 0.018 * motionBlend;
-
-    group.children.forEach((child, index) => {
-      if (!(child instanceof THREE.Mesh)) return;
-      const puff = puffs[index];
-      if (!puff) return;
-
-      const drift = Math.sin(t * 0.14 + puff.driftPhase) * 1.8;
-      child.position
-        .copy(puff.basePosition)
-        .multiplyScalar(1 + drift * 0.012);
-      child.rotation.z = t * 0.05 + puff.driftPhase;
-      const breathe = 1 + Math.sin(t * 0.22 + puff.driftPhase) * 0.06;
-      child.scale.setScalar(puff.scale * breathe);
-      material.opacity =
-        0.07 *
-        motionBlend *
-        usePortfolioStore.getState().introStarsOpacity;
-    });
-  });
-
-  return (
-    <group ref={groupRef} renderOrder={-28}>
-      {puffs.map((puff, index) => (
-        <mesh
-          key={`dust-puff-${index}`}
-          position={puff.basePosition}
-          scale={puff.scale}
-          material={material}
-          frustumCulled={false}
-        >
-          <sphereGeometry args={[1, 10, 8]} />
-        </mesh>
-      ))}
     </group>
   );
 }
@@ -336,7 +259,7 @@ function makeAmbientShootingStar(random: () => number): ShootingStarPath {
     duration: 0.82 + random() * 0.48,
     from: [fromLeft ? -0.92 : 0.92, startY],
     to: [fromLeft ? -0.16 + random() * 0.68 : 0.16 - random() * 0.68, startY - drift],
-    opacity: 0.48 + random() * 0.34,
+    opacity: 0.22 + random() * 0.2,
   };
 }
 
@@ -344,7 +267,7 @@ function ShootingStars() {
   const ambientRandomRef = useRef(seededRandom(92017));
   const ambientPathRef = useRef<ShootingStarPath | null>(null);
   const ambientStartTimeRef = useRef(0);
-  const nextAmbientTimeRef = useRef(0);
+  const nextAmbientTimeRef = useRef(12);
   const { camera } = useThree();
 
   const geometries = useMemo(
@@ -428,7 +351,7 @@ function ShootingStars() {
       (elapsed - ambientStartTimeRef.current) / ambientPath.duration;
     if (ambientProgress >= 1) {
       ambientPathRef.current = null;
-      nextAmbientTimeRef.current = elapsed + 3.8 + random() * 5.8;
+      nextAmbientTimeRef.current = elapsed + 12 + random() * 14;
       ambientLine.visible = false;
       return;
     }
@@ -470,11 +393,10 @@ export function Atmosphere() {
   return (
     <>
       <color attach="background" args={["#030508"]} />
-      <fog attach="fog" args={["#030508", 22, 95]} />
+      <fog attach="fog" args={["#030508", 26, 78]} />
       <IntroAtmosphereClock />
       <CameraViewportAtmosphere>
         <BrowserSafeStars />
-        <SpaceDustPuffs />
         <ShootingStars />
       </CameraViewportAtmosphere>
     </>

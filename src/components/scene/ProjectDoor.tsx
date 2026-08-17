@@ -18,6 +18,7 @@ import { MODEL_PATHS } from "@/lib/models";
 import { openExternalUrl } from "@/lib/openExternalUrl";
 import { DoorPortalContent } from "./DoorPortalContent";
 import { findChildByNamePart } from "./cloneScene";
+import { cloneDoorWithMaterials } from "./doorMaterials";
 
 type ProjectDoorProps = {
   poolId: number;
@@ -45,7 +46,10 @@ export function ProjectDoor({ poolId }: ProjectDoorProps) {
   const setDoorFocus = usePortfolioStore((s) => s.setDoorFocus);
   const resetDoors = usePortfolioStore((s) => s.resetDoors);
 
-  const doorClone = useMemo(() => doorScene.clone(true), [doorScene]);
+  const doorClone = useMemo(
+    () => cloneDoorWithMaterials(doorScene),
+    [doorScene],
+  );
 
   const project = getProjectForStairIndex(virtualIndex);
   const doorInteractive =
