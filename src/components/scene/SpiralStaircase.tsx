@@ -23,6 +23,7 @@ import { usePortfolioStore } from "@/lib/store";
 import { PlatformLanding } from "./PlatformLanding";
 import { ProjectDoor } from "./ProjectDoor";
 import { StairSegment } from "./StairSegment";
+import { cloneStairWithMaterial } from "./stairMaterials";
 
 type SpiralStaircaseProps = {
   virtualIndexRef: MutableRefObject<number>;
@@ -39,13 +40,17 @@ export function SpiralStaircase({ virtualIndexRef }: SpiralStaircaseProps) {
 
   const stairObjects = useMemo(
     () =>
-      Array.from({ length: STAIR_POOL_SIZE }, () => stairScene.clone(true)),
+      Array.from({ length: STAIR_POOL_SIZE }, () =>
+        cloneStairWithMaterial(stairScene),
+      ),
     [stairScene],
   );
 
   const platformObjects = useMemo(
     () =>
-      Array.from({ length: DOOR_POOL_SIZE }, () => stairScene.clone(true)),
+      Array.from({ length: DOOR_POOL_SIZE }, () =>
+        cloneStairWithMaterial(stairScene),
+      ),
     [stairScene],
   );
 

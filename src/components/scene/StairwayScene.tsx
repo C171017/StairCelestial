@@ -2,6 +2,7 @@
 
 import { Canvas } from "@react-three/fiber";
 import { Suspense } from "react";
+import * as THREE from "three";
 import { useVirtualScrollIndex } from "@/hooks/useVirtualScrollIndex";
 import { Atmosphere } from "./Atmosphere";
 import { CameraRig } from "./CameraRig";
@@ -36,6 +37,11 @@ export function StairwayScene() {
       camera={{ position: [25, 4, 0], fov: 58, near: 0.1, far: 200 }}
       gl={{ antialias: true, alpha: false }}
       dpr={[1, 1.5]}
+      onCreated={({ gl }) => {
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 0.92;
+        gl.shadowMap.type = THREE.PCFSoftShadowMap;
+      }}
     >
       <Atmosphere />
       <Suspense fallback={null}>
