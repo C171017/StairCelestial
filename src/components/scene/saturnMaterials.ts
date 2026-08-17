@@ -9,7 +9,9 @@ import {
   SRGBColorSpace,
 } from "three";
 
-const SATURN_BODY_RADIUS = 2.2575;
+const SATURN_BODY_RADIUS = 1.92;
+const SATURN_RING_WIDTH_SCALE = 1.22;
+const SATURN_RING_DEPTH_SCALE = 0.88;
 const saturnBodyGeometry = new SphereGeometry(
   SATURN_BODY_RADIUS,
   64,
@@ -42,12 +44,16 @@ export function applySaturnMaterials(
       // plane toward the camera-relative planet rig and restore its intended
       // ellipse after the 4:1 image is mapped onto the square GLB plane.
       child.rotation.set(Math.PI / 2, 0, 0);
-      child.scale.set(1, 1, 0.72);
+      child.scale.set(
+        SATURN_RING_WIDTH_SCALE,
+        1,
+        SATURN_RING_DEPTH_SCALE,
+      );
       const ringMaterial = new MeshBasicMaterial({
         map: textures.ringColor,
         alphaMap: textures.ringAlpha,
         transparent: true,
-        opacity: 0.9,
+        opacity: 1,
         side: DoubleSide,
         depthWrite: false,
         toneMapped: false,

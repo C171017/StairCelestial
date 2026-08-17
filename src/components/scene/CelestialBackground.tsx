@@ -21,8 +21,8 @@ import { applySaturnMaterials } from "./saturnMaterials";
 
 export const SATURN_VIDEO_URL = "https://youtu.be/RKF_uDYrnuk";
 
-/** Fixed viewport anchor (NDC): right side, upper area */
-const RINGED_NDC = { x: 0.72, y: 0.24 };
+/** Fixed viewport anchor (NDC): parked quietly in the lower-right. */
+const RINGED_NDC = { x: 0.78, y: -0.16 };
 /** Closer than fog far so stairs keep depth while Saturn stays clear */
 const RINGED_VIEW_DISTANCE = 62;
 const RINGED_SCALE = 4.2;
