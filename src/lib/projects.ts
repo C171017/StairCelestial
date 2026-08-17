@@ -17,11 +17,11 @@ export const projects: Project[] = [
     doorIndex: 0,
   },
   {
-    id: "stars",
-    title: "Stars",
-    description: "stars.c171017.com",
+    id: "jazztree",
+    title: "JazzTree",
+    description: "jazztree.c171017.com",
     previewImage: "/previews/project-beta.svg",
-    url: "https://stars.c171017.com",
+    url: "https://jazztree.c171017.com",
     doorIndex: 1,
   },
   {

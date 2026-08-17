@@ -141,59 +141,131 @@ function RecordPlayerPortal({ active }: { active: boolean }) {
   );
 }
 
-function StarsPortal({ active }: { active: boolean }) {
+const JAZZ_GOLD = "#f5b942";
+const JAZZ_COPPER = "#b85c2e";
+const JAZZ_PLUM = "#6d2848";
+
+function JazzNote({
+  position,
+  rotation = [0, 0, 0],
+  scale = 1,
+}: {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: number;
+}) {
+  return (
+    <group position={position} rotation={rotation} scale={scale}>
+      <mesh position={[-0.035, -0.13, 0]} rotation={[0, 0, -0.25]}>
+        <sphereGeometry args={[0.075, 16, 12]} />
+        <meshStandardMaterial
+          color={JAZZ_GOLD}
+          emissive={JAZZ_COPPER}
+          emissiveIntensity={0.5}
+          metalness={0.72}
+          roughness={0.24}
+        />
+      </mesh>
+      <mesh position={[0.025, 0.05, 0]}>
+        <cylinderGeometry args={[0.012, 0.012, 0.34, 10]} />
+        <meshStandardMaterial color={JAZZ_GOLD} metalness={0.8} roughness={0.2} />
+      </mesh>
+      <mesh position={[0.09, 0.2, 0]} rotation={[0, 0, -0.28]}>
+        <boxGeometry args={[0.15, 0.025, 0.025]} />
+        <meshStandardMaterial color={JAZZ_GOLD} metalness={0.8} roughness={0.2} />
+      </mesh>
+    </group>
+  );
+}
+
+function JazzTreePortal({ active }: { active: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
-  const starPositions = useMemo(() => {
-    const positions: [number, number, number][] = [];
-    const rand = seededRandom(42);
-    for (let i = 0; i < 48; i++) {
-      const r = 0.12 + rand() * 0.38;
-      const theta = rand() * Math.PI * 2;
-      const phi = Math.acos(2 * rand() - 1);
-      positions.push([
-        r * Math.sin(phi) * Math.cos(theta),
-        r * Math.sin(phi) * Math.sin(theta),
-        r * Math.cos(phi) * 0.45,
-      ]);
-    }
-    return positions;
+  const notesRef = useRef<THREE.Group>(null);
+  const trunkGeometry = useMemo(() => {
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.16, -0.42, 0),
+      new THREE.Vector3(-0.05, -0.24, 0.02),
+      new THREE.Vector3(0.02, -0.02, 0),
+      new THREE.Vector3(-0.06, 0.22, -0.02),
+      new THREE.Vector3(0.08, 0.42, 0),
+    ]);
+    return new THREE.TubeGeometry(curve, 28, 0.045, 10, false);
   }, []);
 
   useFrame((state) => {
     if (!active || !groupRef.current) return;
     const t = state.clock.elapsedTime;
-    groupRef.current.rotation.y = t * 0.12;
-    groupRef.current.children.forEach((child, i) => {
-      if (!(child instanceof THREE.Mesh)) return;
-      const mat = child.material as THREE.MeshStandardMaterial;
-      mat.emissiveIntensity = 0.35 + Math.sin(t * 2.2 + i * 0.7) * 0.2;
-    });
+    groupRef.current.rotation.y = Math.sin(t * 0.55) * 0.1;
+    groupRef.current.rotation.z = Math.sin(t * 0.75) * 0.025;
+    if (notesRef.current) {
+      notesRef.current.position.y = Math.sin(t * 1.4) * 0.025;
+      notesRef.current.children.forEach((note, i) => {
+        note.rotation.z = Math.sin(t * 1.6 + i * 1.3) * 0.12;
+      });
+    }
   });
 
   return (
-    <group ref={groupRef} scale={0.82}>
-      <mesh>
-        <sphereGeometry args={[0.18, 24, 24]} />
+    <group ref={groupRef} position={[0, -0.01, 0]} scale={0.9}>
+      {/* A brass trunk curves like the body of a saxophone. */}
+      <mesh geometry={trunkGeometry}>
         <meshStandardMaterial
-          color="#0c1929"
-          emissive={CYAN_DIM}
-          emissiveIntensity={0.5}
-          metalness={0.1}
-          roughness={0.85}
+          color={JAZZ_GOLD}
+          emissive={JAZZ_COPPER}
+          emissiveIntensity={0.28}
+          metalness={0.78}
+          roughness={0.22}
         />
       </mesh>
-      {starPositions.map((pos, i) => (
-        <mesh key={i} position={pos} scale={0.025 + (i % 5) * 0.006}>
-          <sphereGeometry args={[1, 8, 8]} />
-          <meshStandardMaterial
-            color="#f8fafc"
-            emissive={CYAN}
-            emissiveIntensity={0.55}
-            toneMapped={false}
-          />
+
+      {/* Sax bell / tree roots. */}
+      <mesh position={[-0.17, -0.44, 0.02]} rotation={[0, 0, -0.38]}>
+        <coneGeometry args={[0.13, 0.2, 24, 1, true]} />
+        <meshStandardMaterial
+          color={JAZZ_GOLD}
+          emissive={JAZZ_COPPER}
+          emissiveIntensity={0.22}
+          metalness={0.82}
+          roughness={0.2}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Branches become the staff that holds the notes. */}
+      {[
+        { p: [-0.18, 0.18, 0] as [number, number, number], r: -0.78, l: 0.38 },
+        { p: [0.18, 0.24, 0] as [number, number, number], r: 0.72, l: 0.42 },
+        { p: [-0.12, 0.37, 0] as [number, number, number], r: -0.58, l: 0.3 },
+      ].map((branch, i) => (
+        <mesh key={i} position={branch.p} rotation={[0, 0, branch.r]}>
+          <cylinderGeometry args={[0.018, 0.032, branch.l, 10]} />
+          <meshStandardMaterial color={JAZZ_COPPER} metalness={0.65} roughness={0.32} />
         </mesh>
       ))}
-      <pointLight position={[0, 0.15, 0.25]} intensity={0.85} color={CYAN} distance={2.5} />
+
+      <group ref={notesRef}>
+        <JazzNote position={[-0.34, 0.31, 0.03]} rotation={[0, -0.18, -0.15]} scale={0.9} />
+        <JazzNote position={[0.33, 0.39, 0.01]} rotation={[0, 0.2, 0.08]} scale={1.05} />
+        <JazzNote position={[-0.2, 0.52, -0.02]} rotation={[0, -0.1, -0.08]} scale={0.72} />
+      </group>
+
+      {/* Piano keys ground the sculpture in a tiny stage. */}
+      <group position={[0.08, -0.48, 0.02]} rotation={[-0.08, 0, 0]}>
+        {Array.from({ length: 7 }, (_, i) => (
+          <mesh key={i} position={[(i - 3) * 0.09, 0, 0]}>
+            <boxGeometry args={[0.078, 0.055, 0.26]} />
+            <meshStandardMaterial
+              color={i % 3 === 1 ? JAZZ_PLUM : "#f4ead5"}
+              emissive={i % 3 === 1 ? JAZZ_PLUM : "#5b3a22"}
+              emissiveIntensity={0.12}
+              metalness={0.15}
+              roughness={0.5}
+            />
+          </mesh>
+        ))}
+      </group>
+
+      <pointLight position={[0, 0.22, 0.35]} intensity={1.15} color="#ffb347" distance={2.6} />
     </group>
   );
 }
@@ -319,8 +391,8 @@ function PortalByProject({
   switch (projectId) {
     case "music":
       return <RecordPlayerPortal active={active} />;
-    case "stars":
-      return <StarsPortal active={active} />;
+    case "jazztree":
+      return <JazzTreePortal active={active} />;
     case "guanchang":
       return <MapPortal />;
     case "columbia-network":
@@ -380,14 +452,6 @@ export function DoorPortalContent({
       </mesh>
     </group>
   );
-}
-
-function seededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 4294967296;
-  };
 }
 
 function createStylizedMapTexture(): THREE.CanvasTexture {
