@@ -5,8 +5,16 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  SphereGeometry,
   SRGBColorSpace,
 } from "three";
+
+const SATURN_BODY_RADIUS = 2.2575;
+const saturnBodyGeometry = new SphereGeometry(
+  SATURN_BODY_RADIUS,
+  64,
+  32,
+);
 
 function isRingMesh(mesh: Mesh): boolean {
   const name = mesh.name.toLowerCase();
@@ -49,6 +57,7 @@ export function applySaturnMaterials(
       return;
     }
 
+    child.geometry = saturnBodyGeometry;
     const bodyMaterial = new MeshStandardMaterial({
       map: textures.body,
       metalness: 0,

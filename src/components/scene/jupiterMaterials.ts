@@ -2,6 +2,12 @@ import * as THREE from "three";
 
 const BAND_TEXTURE_WIDTH = 4;
 const BAND_TEXTURE_HEIGHT = 128;
+const JUPITER_RADIUS = 9.45;
+const jupiterSphereGeometry = new THREE.SphereGeometry(
+  JUPITER_RADIUS,
+  64,
+  32,
+);
 
 function createJupiterBandTexture(): THREE.DataTexture {
   const data = new Uint8Array(
@@ -80,6 +86,7 @@ const jupiterMaterial = new THREE.MeshStandardMaterial({
 export function applyJupiterMaterials(root: THREE.Object3D): void {
   root.traverse((child) => {
     if (!(child instanceof THREE.Mesh)) return;
+    child.geometry = jupiterSphereGeometry;
     child.material = jupiterMaterial;
   });
 }

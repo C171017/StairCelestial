@@ -3,8 +3,8 @@ import type { NdcAnchor } from "./viewportAnchor";
 /** Center screen — aligned with eye / play control overlay. */
 export const PLAY_INTRO_NDC: NdcAnchor = { x: 0, y: 0 };
 
-/** Viewport-fixed dock: upper-left (Saturn stays upper-right at 0.72, 0.24). */
-export const PLAY_DOCK_NDC: NdcAnchor = { x: -0.68, y: 0.76 };
+/** Viewport-fixed dock: horizontally centered near the top edge. */
+export const PLAY_DOCK_NDC: NdcAnchor = { x: 0, y: 0.76 };
 
 /** Closer = larger on screen; scale is computed from FOV + viewport to match SVG iris. */
 export const PLAY_INTRO_VIEW_DISTANCE = 28;

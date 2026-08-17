@@ -109,7 +109,9 @@ export function PlayControl3D() {
   const hitRef = useRef<THREE.Mesh>(null);
   const chromeGroupRef = useRef<THREE.Group>(null);
   const playMeshRef = useRef<THREE.Mesh>(null);
+  const playEdgeRef = useRef<THREE.LineSegments>(null);
   const cubeMeshRef = useRef<THREE.Mesh>(null);
+  const cubeEdgeRef = useRef<THREE.LineSegments>(null);
   const introScaleRef = useRef(1);
   const dockScaleRef = useRef(0.4);
   const mobileShapeScaleRef = useRef(1);
@@ -148,17 +150,31 @@ export function PlayControl3D() {
   } = useSiteAudio();
 
   const tetrahedronGeometry = useMemo(() => createPlayTetrahedronGeometry(), []);
-  const tetrahedronMaterial = useMemo(
+  const controlBodyMaterial = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#dee1cd",
-        emissive: "#f6efd4",
-        emissiveIntensity: 0.22,
-        roughness: 0.38,
-        metalness: 0.08,
+        color: "#d2c8b7",
+        emissive: "#8a7d68",
+        emissiveIntensity: 0.3,
+        roughness: 0.8,
+        metalness: 0,
         flatShading: true,
       }),
     [],
+  );
+  const controlEdgeMaterial = useMemo(
+    () =>
+      new THREE.LineBasicMaterial({
+        color: "#79d4df",
+        opacity: 0.46,
+        transparent: true,
+        toneMapped: false,
+      }),
+    [],
+  );
+  const tetrahedronEdgeGeometry = useMemo(
+    () => new THREE.EdgesGeometry(tetrahedronGeometry, 24),
+    [tetrahedronGeometry],
   );
   const hitGeometry = useMemo(
     () => new THREE.SphereGeometry(PLAY_IRIS_LOCAL_RADIUS, 12, 8),
@@ -177,9 +193,10 @@ export function PlayControl3D() {
   const innerRingMaterial = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
-        color: "#e0e1cc",
+        color: "#79d4df",
         transparent: true,
-        opacity: 0.35,
+        opacity: 0.58,
+        toneMapped: false,
       }),
     [],
   );
@@ -196,9 +213,9 @@ export function PlayControl3D() {
   const softRingMaterial = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
-        color: "#dcdac4",
+        color: "#59636a",
         transparent: true,
-        opacity: 0.42,
+        opacity: 0.55,
       }),
     [],
   );
@@ -207,32 +224,32 @@ export function PlayControl3D() {
     const edge = getPlayCubeEdgeLength();
     return new THREE.BoxGeometry(edge, edge, edge);
   }, []);
-  const cubeMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: "#dee1cd",
-        emissive: "#f6efd4",
-        emissiveIntensity: 0.22,
-        roughness: 0.38,
-        metalness: 0.08,
-        flatShading: true,
-      }),
-    [],
+  const cubeEdgeGeometry = useMemo(
+    () => new THREE.EdgesGeometry(cubeGeometry, 24),
+    [cubeGeometry],
   );
 
   const syncShapeVisibility = useCallback((playing: boolean) => {
     if (playMeshRef.current) {
       playMeshRef.current.visible = !playing;
     }
+    if (playEdgeRef.current) {
+      playEdgeRef.current.visible = !playing;
+    }
     if (cubeMeshRef.current) {
       cubeMeshRef.current.visible = playing;
+    }
+    if (cubeEdgeRef.current) {
+      cubeEdgeRef.current.visible = playing;
     }
   }, []);
 
   const applyMobileShapeScale = useCallback(() => {
     const scale = mobileShapeScaleRef.current;
     if (playMeshRef.current) playMeshRef.current.scale.setScalar(scale);
+    if (playEdgeRef.current) playEdgeRef.current.scale.setScalar(scale);
     if (cubeMeshRef.current) cubeMeshRef.current.scale.setScalar(scale);
+    if (cubeEdgeRef.current) cubeEdgeRef.current.scale.setScalar(scale);
     if (hitRef.current) hitRef.current.scale.setScalar(scale);
   }, []);
 
@@ -542,12 +559,6 @@ export function PlayControl3D() {
 
   return (
     <group ref={groupRef} visible={false}>
-      <pointLight
-        position={[0, 0, 0.4]}
-        intensity={0.85}
-        distance={12}
-        color="#f3ecd4"
-      />
       <group ref={hoverVisualRef}>
         <group ref={chromeGroupRef}>
           <mesh geometry={softRingGeometry} material={softRingMaterial} />
@@ -557,13 +568,24 @@ export function PlayControl3D() {
         <mesh
           ref={playMeshRef}
           geometry={tetrahedronGeometry}
-          material={tetrahedronMaterial}
+          material={controlBodyMaterial}
+        />
+        <lineSegments
+          ref={playEdgeRef}
+          geometry={tetrahedronEdgeGeometry}
+          material={controlEdgeMaterial}
         />
 
         <mesh
           ref={cubeMeshRef}
           geometry={cubeGeometry}
-          material={cubeMaterial}
+          material={controlBodyMaterial}
+          visible={false}
+        />
+        <lineSegments
+          ref={cubeEdgeRef}
+          geometry={cubeEdgeGeometry}
+          material={controlEdgeMaterial}
           visible={false}
         />
       </group>
