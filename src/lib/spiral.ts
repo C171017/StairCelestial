@@ -24,13 +24,24 @@ export const SPIRAL_RADIUS = 11;
 export const STAIR_HEIGHT_STEP = 0.52;
 export const STAIR_ANGLE_STEP = (Math.PI * 2) / LOOP_LENGTH;
 
-/** Local Y of platform_landing.glb top surface (from mesh bounds). */
-const PLATFORM_MESH_TOP_Y = 0.265;
+/** Unscaled mesh sizes from GLB bounds (X tangent, Y thickness, Z radial). */
+const STAIR_MESH_SIZE = { x: 2.55, y: 0.26, z: 1.58 };
+
+/** Local Y of stair_segment.glb top surface. */
+const STAIR_MESH_TOP_Y = STAIR_MESH_SIZE.y / 2;
 /** Local Y of project_door_portal.glb bottom (from mesh bounds). */
 const DOOR_MESH_BOTTOM_Y = -1.46;
-/** Raise door root so mesh bottom sits on platform top (+ small gap). */
+/** Raise door root so mesh bottom sits on the stair-sized pad (+ small gap). */
 export const DOOR_Y_OFFSET_ABOVE_PLATFORM =
-  PLATFORM_MESH_TOP_Y - DOOR_MESH_BOTTOM_Y + 0.02;
+  STAIR_MESH_TOP_Y - DOOR_MESH_BOTTOM_Y + 0.02;
+
+/** Same-size landing, nudged slightly outward so the door has a small pad. */
+export const PLATFORM_OUTWARD_OFFSET = 0.32;
+/** Keep the landing flush with the stair tread. */
+export const PLATFORM_Y_OFFSET = 0;
+
+/** Door centered on the pad. */
+export const DOOR_OUTWARD_FROM_PLATFORM = 0;
 
 /** Fixed orbit radius — camera stays this far from the central axis at all times */
 export const CAMERA_ORBIT_RADIUS = SPIRAL_RADIUS + 14;
@@ -119,9 +130,9 @@ export function getPlatformPlacement(stairIndex: number): SpiralPlacement {
   return {
     index: stairIndex,
     position: [
-      stair.position[0] + outwardX * 1.8,
-      stair.position[1] + 0.08,
-      stair.position[2] + outwardZ * 1.8,
+      stair.position[0] + outwardX * PLATFORM_OUTWARD_OFFSET,
+      stair.position[1] + PLATFORM_Y_OFFSET,
+      stair.position[2] + outwardZ * PLATFORM_OUTWARD_OFFSET,
     ],
     rotation: stair.rotation,
   };
@@ -138,9 +149,9 @@ export function getDoorPlacement(stairIndex: number): SpiralPlacement {
   return {
     index: stairIndex,
     position: [
-      platform.position[0] + outwardX * 0.55,
+      platform.position[0] + outwardX * DOOR_OUTWARD_FROM_PLATFORM,
       platform.position[1] + DOOR_Y_OFFSET_ABOVE_PLATFORM,
-      platform.position[2] + outwardZ * 0.55,
+      platform.position[2] + outwardZ * DOOR_OUTWARD_FROM_PLATFORM,
     ],
     rotation: platform.rotation,
   };

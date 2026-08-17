@@ -30,7 +30,6 @@ type SpiralStaircaseProps = {
 
 export function SpiralStaircase({ virtualIndexRef }: SpiralStaircaseProps) {
   const { scene: stairScene } = useGLTF(MODEL_PATHS.stair);
-  const { scene: platformScene } = useGLTF(MODEL_PATHS.platform);
 
   const stairGroups = useRef<(THREE.Group | null)[]>([]);
   const platformGroups = useRef<(THREE.Group | null)[]>([]);
@@ -46,8 +45,8 @@ export function SpiralStaircase({ virtualIndexRef }: SpiralStaircaseProps) {
 
   const platformObjects = useMemo(
     () =>
-      Array.from({ length: DOOR_POOL_SIZE }, () => platformScene.clone(true)),
-    [platformScene],
+      Array.from({ length: DOOR_POOL_SIZE }, () => stairScene.clone(true)),
+    [stairScene],
   );
 
   useFrame(() => {
@@ -60,6 +59,7 @@ export function SpiralStaircase({ virtualIndexRef }: SpiralStaircaseProps) {
       const placement = getStairPlacement(vi);
       group.position.set(...placement.position);
       group.rotation.set(...placement.rotation);
+      group.visible = !isDoorStairIndex(vi);
     });
 
     const doorSlots = assignDoorPoolSlots(
@@ -147,4 +147,3 @@ export function SpiralStaircase({ virtualIndexRef }: SpiralStaircaseProps) {
 }
 
 useGLTF.preload(MODEL_PATHS.stair);
-useGLTF.preload(MODEL_PATHS.platform);
