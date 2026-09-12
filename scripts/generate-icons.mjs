@@ -1,17 +1,24 @@
 import { readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 
-// The SVG is the source of truth. Raster fallbacks use a dark tile so the
-// ivory eye remains readable when the browser cannot adapt an SVG favicon.
+// The SVG is the source of truth. Browser favicons stay transparent;
+// only the home-screen icon uses a solid tile.
 const iconUrl = new URL("../public/icon.svg", import.meta.url);
 const svg = (await readFile(iconUrl, "utf8"))
-  .replace(/<style>[\s\S]*?<\/style>/, '<rect width="64" height="64" rx="12" fill="#080d10"/>')
-  .replaceAll("currentColor", "#e7e3d8");
-const input = Buffer.from(svg);
-await sharp(input).resize(180, 180).png().toFile(
+  .replace(/<style>[\s\S]*?<\/style>/, "");
+const homeIcon = svg
+  .replaceAll("currentColor", "#e7e3d8")
+  .replace('viewBox="0 0 64 64">', 'viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#080d10"/>');
+await sharp(Buffer.from(homeIcon)).resize(180, 180).png().toFile(
   new URL("../public/apple-touch-icon.png", import.meta.url).pathname,
 );
-const png = await sharp(input).resize(32, 32).png().toBuffer();
+for (const [theme, color] of [["light", "#292d30"], ["dark", "#e7e3d8"]]) {
+  await sharp(Buffer.from(svg.replaceAll("currentColor", color)))
+    .resize(32, 32).png().toFile(
+      new URL(`../public/favicon-${theme}.png`, import.meta.url).pathname,
+    );
+}
+const png = await readFile(new URL("../public/favicon-light.png", import.meta.url));
 // Single PNG-compressed image in an ICO container.
 const header = Buffer.alloc(22);
 header.writeUInt16LE(1, 2);

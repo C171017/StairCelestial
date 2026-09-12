@@ -6,8 +6,10 @@ export const metadata: Metadata = {
   description: "Interactive 3D portfolio along an endless celestial spiral staircase.",
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "32x32" },
-      { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+      { url: "/favicon.ico?v=2", sizes: "32x32" },
+      { url: "/favicon-light.png", type: "image/png", sizes: "32x32", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-dark.png", type: "image/png", sizes: "32x32", media: "(prefers-color-scheme: dark)" },
+      { url: "/icon.svg?v=2", type: "image/svg+xml", sizes: "any" },
     ],
     apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
   },
