@@ -5,7 +5,7 @@ import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import gsap from "gsap";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Group, Object3D } from "three";
-import { DoubleSide, Vector3 } from "three";
+import { DoubleSide, Mesh, Vector3 } from "three";
 import { createExternalLinkPointerHandlers } from "@/lib/externalLinkPointerHandlers";
 import {
   setInteractiveHoverScale,
@@ -17,17 +17,19 @@ import { isPortfolioSceneInteractive, usePortfolioStore } from "@/lib/store";
 import { SATURN_TEXTURES } from "@/lib/textures";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
 import { applyJupiterMaterials } from "./jupiterMaterials";
-import { applySaturnMaterials } from "./saturnMaterials";
+import {
+  applySaturnMaterials,
+  SATURN_BODY_RADIUS,
+} from "./saturnMaterials";
 
 export const SATURN_VIDEO_URL = "https://youtu.be/RKF_uDYrnuk";
 
 /** Fixed viewport anchor (NDC): parked quietly in the lower-right. */
-const RINGED_NDC = { x: 0.78, y: -0.16 };
+const RINGED_NDC = { x: 0.6, y: -0.72 };
 /** Closer than fog far so stairs keep depth while Saturn stays clear */
 const RINGED_VIEW_DISTANCE = 62;
 const RINGED_SCALE = 4.2;
-
-/** Slight screen-space cant; the ring texture already supplies its ellipse. */
+/** The same tilted Saturn model is used at every viewport size. */
 const SATURN_TILT: [number, number, number] = [0, 0, -0.08];
 
 /** Large, distant counterweight parked opposite Saturn. */
@@ -36,7 +38,7 @@ const JUPITER_VIEW_DISTANCE = 82;
 const JUPITER_SCALE = 1.6;
 const JUPITER_YAW_SPEED = 0.01;
 
-const SATURN_HIT_RADIUS = 1.15;
+const SATURN_HIT_RADIUS = SATURN_BODY_RADIUS;
 
 function FixedRingedPlanet() {
   const groupRef = useRef<Group>(null);
@@ -50,8 +52,6 @@ function FixedRingedPlanet() {
   const ringed = useGLTF(MODEL_PATHS.ringed);
   const textures = useTexture({
     body: SATURN_TEXTURES.body,
-    ringColor: SATURN_TEXTURES.ringColor,
-    ringAlpha: SATURN_TEXTURES.ringAlpha,
   });
 
   const ringedClone = useMemo(() => {
@@ -59,6 +59,18 @@ function FixedRingedPlanet() {
     applySaturnMaterials(clone, textures);
     return clone;
   }, [ringed.scene, textures]);
+
+  useEffect(() => {
+    return () => {
+      ringedClone.traverse((child) => {
+        if (!(child instanceof Mesh)) return;
+        const materials = Array.isArray(child.material)
+          ? child.material
+          : [child.material];
+        materials.forEach((material) => material.dispose());
+      });
+    };
+  }, [ringedClone]);
 
   useFrame(() => {
     const group = groupRef.current;

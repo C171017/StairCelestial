@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    svg { color: #292d30; }
+    @media (prefers-color-scheme: dark) { svg { color: #e7e3d8; } }
+  </style>
+  <ellipse cx="32" cy="32" rx="23" ry="21" fill="none" stroke="currentColor" stroke-width="4.2"/>
+  <circle cx="37" cy="33" r="5" fill="currentColor"/>
+</svg>
