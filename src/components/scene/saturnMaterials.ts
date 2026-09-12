@@ -15,8 +15,8 @@ import {
 
 // Shared geometry, proportions, and textures for every screen size.
 export const SATURN_BODY_RADIUS = 0.96;
-const RING_INNER_RADIUS = SATURN_BODY_RADIUS * 1.35;
-const RING_OUTER_RADIUS = SATURN_BODY_RADIUS * 2.25;
+const RING_INNER_RADIUS = SATURN_BODY_RADIUS * 1.5;
+const RING_OUTER_RADIUS = SATURN_BODY_RADIUS * 3.05;
 const saturnBodyGeometry = new SphereGeometry(SATURN_BODY_RADIUS, 64, 32);
 const saturnRingGeometry = new RingGeometry(RING_INNER_RADIUS, RING_OUTER_RADIUS, 192);
 
@@ -39,18 +39,21 @@ function createRingTexture(): DataTexture {
   const data = new Uint8Array(width * 4);
   for (let i = 0; i < width; i++) {
     const r = i / (width - 1);
-    // A faint inner veil, broad dusty middle, and one restrained division.
+    // Smoky inner dust gives way to luminous bands and a diffuse outer veil.
     const grain = 0.018 * Math.sin(r * 710) + 0.012 * Math.sin(r * 1291)
       + 0.014 * Math.sin(r * 237);
     const broadBands = 0.035 * Math.sin(r * 23) + 0.018 * Math.sin(r * 59);
     const denseBand = smoothstep(0.12, 0.32, r) * (1 - smoothstep(0.64, 0.75, r));
     const division = smoothstep(0.71, 0.725, r) * (1 - smoothstep(0.75, 0.765, r));
-    const edges = smoothstep(0, 0.13, r) * (1 - smoothstep(0.91, 1, r));
-    const brightness = 0.76 + denseBand * 0.1 + grain + broadBands - division * 0.16;
-    data[i * 4] = Math.round(198 * brightness);
-    data[i * 4 + 1] = Math.round(181 * brightness);
-    data[i * 4 + 2] = Math.round(155 * brightness);
-    data[i * 4 + 3] = Math.round(255 * edges * (0.48 + denseBand * 0.34 + grain - division * 0.32));
+    const outerVeil = Math.exp(-Math.pow((r - 0.86) / 0.075, 2));
+    const edges = smoothstep(0, 0.18, r) * (1 - smoothstep(0.88, 1, r));
+    const brightness = 0.72 + denseBand * 0.14 + outerVeil * 0.19
+      + grain + broadBands - division * 0.22;
+    data[i * 4] = Math.round((198 + outerVeil * 9) * brightness);
+    data[i * 4 + 1] = Math.round((181 + outerVeil * 15) * brightness);
+    data[i * 4 + 2] = Math.round((155 + outerVeil * 25) * brightness);
+    data[i * 4 + 3] = Math.round(255 * edges * (0.42 + denseBand * 0.38
+      + outerVeil * 0.16 + grain - division * 0.34));
   }
   const texture = new DataTexture(data, width, 1, RGBAFormat);
   texture.colorSpace = SRGBColorSpace;
@@ -88,7 +91,7 @@ export function applySaturnMaterials(root: Object3D, textures: SaturnTextureSet)
         metalness: 0,
         emissive: new Color("#b5a38c"),
         emissiveMap: saturnRingTexture,
-        emissiveIntensity: 0.55,
+        emissiveIntensity: 0.75,
         fog: false,
       });
       return;
