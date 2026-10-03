@@ -2,18 +2,19 @@
 
 import { Mask, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, type RefObject } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { fitProjectToDoor, getDoorAperture } from "@/lib/doorAperture";
 import { doorModelUrl, type DoorStudy } from "@/lib/doorStudies";
 import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 import { sanctuaryProjects, type SanctuaryProject } from "@/lib/sanctuaryContent";
+import { advanceSculptureReveal, createSculptureReveal, sculptureRevealPose } from "@/lib/sculptureReveal";
 
 /** The preserved project model lives wholly behind the door's local Z=0 leaf. */
-export function ProjectSculpture({ study, project, openingProgress, maskId }: {
+export function ProjectSculpture({ study, project, selected, maskId }: {
   study: DoorStudy;
   project: SanctuaryProject;
-  openingProgress: RefObject<number>;
+  selected: boolean;
   maskId: number;
 }) {
   const { scene } = useGLTF(`/models/sanctuary/${project.model}.glb`);
@@ -34,6 +35,15 @@ export function ProjectSculpture({ study, project, openingProgress, maskId }: {
     return geometry;
   }, [doorScene]);
   const group = useRef<THREE.Group>(null);
+  const content = useRef<THREE.Group>(null);
+  const reveal = useRef(createSculptureReveal());
+  const reduced = useRef(false);
+  useEffect(() => {
+    const query = matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => { reduced.current = query.matches; };
+    update(); query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const { model, materials } = useMemo(() => {
     const model = scene.clone(true);
     // The turntable's platter lies horizontally; tip it toward the doorway so
@@ -64,16 +74,24 @@ export function ProjectSculpture({ study, project, openingProgress, maskId }: {
     const bounds = new THREE.Box3().setFromObject(model);
     const { scale, position } = fitProjectToDoor(bounds, aperture);
     model.scale.multiplyScalar(scale);
-    model.position.copy(position);
+    // Animate around the fitted object's center, without moving the aperture
+    // mask or scaling the object from the door's floor.
+    model.position.copy(position).sub(new THREE.Vector3(aperture.center.x, aperture.center.y, -0.55));
     return { model, materials };
   }, [scene, project.model, aperture, maskId]);
   useEffect(() => () => materials.forEach(({ material }) => material.dispose()), [materials]);
   useEffect(() => () => maskGeometry?.dispose(), [maskGeometry]);
-  useFrame(() => {
-    const reveal = THREE.MathUtils.smoothstep(openingProgress.current, 0.35, 0.85);
-    if (group.current) group.current.visible = reveal > 0.001;
+  useFrame((_, dt) => {
+    advanceSculptureReveal(reveal.current, selected, dt, reduced.current);
+    const opacityFactor = reveal.current.value;
+    if (group.current) group.current.visible = opacityFactor > 0;
+    if (content.current) {
+      const pose = sculptureRevealPose(opacityFactor, reduced.current);
+      content.current.scale.setScalar(pose.scale);
+      content.current.position.z = -0.55 + pose.depth;
+    }
     for (const { material, opacity } of materials) {
-      setLocalMaterialOpacity(material, opacity * reveal);
+      setLocalMaterialOpacity(material, opacity * opacityFactor);
     }
   });
   return <group ref={group} visible={false}>
@@ -81,7 +99,9 @@ export function ProjectSculpture({ study, project, openingProgress, maskId }: {
     <Mask id={maskId} geometry={maskGeometry} raycast={() => null}>
       <meshBasicMaterial side={THREE.DoubleSide} />
     </Mask>
-    <primitive object={model} />
+    <group ref={content} position={[aperture.center.x, aperture.center.y, -0.55]}>
+      <primitive object={model} />
+    </group>
   </group>;
 }
 

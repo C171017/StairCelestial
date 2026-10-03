@@ -33,21 +33,40 @@ export function createDoorMaterials(study: DoorStudy) {
     toneMapped: false,
   });
   const glass = new THREE.MeshPhysicalMaterial({
-    name: "ClearGlassLeaf",
-    color: "#ffffff",
-    transmission: 1,
-    // Preserve the site's light glass treatment when several transparent
-    // doors and ribbon turns overlap in the screen-space transmission pass.
+    name: "LavenderFrostedGlassLeaf",
+    // A restrained lavender filter separates the doorway from the clear,
+    // blue-white ribbon. Keep this treatment local to the moving glass leaf.
+    color: "#d0c9e7",
+    transmission: 0.72,
+    // A visible surface contribution is essential: full transmission combined
+    // with low alpha made the leaf read as an empty hole. Keep alpha blending
+    // for overlapping ribbon turns; opaque depth writes would cut them out.
     transparent: true,
-    opacity: 0.32,
+    opacity: 0.8,
     depthWrite: false,
-    roughness: 0.055,
-    thickness: 0.09,
+    roughness: 0.28,
+    thickness: 0.2,
     ior: 1.46,
-    attenuationColor: "#f0f7f8",
-    attenuationDistance: 6,
-    envMapIntensity: 0.75,
+    attenuationColor: "#b7b0df",
+    attenuationDistance: 0.85,
+    envMapIntensity: 0.95,
+    clearcoat: 0.55,
+    clearcoatRoughness: 0.12,
     side: THREE.FrontSide,
   });
-  return { ceramic, gold, light, glass };
+  // A polished rim reflects light independently of the frosted pane. This
+  // uses the existing thin edge mesh and travels/dissolves with the leaf.
+  const glassEdge = new THREE.MeshPhysicalMaterial({
+    name: "PolishedGlassBoundary",
+    color: "#e4dff5",
+    metalness: 0.18,
+    roughness: 0.09,
+    clearcoat: 1,
+    clearcoatRoughness: 0.06,
+    envMapIntensity: 1.5,
+    transparent: true,
+    opacity: 0.78,
+    depthWrite: false,
+  });
+  return { ceramic, gold, light, glass, glassEdge };
 }

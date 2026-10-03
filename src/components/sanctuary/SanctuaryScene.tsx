@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { useRibbonMotion } from "@/hooks/useRibbonMotion";
 import { type RibbonMotionSnapshot } from "@/lib/ribbonMotion";
 import { advanceRibbonFocus, createRibbonFocus } from "@/lib/ribbonFocus";
-import { ribbonPoint, RIBBON_PITCH } from "@/lib/ribbonGeometry";
+import { RIBBON_PITCH } from "@/lib/ribbonGeometry";
 import { sanctuaryProjects, projectIndexForDoor } from "@/lib/sanctuaryContent";
 import { doorStudies, doorModelUrl } from "@/lib/doorStudies";
 import { doorPlacement, doorShapeIndex } from "@/lib/doorPlacement";
@@ -19,6 +19,8 @@ import { ProjectArtifact } from "./ProjectArtifact";
 import { StudioLight } from "./SceneEnvironment";
 import { OrbitSky } from "./OrbitSky";
 import { OrbitCamera } from "./OrbitCamera";
+import { RIBBON_SHADOW_COUNT } from "./ribbonShadows";
+import { fitDoorSupport, getDoorBase, sillWorldPoint } from "@/lib/doorSupport";
 
 const doorModelUrls = doorStudies.map(doorModelUrl);
 
@@ -50,7 +52,8 @@ function Ready({ onReady }: { onReady: () => void }) {
 function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }: Pick<Props, "active" | "selection" | "onSelect"> & { motion: RefObject<RibbonMotionSnapshot>; orbit: RefObject<RibbonMotionSnapshot>; ribbonFrame: RefObject<THREE.Group | null> }) {
   // Random draws may omit a shape initially; prepare every shape before entry
   // so its first later appearance cannot suspend the visible world.
-  useGLTF(doorModelUrls);
+  const doorModels = useGLTF(doorModelUrls);
+  const bases = useMemo(() => doorModels.map(model => getDoorBase(model.scene)), [doorModels]);
   const { size } = useThree();
   const compact = size.width < 650;
   const radius = compact ? 2.6 : 5.7;
@@ -73,24 +76,42 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
     update(); query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
-  const slots = useMemo(() => Array.from({ length: 15 }, (_, i) => i - 6), []);
+  const slots = useMemo(() => Array.from({ length: RIBBON_SHADOW_COUNT }, (_, i) => i - 6), []);
+  const doors = useMemo(() => slots.map(slot => {
+    const occurrence = slot + cycle * 3;
+    const placement = doorPlacement(occurrence, arrangementSeed);
+    const studyIndex = doorShapeIndex(occurrence, doorStudies.length, arrangementSeed);
+    const support = fitDoorSupport({ ...placement, turn: placement.turn - cycle }, bases[studyIndex], radius, width, compact);
+    return { slot, occurrence, placement, studyIndex, support };
+  }), [slots, cycle, arrangementSeed, bases, radius, width, compact]);
+  const selectedOccurrence = selection?.occurrence;
+  const selectedDoor = doors.find(door => door.occurrence === selectedOccurrence);
+  const doorShadows = useMemo(() => doors.map(({ occurrence, support }) => {
+    const position = sillWorldPoint(support, new THREE.Vector2((support.base.minX + support.base.maxX) / 2, 0));
+    position.y = support.position.y;
+    return {
+      position,
+      scale: support.scale,
+      yaw: support.yaw,
+      visible: selectedOccurrence === undefined || selectedOccurrence === occurrence,
+    };
+  }), [doors, selectedOccurrence]);
   useFrame((_, delta) => {
     if (!transform.current || !scrollGroup.current) return;
     const position = motion.current.position;
     const nextCycle = Math.floor(position);
     if (cycleRef.current !== nextCycle) { cycleRef.current = nextCycle; setCycle(nextCycle); }
     scrollGroup.current.position.y = -(position - cycle) * RIBBON_PITCH;
-    if (selection) {
-      const placement = doorPlacement(selection.occurrence, arrangementSeed);
-      ribbonPoint(placement.turn - cycle, radius + placement.lateral * width, anchor);
+    if (selectedDoor) {
+      anchor.copy(selectedDoor.support.position);
       anchor.y -= (position - cycle) * RIBBON_PITCH;
-      anchor.y += (compact ? 1.15 : 1.45) * placement.scale;
+      anchor.y += 1.45 * selectedDoor.support.scale;
     }
-    advanceRibbonFocus(focus.current, selection ? anchor : null, delta, {
+    advanceRibbonFocus(focus.current, selectedDoor ? anchor : null, delta, {
       focusScale: compact ? 1.55 : 1.7, reducedMotion: reduced.current,
       // Frame the selected door; the audio control follows the transformed spiral axis.
       focusPosition: { x: 0, y: 2.3, z: 4.2 },
-      doorYaw: selection ? doorPlacement(selection.occurrence, arrangementSeed).yaw : 0,
+      doorYaw: selectedDoor?.support.yaw ?? 0,
       cameraPosition: { x: 0, y: ORBIT_HEIGHT, z: ORBIT_RADIUS },
       viewYaw: ribbonOrbitAngle(orbit.current.position),
     });
@@ -100,16 +121,15 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
     transform.current.quaternion.premultiply(viewRotation.setFromAxisAngle(up, focus.current.viewYaw));
   }, -0.5);
   return <group ref={transform}><group ref={scrollGroup} position={[0, -(motion.current.position - cycle) * RIBBON_PITCH, 0]}>
-    <GlassRibbon radius={radius} width={width} focused={!!selection} />
-    {slots.map((slot) => {
-      const occurrence = slot + cycle * 3;
-      const placement = doorPlacement(occurrence, arrangementSeed);
-      const studyIndex = doorShapeIndex(occurrence, doorStudies.length, arrangementSeed);
+    <GlassRibbon radius={radius} width={width} focused={!!selection} doorShadows={doorShadows} />
+    {doors.map(({ occurrence, placement, studyIndex, support }) => {
       const index = projectIndexForDoor(doorStudies[studyIndex].id);
-      const position = ribbonPoint(placement.turn - cycle, radius + placement.lateral * width);
       const selected = selection?.occurrence === occurrence;
-      return <group key={slot} position={[position.x, position.y + 0.11, position.z]} rotation={[0, placement.yaw, 0]} scale={placement.scale}>
-        <ProjectArtifact maskId={slot + 7} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
+      // Preserve animation and material state when an occurrence moves to a
+      // new pool slot. Modulo IDs stay unique across the contiguous pool.
+      const maskId = ((occurrence % slots.length) + slots.length) % slots.length + 1;
+      return <group key={occurrence} position={support.position} rotation={[0, support.yaw, 0]} scale={support.scale}>
+        <ProjectArtifact support={support} maskId={maskId} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
           compact={compact} onSelect={() => {
             if (selected) window.open(sanctuaryProjects[index].url, "_blank", "noopener,noreferrer");
             else onSelect({ index, turn: placement.turn, occurrence });

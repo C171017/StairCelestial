@@ -24,15 +24,26 @@ function stateFor(material: Material) {
 }
 
 function apply(material: Material, state: RevealState) {
+  // Stencil apertures are rendering controls, not visible surfaces. Moving
+  // them to the transparent pass would draw them after the clipped models.
+  if (!material.colorWrite) return;
   const opacity = state.localOpacity * state.introOpacity;
-  const transparent = state.transparent || opacity < 1;
+  // Keep solid shells in the opaque pass throughout a fade. Alpha hashing
+  // removes coverage instead of exposing the hidden gold/back faces through
+  // an alpha-blended shell, then abruptly restoring depth at opacity === 1.
+  const solid = !state.transparent && state.depthWrite;
+  if (solid && !material.alphaHash) {
+    material.alphaHash = true;
+    material.needsUpdate = true;
+  }
+  const transparent = state.transparent || (!solid && opacity < 1);
   if (material.transparent !== transparent) {
     material.transparent = transparent;
     material.needsUpdate = true;
   }
   material.opacity = opacity;
-  // A nearly invisible surface must not occlude the objects behind it.
-  material.depthWrite = state.depthWrite && opacity >= 1;
+  // Hashed fragments that disappear are discarded before writing depth.
+  material.depthWrite = state.depthWrite && (solid || opacity >= 1);
 }
 
 /** Scene and object animation own separate factors, regardless of frame order. */

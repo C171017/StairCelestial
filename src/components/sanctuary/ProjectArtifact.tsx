@@ -9,25 +9,21 @@ import type { DoorStudy } from "@/lib/doorStudies";
 import { interactiveMeshRaycast } from "@/lib/interactiveMeshRaycast";
 import { GlassDoor } from "./GlassDoor";
 import { ProjectSculpture } from "./ProjectSculpture";
+import type { DoorSupport } from "@/lib/doorSupport";
 
-export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed, maskId }: {
+export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed, maskId, support }: {
   study: DoorStudy; project: SanctuaryProject; selected: boolean; enabled: boolean; compact: boolean; dimmed: boolean; onSelect: () => void; maskId: number;
+  support: DoorSupport;
 }) {
-  const visibility = useRef(1);
   const sculpture = useRef<THREE.Group>(null);
-  const openingProgress = useRef(0);
-  const hovered = useRef(false);
   const pointerStart = useRef<[number, number] | null>(null);
   const button = useRef<HTMLButtonElement>(null);
   const projected = useMemo(() => new THREE.Vector3(), []);
-  const scaleTarget = useMemo(() => new THREE.Vector3(), []);
   useEffect(() => () => { document.body.style.cursor = ""; }, []);
-  useFrame(({ camera }, dt) => {
+  useFrame(({ camera }) => {
     if (!sculpture.current) return;
-    const target = hovered.current || selected ? 1.055 : 1;
-    sculpture.current.scale.lerp(scaleTarget.setScalar(target), 1 - Math.exp(-8 * dt));
-    visibility.current = THREE.MathUtils.damp(visibility.current, dimmed ? 0 : 1, 6, Math.min(dt, 0.05));
-    sculpture.current.visible = visibility.current > 0.015;
+    // The frame and interior each finish their own fade. Hiding this parent
+    // when another door is selected would cut off the interior's longer exit.
     if (button.current) {
       sculpture.current.getWorldPosition(projected).project(camera);
       button.current.hidden = dimmed || projected.y > (compact && !selected ? 0.55 : 0.9) || projected.y < -0.84 || Math.abs(projected.x) > 0.88 || projected.z > 1;
@@ -41,19 +37,19 @@ export function ProjectArtifact({ study, project, selected, enabled, onSelect, c
     pointerStart.current = null;
   }
   return (
-    <group scale={compact ? 0.78 : 1}>
+    <group>
       <group ref={sculpture}>
-        <GlassDoor study={study} amount={selected ? 1 : 0} opening="dissolve" dimmed={dimmed} openingProgress={openingProgress} />
+        <GlassDoor study={study} amount={selected ? 1 : 0} opening="dissolve" dimmed={dimmed} support={support} />
         <Suspense fallback={null}>
-          <ProjectSculpture study={study} project={project} openingProgress={openingProgress} maskId={maskId} />
+          <ProjectSculpture study={study} project={project} selected={selected} maskId={maskId} />
         </Suspense>
       </group>
       <mesh position={[0, 1.7, 0]}
         raycast={interactiveMeshRaycast(enabled)}
         onPointerDown={(e) => { if (enabled) { e.stopPropagation(); pointerStart.current = [e.clientX, e.clientY]; } }}
         onClick={activate}
-        onPointerOver={() => { if (enabled) { hovered.current = true; document.body.style.cursor = "pointer"; } }}
-        onPointerOut={() => { hovered.current = false; document.body.style.cursor = ""; }}>
+        onPointerOver={() => { if (enabled) document.body.style.cursor = "pointer"; }}
+        onPointerOut={() => { document.body.style.cursor = ""; }}>
         <boxGeometry args={[2.7, 3.5, 0.8]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>

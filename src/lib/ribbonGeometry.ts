@@ -53,6 +53,31 @@ export function createRibbonGeometry(radius: number, width: number) {
   return geometry;
 }
 
+/** Local bounds let glass sort by the visible arc instead of the whole helix. */
+export function createRibbonSections(radius: number, width: number) {
+  const source = createRibbonGeometry(radius, width);
+  const ringsPerSection = 16;
+  const verticesPerRing = 20;
+  const indicesPerSection = ringsPerSection * verticesPerRing * 6;
+  const sections = Array.from({ length: 72 }, (_, index) => {
+    const geometry = new THREE.BufferGeometry();
+    const firstVertex = index * ringsPerSection * verticesPerRing;
+    const endVertex = firstVertex + (ringsPerSection + 1) * verticesPerRing;
+    // Slice the completed mesh so shared boundaries retain identical normals.
+    for (const name of ["position", "normal", "uv"]) {
+      const attribute = source.getAttribute(name) as THREE.BufferAttribute;
+      geometry.setAttribute(name, new THREE.BufferAttribute(
+        attribute.array.slice(firstVertex * attribute.itemSize, endVertex * attribute.itemSize), attribute.itemSize));
+    }
+    const indices = source.getIndex()!.array.slice(index * indicesPerSection, (index + 1) * indicesPerSection);
+    geometry.setIndex(new THREE.BufferAttribute(indices.map(vertex => vertex - firstVertex), 1));
+    geometry.computeBoundingSphere();
+    return geometry;
+  });
+  source.dispose();
+  return sections;
+}
+
 class RibbonEdge extends THREE.Curve<THREE.Vector3> {
   constructor(private radius: number) { super(); }
   getPoint(t: number, target = new THREE.Vector3()) {

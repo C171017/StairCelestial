@@ -29,14 +29,16 @@ test("intro and local fades compose identically in either frame callback order",
   first.dispose(); second.dispose();
 });
 
-test("the ribbon fade is monotonic and hidden surfaces do not write depth", () => {
+test("solid fades keep depth and render pass stable at every opacity", () => {
   const material = new MeshStandardMaterial();
   let previous = 0;
   for (let frame = 0; frame <= 240; frame++) {
     setIntroMaterialOpacity(material, frame / 240);
     setLocalMaterialOpacity(material, 1);
     assert.ok(material.opacity >= previous);
-    assert.equal(material.depthWrite, frame === 240);
+    assert.equal(material.depthWrite, true);
+    assert.equal(material.transparent, false);
+    assert.equal(material.alphaHash, true);
     previous = material.opacity;
   }
   assert.equal(material.opacity, 1);
@@ -56,13 +58,13 @@ test("local dimming and reversal still work after the intro finishes", () => {
   material.dispose();
 });
 
-test("solid sculptures become depth-writing opaque objects for glass transmission after revealing", () => {
+test("solid sculptures remain in the glass transmission buffer throughout reveal and reversal", () => {
   const sculpture = new MeshPhysicalMaterial({ color: "#080a0d", metalness: 0.35 });
   setLocalMaterialOpacity(sculpture, 0);
-  assert.equal(sculpture.transparent, true);
-  assert.equal(sculpture.depthWrite, false);
+  assert.equal(sculpture.transparent, false);
+  assert.equal(sculpture.depthWrite, true);
   setLocalMaterialOpacity(sculpture, 0.5);
-  assert.equal(sculpture.transparent, true);
+  assert.equal(sculpture.transparent, false);
   setLocalMaterialOpacity(sculpture, 1);
   // Three includes non-transmissive, non-transparent objects in the opaque
   // scene buffer sampled by physical glass; depth rejects glass behind them.
@@ -70,5 +72,23 @@ test("solid sculptures become depth-writing opaque objects for glass transmissio
   assert.equal(sculpture.transparent, false);
   assert.equal(sculpture.depthTest, true);
   assert.equal(sculpture.depthWrite, true);
+  for (const opacity of [0.999, 0.5, 0, 0.5, 0.999, 1]) {
+    setLocalMaterialOpacity(sculpture, opacity);
+    assert.equal(sculpture.transparent, false);
+    assert.equal(sculpture.depthWrite, true);
+    assert.equal(sculpture.alphaHash, true);
+  }
   sculpture.dispose();
+});
+
+test("scene fades never move stencil-only aperture masks behind their sculptures", () => {
+  const mask = new MeshStandardMaterial({ colorWrite: false, depthWrite: false, stencilWrite: true });
+  for (const opacity of [0, 0.2, 0.99, 1]) {
+    setIntroMaterialOpacity(mask, opacity);
+    assert.equal(mask.transparent, false);
+    assert.equal(mask.opacity, 1);
+    assert.equal(mask.depthWrite, false);
+    assert.equal(mask.alphaHash, false);
+  }
+  mask.dispose();
 });

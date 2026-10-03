@@ -7,15 +7,17 @@ import * as THREE from "three";
 import { doorModelUrl, type DoorOpening, type DoorStudy } from "@/lib/doorStudies";
 import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 import { createDoorMaterials } from "./doorMaterials";
+import { createDoorSill, type DoorSupport } from "@/lib/doorSupport";
 
 /** A pearl-ceramic surround, lit gold reveal, and independently opening glass leaf. */
-export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false, onSelect, enabled = true, openingProgress }: {
+export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false, onSelect, enabled = true, openingProgress, support }: {
   study: DoorStudy; amount?: number; opening?: DoorOpening; dimmed?: boolean;
   onSelect?: () => void; enabled?: boolean;
   openingProgress?: RefObject<number>;
+  support?: DoorSupport;
 }) {
   const { scene } = useGLTF(doorModelUrl(study));
-  const { model, pivot, restQuaternion, materials } = useMemo(() => {
+  const { model, pivot, restQuaternion, materials, sill } = useMemo(() => {
     const model = scene.clone(true);
     let pivot: THREE.Object3D | undefined;
     const materials: { material: THREE.Material; moving: boolean; opacity: number }[] = [];
@@ -25,7 +27,7 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
     const movingGold = finishes.gold.clone();
     const ownedMaterials = [...Object.values(finishes), movingGold];
     materials.push(...ownedMaterials.map(material => ({
-      material, moving: material === finishes.glass || material === movingGold, opacity: material.opacity,
+      material, moving: material === finishes.glass || material === finishes.glassEdge || material === movingGold, opacity: material.opacity,
     })));
     model.traverse(object => {
       if (object.userData.door_role === "pivot") pivot = object;
@@ -34,11 +36,20 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
       if (object.name.startsWith("Fixed_GlassFrame")) mesh.material = finishes.ceramic;
       else if (object.name.startsWith("Fixed_InnerLight")) mesh.material = finishes.light;
       else if (object.name.startsWith("Moving_Pull")) mesh.material = movingGold;
+      else if (object.name.startsWith("Moving_PolishedEdge")) mesh.material = finishes.glassEdge;
       else if (object.name.startsWith("Moving_")) mesh.material = finishes.glass;
       else mesh.material = finishes.gold;
     });
-    return { model, pivot, restQuaternion: pivot?.quaternion.clone(), materials };
-  }, [scene, study]);
+    const sill = support ? createDoorSill(support) : undefined;
+    if (sill) {
+      const ceramic = new THREE.Mesh(sill.ceramic, finishes.ceramic);
+      const gold = new THREE.Mesh(sill.gold, finishes.gold);
+      ceramic.name = "Fixed_CeramicSill";
+      gold.name = "Fixed_SillGoldEdge";
+      model.add(ceramic, gold);
+    }
+    return { model, pivot, restQuaternion: pivot?.quaternion.clone(), materials, sill };
+  }, [scene, study, support]);
   const visibility = useRef(1);
   const travel = useRef(0);
   const rotation = useMemo(() => new THREE.Quaternion(), []);
@@ -53,13 +64,14 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
     return () => { query.removeEventListener("change", update); document.body.style.cursor = ""; };
   }, []);
   useEffect(() => () => materials.forEach(({ material }) => material.dispose()), [materials]);
+  useEffect(() => () => { sill?.ceramic.dispose(); sill?.gold.dispose(); }, [sill]);
   useFrame((_, dt) => {
     const delta = Math.min(dt, 0.05);
     travel.current = reduced.current ? amount : THREE.MathUtils.damp(travel.current, amount, 7, delta);
     if (Math.abs(travel.current - amount) < 0.001) travel.current = amount;
     if (openingProgress) openingProgress.current = travel.current;
     visibility.current = THREE.MathUtils.damp(visibility.current, dimmed ? 0 : 1, 6, delta);
-    // Let fully revealed ceramic regain opaque rendering and depth writes.
+    // Settle the fade exactly; solid finishes retain depth throughout it.
     if (Math.abs(visibility.current - (dimmed ? 0 : 1)) < 0.001) visibility.current = dimmed ? 0 : 1;
     model.visible = visibility.current > 0.015;
     if (pivot && restQuaternion) {

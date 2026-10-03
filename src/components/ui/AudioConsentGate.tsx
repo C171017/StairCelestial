@@ -42,7 +42,6 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
   const scleraExtrasRef = useRef<SVGGElement>(null);
   const irisRef = useRef<SVGCircleElement>(null);
   const pupilRef = useRef<SVGCircleElement>(null);
-  const pupilHighlightRef = useRef<SVGCircleElement>(null);
   const playRingRef = useRef<SVGCircleElement>(null);
   const playIconRef = useRef<SVGPolygonElement>(null);
   const pauseIconRef = useRef<SVGGElement>(null);
@@ -178,7 +177,6 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
     const sclera = scleraExtrasRef.current;
     const iris = irisRef.current;
     const pupil = pupilRef.current;
-    const highlight = pupilHighlightRef.current;
 
     if (
       !control ||
@@ -220,7 +218,7 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
     });
     gsap.set(sclera, { opacity: 0 });
     gsap.set(eyeInterior, { opacity: 1 });
-    gsap.set([iris, pupil, highlight], { opacity: 1 });
+    gsap.set([iris, pupil], { opacity: 1 });
 
     const tl = gsap.timeline();
     timelineRef.current = tl;
@@ -375,7 +373,6 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
     scleraExtras: scleraExtrasRef,
     iris: irisRef,
     pupil: pupilRef,
-    pupilHighlight: pupilHighlightRef,
     playRing: playRingRef,
     playIcon: playIconRef,
     pauseIcon: pauseIconRef,

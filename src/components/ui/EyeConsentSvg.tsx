@@ -10,7 +10,6 @@ export type EyeConsentRefs = {
   scleraExtras: RefObject<SVGGElement | null>;
   iris: RefObject<SVGCircleElement | null>;
   pupil: RefObject<SVGCircleElement | null>;
-  pupilHighlight: RefObject<SVGCircleElement | null>;
   playRing: RefObject<SVGCircleElement | null>;
   playIcon: RefObject<SVGPolygonElement | null>;
   pauseIcon: RefObject<SVGGElement | null>;
@@ -205,14 +204,6 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
           cy={CY}
           r={PUPIL_R}
           fill="url(#eye-consent-void)"
-        />
-
-        <circle
-          ref={refs.pupilHighlight}
-          cx={CX - 8}
-          cy={CY - 9}
-          r={1.3}
-          fill="rgba(240, 234, 208, 0.28)"
         />
       </g>
 
