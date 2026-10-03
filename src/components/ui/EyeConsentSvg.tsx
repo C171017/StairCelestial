@@ -4,6 +4,8 @@ import type { RefObject } from "react";
 
 export type EyeConsentRefs = {
   eyeAperture: RefObject<SVGPathElement | null>;
+  dissolveWarp: RefObject<SVGFEDisplacementMapElement | null>;
+  dissolveBlur: RefObject<SVGFEGaussianBlurElement | null>;
   eyeInterior: RefObject<SVGGElement | null>;
   upperLid: RefObject<SVGPathElement | null>;
   lowerLid: RefObject<SVGPathElement | null>;
@@ -44,6 +46,12 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
       aria-hidden
     >
       <defs>
+        <filter id="eye-consent-dissolve" x="-25%" y="-25%" width="150%" height="150%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.055" numOctaves={2} seed={7} result="wisps" />
+          <feDisplacementMap ref={refs.dissolveWarp} in="SourceGraphic" in2="wisps"
+            scale={0} xChannelSelector="R" yChannelSelector="G" />
+          <feGaussianBlur ref={refs.dissolveBlur} stdDeviation={0} />
+        </filter>
         <clipPath id="eye-consent-aperture">
           <path ref={refs.eyeAperture} d={EYE_LID_PATHS.apertureClosed} />
         </clipPath>
@@ -91,6 +99,7 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         </filter>
       </defs>
 
+      <g filter="url(#eye-consent-dissolve)">
       <g ref={refs.scleraExtras} opacity={0}>
         <path
           d="M 10 103 C 44 53 128 31 191 94 C 156 121 58 130 10 103 Z"
@@ -275,6 +284,7 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         strokeLinecap="round"
         opacity={0.88}
       />
+      </g>
     </svg>
   );
 }

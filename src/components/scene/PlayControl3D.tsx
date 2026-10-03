@@ -32,6 +32,9 @@ import {
   setPointerCursor,
 } from "@/lib/interactiveHoverZoom";
 import { CloudPlayShape } from "./CloudPlayShape";
+import { IntroGlassRings } from "./IntroGlassRings";
+import { IntroDissolveParticles } from "./IntroDissolveParticles";
+import { CONTROL_ENTRANCE_SECONDS, sampleControlEntrance } from "@/lib/controlEntrance";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
 
 function prefersReducedMotion(): boolean {
@@ -111,6 +114,8 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
   const hoverTweenRef = useRef<gsap.core.Tween | null>(null);
   const hitRef = useRef<THREE.Mesh>(null);
   const chromeGroupRef = useRef<THREE.Group>(null);
+  const glassGroupRef = useRef<THREE.Group>(null);
+  const entranceRef = useRef(sampleControlEntrance(0));
   const playMeshRef = useRef<THREE.Mesh>(null);
   const playEdgeRef = useRef<THREE.LineSegments>(null);
   const cubeMeshRef = useRef<THREE.Mesh>(null);
@@ -321,7 +326,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
     );
     // The cloud control lives on the ribbon's axis, with a physical world size.
     // Its mobile mesh already has the shared 2x size multiplier.
-    if (cloud) dockScaleRef.current = size.width < 650 ? 6 : 13;
+    if (cloud) dockScaleRef.current = size.width < 650 ? 8.1 : 17.5;
     mobileShapeScaleRef.current = getPlayControlMobileSizeScale(
       controlViewport.width,
       controlViewport.height,
@@ -387,7 +392,10 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
       const t = AUDIO_CONSENT_TIMING;
       const reduced = reducedMotionRef.current;
       const flyDur = reduced ? t.reducedFlyDuration : t.flyDuration;
-      const mainDur = reduced ? t.reducedMainReveal : t.mainRevealDuration;
+      const elapsed = Math.max(0, (performance.now() - awaitStartMsRef.current) / 1000);
+      const mainDur = reduced ? t.reducedMainReveal : cloud
+        ? Math.max(0.35, CONTROL_ENTRANCE_SECONDS - elapsed)
+        : t.mainRevealDuration;
       usePortfolioStore.getState().setIntroPlayPhase("entering", {
         enteredByClick: byClick,
       });
@@ -409,7 +417,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
         pose.tiltY = PLAY_DOCK_TILT[1];
         pose.tiltZ = PLAY_DOCK_TILT[2];
         pose.billboard = 0;
-      } else {
+      } else if (!cloud) {
         runFlyTween(flyDur);
       }
 
@@ -419,6 +427,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
       });
     },
     [
+      cloud,
       fadeAmbientIn,
       playConsentSting,
       runFlyTween,
@@ -503,9 +512,22 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
     group.visible = true;
     const chrome = chromeGroupRef.current;
     if (chrome) {
-      chrome.visible = phase === "awaitClick";
+      chrome.visible = !cloud && phase === "awaitClick";
     }
     const pose = flyPoseRef.current;
+    if (cloud) {
+      const elapsed = awaitStartMsRef.current > 0
+        ? Math.max(0, (performance.now() - awaitStartMsRef.current) / 1000) : 0;
+      const entrance = sampleControlEntrance(elapsed, reducedMotionRef.current);
+      entranceRef.current = entrance;
+      pose.scale = THREE.MathUtils.lerp(introScaleRef.current, dockScaleRef.current, entrance.travel);
+      pose.billboard = 1 - entrance.travel;
+      // Keep the dissolving eye/rims at their original footprint as the sculpture grows.
+      if (glassGroupRef.current) {
+        glassGroupRef.current.scale.setScalar(introScaleRef.current / pose.scale);
+        glassGroupRef.current.visible = !reducedMotionRef.current && elapsed < 7;
+      }
+    }
     getViewportAnchorPosition(
       camera,
       cloud ? PLAY_INTRO_NDC : { x: pose.ndcX, y: pose.ndcY },
@@ -523,7 +545,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
     let motionScale = 1;
     let motionRotZ = 0;
 
-    if (phase === "awaitClick" && !reducedMotionRef.current) {
+    if (!cloud && phase === "awaitClick" && !reducedMotionRef.current) {
       const t = state.clock.elapsedTime;
       const period = AUDIO_CONSENT_TIMING.idleMotionPeriod;
       const wobble = Math.sin((t / period) * Math.PI * 2);
@@ -546,7 +568,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
     // Face-on to camera: one actual tetrahedron face reads as the play triangle.
     lookTarget.copy(camera.position);
     group.lookAt(lookTarget);
-    if (phase === "awaitClick" && !reducedMotionRef.current) {
+    if (!cloud && phase === "awaitClick" && !reducedMotionRef.current) {
       group.rotateZ(motionRotZ);
     }
     faceOnQuaternion.copy(group.quaternion);
@@ -581,7 +603,15 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
           <mesh geometry={innerRingGeometry} material={innerRingMaterial} />
         </group>
 
-        {cloud && <CloudPlayShape playing={soundEnabled} active={introPlayPhase === "active"} ribbonMotion={ribbonMotion} scale={getPlayControlMobileSizeScale(size.width, size.height)} />}
+        {cloud && <>
+          <group ref={glassGroupRef}>
+            <IntroGlassRings entrance={entranceRef} />
+            <IntroDissolveParticles entrance={entranceRef} reduced={reducedMotionRef} />
+          </group>
+          <CloudPlayShape playing={soundEnabled} active={introPlayPhase === "active"}
+            entrance={entranceRef} ribbonMotion={ribbonMotion}
+            scale={getPlayControlMobileSizeScale(size.width, size.height)} />
+        </>}
         <group visible={!cloud}>
         <mesh
           ref={playMeshRef}
