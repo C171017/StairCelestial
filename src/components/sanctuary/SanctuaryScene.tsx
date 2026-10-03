@@ -20,7 +20,7 @@ import { StudioLight } from "./SceneEnvironment";
 import { OrbitSky } from "./OrbitSky";
 import { OrbitCamera } from "./OrbitCamera";
 import { RIBBON_SHADOW_COUNT } from "./ribbonShadows";
-import { fitDoorSupport, getDoorBase, sillWorldPoint } from "@/lib/doorSupport";
+import { fitDoorSupport, getDoorBase, doorBaseWorldPoint } from "@/lib/doorSupport";
 
 const doorModelUrls = doorStudies.map(doorModelUrl);
 
@@ -87,7 +87,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
   const selectedOccurrence = selection?.occurrence;
   const selectedDoor = doors.find(door => door.occurrence === selectedOccurrence);
   const doorShadows = useMemo(() => doors.map(({ occurrence, support }) => {
-    const position = sillWorldPoint(support, new THREE.Vector2((support.base.minX + support.base.maxX) / 2, 0));
+    const position = doorBaseWorldPoint(support, new THREE.Vector2((support.base.minX + support.base.maxX) / 2, 0));
     position.y = support.position.y;
     return {
       position,
@@ -129,7 +129,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
       // new pool slot. Modulo IDs stay unique across the contiguous pool.
       const maskId = ((occurrence % slots.length) + slots.length) % slots.length + 1;
       return <group key={occurrence} position={support.position} rotation={[0, support.yaw, 0]} scale={support.scale}>
-        <ProjectArtifact support={support} maskId={maskId} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
+        <ProjectArtifact maskId={maskId} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
           compact={compact} onSelect={() => {
             if (selected) window.open(sanctuaryProjects[index].url, "_blank", "noopener,noreferrer");
             else onSelect({ index, turn: placement.turn, occurrence });

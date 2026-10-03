@@ -9,11 +9,9 @@ import type { DoorStudy } from "@/lib/doorStudies";
 import { interactiveMeshRaycast } from "@/lib/interactiveMeshRaycast";
 import { GlassDoor } from "./GlassDoor";
 import { ProjectSculpture } from "./ProjectSculpture";
-import type { DoorSupport } from "@/lib/doorSupport";
 
-export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed, maskId, support }: {
+export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed, maskId }: {
   study: DoorStudy; project: SanctuaryProject; selected: boolean; enabled: boolean; compact: boolean; dimmed: boolean; onSelect: () => void; maskId: number;
-  support: DoorSupport;
 }) {
   const sculpture = useRef<THREE.Group>(null);
   const pointerStart = useRef<[number, number] | null>(null);
@@ -39,7 +37,7 @@ export function ProjectArtifact({ study, project, selected, enabled, onSelect, c
   return (
     <group>
       <group ref={sculpture}>
-        <GlassDoor study={study} amount={selected ? 1 : 0} opening="dissolve" dimmed={dimmed} support={support} />
+        <GlassDoor study={study} amount={selected ? 1 : 0} opening="dissolve" dimmed={dimmed} />
         <Suspense fallback={null}>
           <ProjectSculpture study={study} project={project} selected={selected} maskId={maskId} />
         </Suspense>

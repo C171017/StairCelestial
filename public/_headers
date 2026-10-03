@@ -1,0 +1,5 @@
+# Next.js includes a content hash in these URLs, so unchanged bundles can be
+# reused across visits without a network revalidation. HTML and unversioned
+# artwork keep Cloudflare's default revalidation behavior for fresh releases.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
