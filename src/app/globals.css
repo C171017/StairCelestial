@@ -18,7 +18,7 @@ button:disabled { cursor: default; }
   .native-ribbon-scroll::-webkit-scrollbar { display: none; }
   .native-ribbon-scroll body::after { content: ''; display: block; height: 200000px; pointer-events: none; }
   .native-ribbon-scroll .sanctuary { position: fixed; top: 0; left: 0; height: 100dvh; overflow: clip; touch-action: pan-y pinch-zoom; }
-  /* R3F puts touch-action:none inline on the canvas wrapper. */
+  /* Allow vertical gestures through both the canvas and its wrapper. */
   .native-ribbon-scroll .world-layer > div, .native-ribbon-scroll canvas { touch-action: pan-y pinch-zoom !important; }
   .native-ribbon-scroll .project-detail { margin-left: env(safe-area-inset-left); margin-bottom: env(safe-area-inset-bottom); }
 }

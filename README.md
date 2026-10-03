@@ -19,11 +19,14 @@ Open [localhost:3000](http://localhost:3000).
 
 - The eye opens into two sculpted glass rings, with soft particles carrying the transition. The central sculpture begins turning as it appears, grows through two eased revolutions over 7.8 seconds, and settles on the ribbon’s center axis at camera height. That world-space anchor follows the spiral when a door opens, rather than staying at the viewport center. The rings dissolve while the ribbon fades in; clicking the control opts into audio without restarting its movement.
 - Scroll or swipe vertically to move the ribbon. Gentle continuous movement resumes in the last travel direction.
+- Mobile touch devices use native document scrolling behind the fixed scene, allowing Safari to collapse its browser bars. The scene follows the dynamic viewport height. Safari controls when its bars reappear; the site cannot enforce tap-only restoration. Desktop retains virtual scrolling.
 - Select a project sculpture to bring it into focus.
 - Activate the selected sculpture again to open its project. Scroll, press Escape, or use the close control to return smoothly.
 - LinkedIn and GitHub objects are independent of ribbon movement. Both URLs remain unconfigured; their placeholder status is available to assistive technology.
 
 A new sound design and conventional navigation remain deferred. The original intro audio opt-in and central play/pause control are restored with the original audio assets. Reduced-motion preferences disable automatic cruising and focus travel.
+
+Audio starts on a completed tap/click so touch Safari receives user activation before the media and AudioContext start. A swipe across the control does not toggle playback. Mobile checks cover first-tap playback during and after the intro, pause/resume, native scrolling, viewport resizing, and landscape in desktop WebKit with iPhone emulation, plus trusted touch swipes in Chrome. These checks do not simulate Safari's iOS browser bars; toolbar collapse still needs a physical iPhone or an Xcode iOS simulator.
 
 ## Content and assets
 
