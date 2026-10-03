@@ -1,17 +1,45 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { doorPlacement, doorShapeIndex } from "./doorPlacement";
+import { doorPlacement, doorShapeIndex, MIN_DOOR_TURN_GAP } from "./doorPlacement";
 import { doorStudies } from "./doorStudies";
 import { projectIndexForDoor, sanctuaryProjects } from "./sanctuaryContent";
 import { ribbonPoint, RIBBON_PITCH } from "./ribbonGeometry";
 
-test("random sequences allow repeats, include every shape, and do not repeat a six-door pattern", () => {
+test("random sequences never repeat neighboring shapes, include every shape, and do not repeat a six-door pattern", () => {
   for (const seed of [0, 12345, 0xffffffff]) {
     const sequence = Array.from({ length: 300 }, (_, i) => doorShapeIndex(i - 150, doorStudies.length, seed));
     assert.equal(new Set(sequence).size, doorStudies.length);
-    assert.ok(sequence.some((shape, i) => i > 0 && shape === sequence[i - 1]));
+    assert.ok(sequence.every((shape, i) => i === 0 || shape !== sequence[i - 1]));
     assert.ok(sequence.some((shape, i) => i >= 6 && shape !== sequence[i - 6]));
     assert.ok(sequence.every(shape => shape >= 0 && shape < doorStudies.length));
+  }
+});
+
+test("doors maintain minimum spacing on desktop and compact ribbons", () => {
+  for (const seed of [0, 13, 731, 12345, 0xffffffff]) {
+    for (const [radius, width] of [[5.7, 2.25], [2.6, 1.45]]) {
+      for (const start of [-30000, -150, 0, 30000]) {
+        const placements = Array.from({ length: 150 }, (_, i) => doorPlacement(start + i, seed));
+        const points = placements.map(p => ribbonPoint(p.turn, radius + p.lateral * width));
+        for (let i = 0; i < points.length; i++) {
+          if (i > 0) assert.ok(placements[i].turn - placements[i - 1].turn >= MIN_DOOR_TURN_GAP - 1e-10);
+          // Check every pair, including doors on neighboring turns.
+          for (let j = 0; j < i; j++) assert.ok(points[i].distanceTo(points[j]) >= 4);
+        }
+      }
+    }
+  }
+});
+
+test("neighbor exclusion works with small shape collections and negative occurrences", () => {
+  for (const count of [1, 2, 3, 6]) {
+    for (const seed of [0, 19, 81]) {
+      for (let occurrence = -100; occurrence < 100; occurrence++) {
+        const shape = doorShapeIndex(occurrence, count, seed);
+        assert.ok(shape >= 0 && shape < count);
+        if (count > 1) assert.notEqual(shape, doorShapeIndex(occurrence + 1, count, seed));
+      }
+    }
   }
 });
 
