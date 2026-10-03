@@ -3,7 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, type RefObject } from "react";
 import * as THREE from "three";
-import { CLOUD_FIELD_SIZE, cloudHash, cloudPosition, cloudVisibility } from "@/lib/cloudMotion";
+import { CLOUD_FIELD_SIZE, cloudHash, cloudPosition, cloudVisibility, cloudRenderOrder } from "@/lib/cloudMotion";
 import { useCloudArtwork } from "@/hooks/useCloudArtwork";
 
 const vertex = `
@@ -105,7 +105,7 @@ export function FlowingClouds({ time, deformation = true }: { time: RefObject<nu
       // Faces the environment's center, not the scrolling camera.
       target.set(0,c.wisp?20:25,0);
       c.mesh.lookAt(target);
-      c.mesh.renderOrder = -80-c.mesh.position.distanceTo(camera.position)/10000;
+      c.mesh.renderOrder = cloudRenderOrder(c.mesh.position, camera.matrixWorldInverse.elements);
       c.material.uniforms.opacity.value=cloudVisibility(distance)*(c.wisp?0.38:1);
       c.mesh.visible=c.material.uniforms.opacity.value>0.001;
       c.core.visible=c.mesh.visible&&!c.wisp&&c.material.uniforms.opacity.value>=0.995;

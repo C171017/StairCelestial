@@ -54,4 +54,10 @@ Automated checks cover world movement, invisible recycling, long-duration finite
 
 The intended artistic result is still subject to owner review. Four source bank silhouettes recur around the environment with differing scale, depth, and overlap; this is an image-layer system, not a volumetric weather simulation.
 
+### Idle cloud continuity correction
+
+The lower-left disappearance was reproduced with a stationary Chrome view at 1280 × 1267. Two overlapping banks exchanged radial distance at cloud time 21.091 seconds, abruptly reversing their transparent draw order. Sorting now uses camera-space depth; shared wind cannot reverse that order in an idle view. The portal camera is updated before the clouds are sorted so an orbit uses the same camera for sorting and rendering.
+
+Matched frames at 21.08 and 21.10 seconds showed 36,670 abruptly changed cloud pixels before the fix and zero afterward (mean RGB change above 15/255; lower half excluding the bottom 100 pixels of review controls). A fresh 30-second, 30-fps recording also removed the large later discontinuity: the worst 32-pixel cloud-block change after startup fell from 36.93/255 to 3.39/255. These compressed-frame checks supplement visual inspection; initial artwork loading is excluded from the motion comparison. Regression tests use the actual failing pair at 60 time samples per second and check view-depth ordering around the full orbit. All 77 tests, lint, and the production build passed. Local frame pairs and the corrected recording are retained in `.screenshots/cloud-continuity/`.
+
 Saved review evidence: [desktop](validation/layered-sky/desktop.png), [phone-width view](validation/layered-sky/mobile.png), [shooting star](validation/layered-sky/shooting-star.png), and [fixed-camera motion recording](validation/layered-sky/fixed-camera.webm). The final normal-window sample is retained in [final-canvas.json](validation/layered-sky/final-canvas.json).

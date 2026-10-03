@@ -477,8 +477,8 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
     syncShapeVisibility(soundEnabled);
   }, [introPlayPhase, soundEnabled, syncShapeVisibility]);
 
-  const handlePointerDown = useCallback(
-    (e: ThreeEvent<PointerEvent>) => {
+  const handleClick = useCallback(
+    (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
       const phase = usePortfolioStore.getState().introPlayPhase;
       if (phase === "awaitClick") {
@@ -595,7 +595,9 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
   });
 
   const pointerHandlers = {
-    onPointerDown: handlePointerDown,
+    // A touch pointerdown is not a Safari audio activation gesture. Wait for
+    // the completed tap; this also keeps swipe navigation from toggling audio.
+    onClick: handleClick,
     onPointerOver: (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
       setPointerCursor(true);

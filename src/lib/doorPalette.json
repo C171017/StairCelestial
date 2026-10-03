@@ -2,11 +2,11 @@
   "gold": "#d6b87c",
   "light": "#fff0cf",
   "doors": {
-    "melt": { "name": "Pearl ivory", "color": "#eee6d9" },
-    "seed": { "name": "Soft sage", "color": "#cdddc4" },
-    "fault": { "name": "Ice blue", "color": "#cbdfea" },
-    "hourglass": { "name": "Shell blush", "color": "#e8cdce" },
-    "cloud": { "name": "Vanilla cream", "color": "#eee0bd" },
-    "orbit": { "name": "Mist lavender", "color": "#d8cee9" }
+    "melt": { "name": "Pearl ivory", "color": "#eee6d9", "slabColor": "#eea15e" },
+    "seed": { "name": "Soft sage", "color": "#cdddc4", "slabColor": "#6ec4a1" },
+    "fault": { "name": "Ice blue", "color": "#cbdfea", "slabColor": "#6eabe7" },
+    "hourglass": { "name": "Shell blush", "color": "#e8cdce", "slabColor": "#e986b0" },
+    "cloud": { "name": "Vanilla cream", "color": "#eee0bd", "slabColor": "#e5c060" },
+    "orbit": { "name": "Mist lavender", "color": "#d8cee9", "slabColor": "#a88ade" }
   }
 }

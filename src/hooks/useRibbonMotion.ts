@@ -2,6 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
+import { bindNativeRibbonScroll } from "@/lib/nativeRibbonScroll";
 import {
   addRibbonInput,
   advanceRibbonMotion,
@@ -74,7 +75,13 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
       addRibbonInput(orbit.current, pixels * 0.5, reducedMotion.current);
     };
 
+    const nativeScroll = bindNativeRibbonScroll((pixels) => {
+      suppressClickUntil = performance.now() + 450;
+      navigate(pixels);
+    }, () => touch !== null);
+
     const onWheel = (event: WheelEvent) => {
+      if (nativeScroll.active) return;
       if (!latest.current.enabled || event.ctrlKey || isInteractive(event.target) || Math.abs(event.deltaY) < 0.1) return;
       event.preventDefault();
       const units = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? surface.clientHeight : 1;
@@ -100,8 +107,11 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
         if (Math.abs(distanceY) < 8 || Math.abs(distanceY) <= Math.abs(distanceX) * 1.15) return;
         touch.dragging = true;
       }
-      event.preventDefault();
       suppressClickUntil = performance.now() + 450;
+      // Let Safari scroll the document and collapse its chrome. The scroll
+      // listener supplies movement, including momentum, exactly once.
+      if (nativeScroll.active) return;
+      event.preventDefault();
       navigate((touch.previousY - point.clientY) * 1.8);
       touch.previousY = point.clientY;
     };
@@ -124,6 +134,7 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
     surface.addEventListener("touchcancel", onTouchEnd);
     surface.addEventListener("click", onClick, true);
     return () => {
+      nativeScroll.dispose();
       preference.removeEventListener("change", updatePreference);
       document.removeEventListener("visibilitychange", updateVisibility);
       surface.removeEventListener("wheel", onWheel);

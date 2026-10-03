@@ -61,7 +61,6 @@ function SanctuaryContent() {
     {entered && <>
       <div className={`project-detail${project ? " is-visible" : ""}`} aria-live="polite">
         {project && <>
-          <button className="detail-close" onClick={() => setSelection(null)} aria-label="Return to the ribbon">×</button>
           <a className="sr-only" href={project.url} target="_blank" rel="noopener noreferrer" aria-label={`Explore ${project.title}`} />
         </>}
       </div>

@@ -1,6 +1,15 @@
 export const CLOUD_FIELD_SIZE = 1680;
 export const CLOUD_WIND = { x: 2.8, z: 0.65 };
 
+/** Back-to-front view depth, kept after the sky effects' render order (-90). */
+export function cloudRenderOrder(position: { x: number; y: number; z: number }, cameraInverse: ArrayLike<number>) {
+  const viewZ = cameraInverse[2] * position.x + cameraInverse[6] * position.y
+    + cameraInverse[10] * position.z + cameraInverse[14];
+  // Radial distance is not view depth: sideways wind can exchange two cards'
+  // distances and abruptly reverse their alpha blending in a stationary view.
+  return -80 + viewZ / 10000;
+}
+
 export function wrapCloudCoordinate(value: number, size = CLOUD_FIELD_SIZE) {
   return ((value + size / 2) % size + size) % size - size / 2;
 }

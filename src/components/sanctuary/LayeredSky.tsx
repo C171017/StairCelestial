@@ -51,6 +51,9 @@ export function LayeredSky({ paused=false, deformation=true, timeOverride=null, 
     return()=>{preference.removeEventListener("change",sync);document.removeEventListener("visibilitychange",sync);};
   },[]);
   useFrame((_,delta)=>{
+    // Update before cloud sorting, so both passes use this frame's orbit view.
+    skyCamera.copy(camera as THREE.PerspectiveCamera);
+    skyCamera.far=3000;skyCamera.updateProjectionMatrix();skyCamera.updateMatrixWorld();
     if(timeOverride!==null)time.current=timeOverride;
     else if(skip.current)skip.current=false;
     else if(!stopped.current&&!paused)time.current+=Math.min(delta,0.1);
@@ -71,8 +74,6 @@ export function LayeredSky({ paused=false, deformation=true, timeOverride=null, 
     }
   },-0.9);
   useFrame(()=>{
-    skyCamera.copy(camera as THREE.PerspectiveCamera);
-    skyCamera.far=3000;skyCamera.updateProjectionMatrix();skyCamera.updateMatrixWorld();
     const previous=gl.getRenderTarget();
     const xr=gl.xr.enabled;
     try{

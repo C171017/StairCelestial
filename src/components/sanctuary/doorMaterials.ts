@@ -4,6 +4,7 @@ import type { DoorStudy } from "@/lib/doorStudies";
 
 /** Instance-owned materials keep each door's entrance and dissolve independent. */
 export function createDoorMaterials(study: DoorStudy) {
+  const slabColor = new THREE.Color(palette.doors[study.id].slabColor);
   const ceramic = new THREE.MeshPhysicalMaterial({
     name: `PearlCeramic_${study.id}`,
     color: palette.doors[study.id].color,
@@ -33,21 +34,21 @@ export function createDoorMaterials(study: DoorStudy) {
     toneMapped: false,
   });
   const glass = new THREE.MeshPhysicalMaterial({
-    name: "LavenderFrostedGlassLeaf",
-    // A restrained lavender filter separates the doorway from the clear,
-    // blue-white ribbon. Keep this treatment local to the moving glass leaf.
-    color: "#d0c9e7",
-    transmission: 0.72,
+    name: `TintedFrostedGlassLeaf_${study.id}`,
+    // Each slab has a richer tint, with enough transmission to retain the
+    // sky and ribbon behind it through the frosted surface.
+    color: slabColor,
+    transmission: 0.56,
     // A visible surface contribution is essential: full transmission combined
     // with low alpha made the leaf read as an empty hole. Keep alpha blending
     // for overlapping ribbon turns; opaque depth writes would cut them out.
     transparent: true,
-    opacity: 0.8,
+    opacity: 0.9,
     depthWrite: false,
     roughness: 0.28,
     thickness: 0.2,
     ior: 1.46,
-    attenuationColor: "#b7b0df",
+    attenuationColor: slabColor,
     attenuationDistance: 0.85,
     envMapIntensity: 0.95,
     clearcoat: 0.55,
@@ -58,7 +59,7 @@ export function createDoorMaterials(study: DoorStudy) {
   // uses the existing thin edge mesh and travels/dissolves with the leaf.
   const glassEdge = new THREE.MeshPhysicalMaterial({
     name: "PolishedGlassBoundary",
-    color: "#e4dff5",
+    color: slabColor.clone().lerp(new THREE.Color("#ffffff"), 0.65),
     metalness: 0.18,
     roughness: 0.09,
     clearcoat: 1,

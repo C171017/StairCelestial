@@ -10,6 +10,18 @@ button:disabled { cursor: default; }
 .sanctuary { width: 100%; height: 100dvh; position: relative; overflow: hidden; touch-action: pan-x pinch-zoom; background: #dceaf0 url('/textures/sanctuary/cloudscape.webp') center/cover; }
 .world-layer { position: absolute; inset: 0; opacity: 0; transition: opacity var(--entrance-fade-duration, 1100ms) ease; }
 .world-layer > div { overflow: clip !important; }
+/* A real root scroll is needed for iPhone Safari's collapsing browser bars.
+   The scene stays fixed and grows with dvh as the browser makes room for it. */
+@media (hover: none) and (pointer: coarse) {
+  html.native-ribbon-scroll, .native-ribbon-scroll body { height: auto; min-height: 100%; overflow: visible; overflow-x: clip; }
+  html.native-ribbon-scroll { scrollbar-width: none; scroll-behavior: auto; overflow-anchor: none; }
+  .native-ribbon-scroll::-webkit-scrollbar { display: none; }
+  .native-ribbon-scroll body::after { content: ''; display: block; height: 200000px; pointer-events: none; }
+  .native-ribbon-scroll .sanctuary { position: fixed; top: 0; left: 0; height: 100dvh; overflow: clip; touch-action: pan-y pinch-zoom; }
+  /* R3F puts touch-action:none inline on the canvas wrapper. */
+  .native-ribbon-scroll .world-layer > div, .native-ribbon-scroll canvas { touch-action: pan-y pinch-zoom !important; }
+  .native-ribbon-scroll .project-detail { margin-left: env(safe-area-inset-left); margin-bottom: env(safe-area-inset-bottom); }
+}
 .has-entered .world-layer, .world-layer.is-revealing { opacity: 1; }
 .identity-divider { height: 16px; width: 1px; background: #839ba780; margin: 0 5px; }
 .identity-caption { font-size: 11px; letter-spacing: .025em; color: var(--quiet); }
@@ -50,7 +62,6 @@ button:disabled { cursor: default; }
 .project-detail h2 { font-family: Georgia, 'Times New Roman', serif; font-size: 30px; font-weight: 400; letter-spacing: -.035em; line-height: 1.12; margin: 19px 0 12px; }
 .project-detail p { color: #516977; font-size: 12px; line-height: 1.7; margin: 0 0 23px; }
 .project-detail a { display: flex; align-items: center; justify-content: space-between; text-decoration: none; font-size: 11px; color: #264b61; border-top: 1px solid #aabfc860; padding-top: 17px; }
-.detail-close { position: absolute; top: 9px; right: 10px; width: 30px; height: 30px; border: 0; background: transparent; font-size: 22px; font-weight: 300; color: #5e7888; }
 .scene-notice { position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%); z-index: 60; background: #f8fbfaee; border: 1px solid #fff; padding: 16px 23px; border-radius: 3px; color: #3f5c6e; font-size: 12px; white-space: nowrap; }
 @media(max-width: 650px) {
   .identity-caption, .identity-divider, .collection-caption { display: none; }
@@ -71,7 +82,6 @@ button:disabled { cursor: default; }
 .social-label { justify-content: center; width: 44px; height: 44px; padding: 0; }
 .social-label span { font-size: 16px; }
 .project-detail { width: auto; padding: 0; display: flex; gap: 6px; border: 0; background: transparent; backdrop-filter: none; }
-.detail-close { position: static; width: 44px; height: 44px; background: #f8fbf8e8; border-radius: 50%; }
 .project-detail a { justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: #f8fbf8e8; font-size: 20px; }
 .entrance-fallback a { display: grid; place-items: center; width: 44px; height: 44px; font-size: 20px; text-decoration: none; }
 @media(max-width: 650px) { .project-detail { right: auto; } }
