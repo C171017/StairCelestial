@@ -35,6 +35,7 @@ import { CloudPlayShape } from "./CloudPlayShape";
 import { IntroGlassRings } from "./IntroGlassRings";
 import { IntroDissolveParticles } from "./IntroDissolveParticles";
 import { CONTROL_ENTRANCE_SECONDS, sampleControlEntrance } from "@/lib/controlEntrance";
+import { getCloudControlFinalScale, spiralControlAnchor } from "@/lib/spiralControlAnchor";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
 
 function prefersReducedMotion(): boolean {
@@ -107,7 +108,11 @@ type FlyPose = {
   billboard: number;
 };
 
-export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "original" | "cloud"; ribbonMotion?: RefObject<RibbonMotionSnapshot> }) {
+export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }: {
+  theme?: "original" | "cloud";
+  ribbonMotion?: RefObject<RibbonMotionSnapshot>;
+  ribbonFrame?: RefObject<THREE.Group | null>;
+}) {
   const cloud = theme === "cloud";
   const groupRef = useRef<THREE.Group>(null);
   const hoverVisualRef = useRef<THREE.Group>(null);
@@ -141,6 +146,8 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
   const ndcScratch = useMemo(() => new THREE.Vector3(), []);
   const rayScratch = useMemo(() => new THREE.Vector3(), []);
   const worldPos = useMemo(() => new THREE.Vector3(), []);
+  const axisAnchor = useMemo(() => new THREE.Vector3(), []);
+  const worldOrientation = useMemo(() => new THREE.Quaternion(), []);
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
   const faceOnQuaternion = useMemo(() => new THREE.Quaternion(), []);
   const dockQuaternion = useMemo(() => new THREE.Quaternion(), []);
@@ -326,7 +333,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
     );
     // The cloud control lives on the ribbon's axis, with a physical world size.
     // Its mobile mesh already has the shared 2x size multiplier.
-    if (cloud) dockScaleRef.current = size.width < 650 ? 8.1 : 17.5;
+    if (cloud) dockScaleRef.current = getCloudControlFinalScale(size.width);
     mobileShapeScaleRef.current = getPlayControlMobileSizeScale(
       controlViewport.width,
       controlViewport.height,
@@ -537,9 +544,14 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
       ndcScratch,
       rayScratch,
     );
-    // Finish the intro at the helix's world-space center. Sharing the main
-    // scene lets glass transmission and depth naturally include this object.
-    if (cloud) worldPos.multiplyScalar(pose.billboard);
+    // The ribbon focus runs first. Resolve its actual world axis rather than
+    // pinning the control to the viewport or the untransformed scene origin.
+    if (cloud) {
+      const frame = ribbonFrame?.current;
+      frame?.updateWorldMatrix(true, false);
+      spiralControlAnchor(frame?.matrixWorld, camera.position.y, axisAnchor);
+      worldPos.lerp(axisAnchor, 1 - pose.billboard);
+    }
     group.position.copy(worldPos);
 
     const baseScale = pose.scale;
@@ -572,6 +584,9 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
     if (!cloud && phase === "awaitClick" && !reducedMotionRef.current) {
       group.rotateZ(motionRotZ);
     }
+    // Only the entrance is billboarded. The settled sculpture has a world
+    // orientation, so orbiting changes the faces and reflections we see.
+    if (cloud) group.quaternion.slerp(worldOrientation, 1 - pose.billboard);
     faceOnQuaternion.copy(group.quaternion);
 
     if (phase !== "awaitClick" && !cloud) {

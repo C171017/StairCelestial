@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { RIBBON_CRUISE_SPEED, type RibbonMotionSnapshot } from "@/lib/ribbonMotion";
 import type { ControlEntrance } from "@/lib/controlEntrance";
-import { createControlReflections } from "@/lib/controlReflections";
+import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 import { createPlayShapeGeometry } from "@/lib/playShapeGeometry";
 
 
@@ -22,7 +22,6 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
   const bodyMaterial = useRef<THREE.MeshPhysicalMaterial>(null);
   const spinAxis = useMemo(() => new THREE.Vector3(0.25, 1, 0.12).normalize(), []);
   const shape = useMemo(createPlayShapeGeometry, []);
-  const reflections = useMemo(createControlReflections, []);
   const progress = useRef(0);
   const edges = useMemo(() => new THREE.LineSegments(
     new THREE.EdgesGeometry(shape.geometry, 20),
@@ -36,8 +35,8 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
     return () => query.removeEventListener("change", sync);
   }, []);
   useEffect(() => () => {
-    shape.geometry.dispose(); edges.geometry.dispose(); edges.material.dispose(); reflections.dispose();
-  }, [shape, edges, reflections]);
+    shape.geometry.dispose(); edges.geometry.dispose(); edges.material.dispose();
+  }, [shape, edges]);
   useFrame((_, dt) => {
     // Integrate speed so ribbon acceleration never causes a jump in orientation.
     // The base spin continues even when the ribbon settles to a stop.
@@ -50,7 +49,7 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
     if (spinGroup.current) {
       spinGroup.current.quaternion.setFromAxisAngle(spinAxis, reducedMotion.current ? 0 : entrance.current.turn + spinAngle.current);
     }
-    if (bodyMaterial.current) bodyMaterial.current.opacity = entrance.current.reveal;
+    if (bodyMaterial.current) setLocalMaterialOpacity(bodyMaterial.current, entrance.current.reveal);
     edges.material.opacity = 0.22 * entrance.current.reveal;
     const target = playing ? 1 : 0;
     if (progress.current === target) return;
@@ -62,9 +61,9 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
   });
   return <group ref={spinGroup} scale={scale}>
     <mesh geometry={shape.geometry}>
-      <meshPhysicalMaterial ref={bodyMaterial} transparent opacity={0} color="#080a0d"
+      <meshPhysicalMaterial ref={bodyMaterial} color="#080a0d"
         metalness={0.35} roughness={0.14} clearcoat={1} clearcoatRoughness={0.055}
-        envMap={reflections} envMapIntensity={1.8}
+        envMapIntensity={1.8} depthTest depthWrite
         flatShading polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
     </mesh>
     <primitive object={edges} />

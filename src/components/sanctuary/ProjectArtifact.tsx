@@ -10,8 +10,8 @@ import { interactiveMeshRaycast } from "@/lib/interactiveMeshRaycast";
 import { GlassDoor } from "./GlassDoor";
 import { ProjectSculpture } from "./ProjectSculpture";
 
-export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed }: {
-  study: DoorStudy; project: SanctuaryProject; selected: boolean; enabled: boolean; compact: boolean; dimmed: boolean; onSelect: () => void;
+export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed, maskId }: {
+  study: DoorStudy; project: SanctuaryProject; selected: boolean; enabled: boolean; compact: boolean; dimmed: boolean; onSelect: () => void; maskId: number;
 }) {
   const visibility = useRef(1);
   const sculpture = useRef<THREE.Group>(null);
@@ -43,10 +43,10 @@ export function ProjectArtifact({ study, project, selected, enabled, onSelect, c
   return (
     <group scale={compact ? 0.78 : 1}>
       <group ref={sculpture}>
-        <GlassDoor study={study} amount={selected ? 1 : 0} dimmed={dimmed} openingProgress={openingProgress} />
-        {selected && <Suspense fallback={null}>
-          <ProjectSculpture project={project} openingProgress={openingProgress} />
-        </Suspense>}
+        <GlassDoor study={study} amount={selected ? 1 : 0} opening="dissolve" dimmed={dimmed} openingProgress={openingProgress} />
+        <Suspense fallback={null}>
+          <ProjectSculpture study={study} project={project} openingProgress={openingProgress} maskId={maskId} />
+        </Suspense>
       </group>
       <mesh position={[0, 1.7, 0]}
         raycast={interactiveMeshRaycast(enabled)}

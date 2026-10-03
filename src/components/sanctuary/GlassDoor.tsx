@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { doorModelUrl, type DoorOpening, type DoorStudy } from "@/lib/doorStudies";
 import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 
-/** A fixed cast-glass surround and an independently rigged, moving glass leaf. */
+/** A fixed cast-glass surround and an independently dissolving glass leaf. */
 export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false, onSelect, enabled = true, openingProgress }: {
   study: DoorStudy; amount?: number; opening?: DoorOpening; dimmed?: boolean;
   onSelect?: () => void; enabled?: boolean;
@@ -49,7 +49,7 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
           glass.side = THREE.FrontSide;
           opacity = moving ? 0.38 : 0.72;
         }
-        material.transparent = true;
+        material.transparent = material.transparent || opacity < 1;
         material.opacity = opacity;
         material.depthWrite = opacity > 0.98;
         clones.set(key, material);
@@ -77,15 +77,17 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
   useFrame((_, dt) => {
     const delta = Math.min(dt, 0.05);
     travel.current = reduced.current ? amount : THREE.MathUtils.damp(travel.current, amount, 7, delta);
+    if (Math.abs(travel.current - amount) < 0.001) travel.current = amount;
     if (openingProgress) openingProgress.current = travel.current;
     visibility.current = THREE.MathUtils.damp(visibility.current, dimmed ? 0 : 1, 6, delta);
     model.visible = visibility.current > 0.015;
     if (pivot && restQuaternion) {
       rotation.setFromAxisAngle(axis, opening === "hinge" ? -travel.current * Math.PI * 0.48 : 0);
       pivot.quaternion.copy(rotation).multiply(restQuaternion);
+      pivot.visible = opening !== "dissolve" || travel.current < 1;
     }
     for (const { material, moving, opacity } of materials) {
-      const dissolve = opening === "dissolve" && moving ? 1 - travel.current * 0.96 : 1;
+      const dissolve = opening === "dissolve" && moving ? 1 - THREE.MathUtils.smoothstep(travel.current, 0, 0.95) : 1;
       setLocalMaterialOpacity(material, opacity * visibility.current * dissolve);
     }
   });

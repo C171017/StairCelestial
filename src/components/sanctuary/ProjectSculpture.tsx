@@ -1,17 +1,38 @@
 "use client";
 
-import { useGLTF } from "@react-three/drei";
+import { Mask, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
+import { fitProjectToDoor, getDoorAperture } from "@/lib/doorAperture";
+import { doorModelUrl, type DoorStudy } from "@/lib/doorStudies";
+import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 import { sanctuaryProjects, type SanctuaryProject } from "@/lib/sanctuaryContent";
 
 /** The preserved project model lives wholly behind the door's local Z=0 leaf. */
-export function ProjectSculpture({ project, openingProgress }: {
+export function ProjectSculpture({ study, project, openingProgress, maskId }: {
+  study: DoorStudy;
   project: SanctuaryProject;
   openingProgress: RefObject<number>;
+  maskId: number;
 }) {
   const { scene } = useGLTF(`/models/sanctuary/${project.model}.glb`);
+  const { scene: doorScene } = useGLTF(doorModelUrl(study));
+  const aperture = useMemo(() => getDoorAperture(doorScene), [doorScene]);
+  const maskGeometry = useMemo(() => {
+    let geometry: THREE.BufferGeometry | undefined;
+    doorScene.updateWorldMatrix(true, true);
+    const inverse = doorScene.matrixWorld.clone().invert();
+    doorScene.traverse(object => {
+      const mesh = object as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.name.startsWith("Moving_GlassLeaf")) return;
+      geometry = mesh.geometry.clone().applyMatrix4(inverse.clone().multiply(mesh.matrixWorld));
+      const positions = geometry.getAttribute("position");
+      for (let i = 0; i < positions.count; i++) positions.setZ(i, 0);
+      geometry.computeBoundingSphere();
+    });
+    return geometry;
+  }, [doorScene]);
   const group = useRef<THREE.Group>(null);
   const { model, materials } = useMemo(() => {
     const model = scene.clone(true);
@@ -27,33 +48,39 @@ export function ProjectSculpture({ project, openingProgress }: {
         const existing = clones.get(source);
         if (existing) return existing;
         const material = source.clone();
+        material.stencilWrite = true;
+        material.stencilRef = maskId;
+        material.stencilFunc = THREE.EqualStencilFunc;
+        material.stencilFail = THREE.KeepStencilOp;
+        material.stencilZFail = THREE.KeepStencilOp;
+        material.stencilZPass = THREE.KeepStencilOp;
         materials.push({ material, opacity: material.opacity });
-        material.transparent = true;
-        material.opacity = 0;
-        material.depthWrite = false;
+        setLocalMaterialOpacity(material, 0);
         clones.set(source, material);
         return material;
       };
       mesh.material = Array.isArray(mesh.material) ? mesh.material.map(clone) : clone(mesh.material);
     });
     const bounds = new THREE.Box3().setFromObject(model);
-    const size = bounds.getSize(new THREE.Vector3());
-    const center = bounds.getCenter(new THREE.Vector3());
-    const scale = Math.min((project.model === "music" ? 1.5 : 1.15) / size.x, 1.75 / size.y, 0.9 / size.z);
+    const { scale, position } = fitProjectToDoor(bounds, aperture);
     model.scale.multiplyScalar(scale);
-    model.position.set(-center.x * scale, 1.55 - center.y * scale, -0.75 - center.z * scale);
+    model.position.copy(position);
     return { model, materials };
-  }, [scene, project.model]);
+  }, [scene, project.model, aperture, maskId]);
   useEffect(() => () => materials.forEach(({ material }) => material.dispose()), [materials]);
+  useEffect(() => () => maskGeometry?.dispose(), [maskGeometry]);
   useFrame(() => {
     const reveal = THREE.MathUtils.smoothstep(openingProgress.current, 0.35, 0.85);
     if (group.current) group.current.visible = reveal > 0.001;
     for (const { material, opacity } of materials) {
-      material.opacity = opacity * reveal;
-      material.depthWrite = material.opacity > 0.98;
+      setLocalMaterialOpacity(material, opacity * reveal);
     }
   });
   return <group ref={group} visible={false}>
+    {/* Clip to the doorway in screen space, including during focus turns. */}
+    <Mask id={maskId} geometry={maskGeometry} raycast={() => null}>
+      <meshBasicMaterial side={THREE.DoubleSide} />
+    </Mask>
     <primitive object={model} />
   </group>;
 }

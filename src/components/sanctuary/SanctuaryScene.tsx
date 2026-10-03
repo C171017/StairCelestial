@@ -47,7 +47,7 @@ function Ready({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-function RibbonWorld({ active, selection, onSelect, motion, orbit }: Pick<Props, "active" | "selection" | "onSelect"> & { motion: RefObject<RibbonMotionSnapshot>; orbit: RefObject<RibbonMotionSnapshot> }) {
+function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }: Pick<Props, "active" | "selection" | "onSelect"> & { motion: RefObject<RibbonMotionSnapshot>; orbit: RefObject<RibbonMotionSnapshot>; ribbonFrame: RefObject<THREE.Group | null> }) {
   // Random draws may omit a shape initially; prepare every shape before entry
   // so its first later appearance cannot suspend the visible world.
   useGLTF(doorModelUrls);
@@ -55,7 +55,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit }: Pick<Props,
   const compact = size.width < 650;
   const radius = compact ? 2.6 : 5.7;
   const width = compact ? 1.45 : 2.25;
-  const transform = useRef<THREE.Group>(null);
+  const transform = ribbonFrame;
   const scrollGroup = useRef<THREE.Group>(null);
   const [cycle, setCycle] = useState(0);
   const cycleRef = useRef(0);
@@ -88,7 +88,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit }: Pick<Props,
     }
     advanceRibbonFocus(focus.current, selection ? anchor : null, delta, {
       focusScale: compact ? 1.55 : 1.7, reducedMotion: reduced.current,
-      // Keep the revealed object above the audio control on the ribbon axis.
+      // Frame the selected door; the audio control follows the transformed spiral axis.
       focusPosition: { x: 0, y: 2.3, z: 4.2 },
       doorYaw: selection ? doorPlacement(selection.occurrence, arrangementSeed).yaw : 0,
       cameraPosition: { x: 0, y: ORBIT_HEIGHT, z: ORBIT_RADIUS },
@@ -98,7 +98,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit }: Pick<Props,
     transform.current.scale.setScalar(focus.current.scale);
     transform.current.rotation.set(focus.current.pitch, focus.current.yaw, 0);
     transform.current.quaternion.premultiply(viewRotation.setFromAxisAngle(up, focus.current.viewYaw));
-  });
+  }, -0.5);
   return <group ref={transform}><group ref={scrollGroup} position={[0, -(motion.current.position - cycle) * RIBBON_PITCH, 0]}>
     <GlassRibbon radius={radius} width={width} focused={!!selection} />
     {slots.map((slot) => {
@@ -109,7 +109,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit }: Pick<Props,
       const position = ribbonPoint(placement.turn - cycle, radius + placement.lateral * width);
       const selected = selection?.occurrence === occurrence;
       return <group key={slot} position={[position.x, position.y + 0.11, position.z]} rotation={[0, placement.yaw, 0]} scale={placement.scale}>
-        <ProjectArtifact study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
+        <ProjectArtifact maskId={slot + 7} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
           compact={compact} onSelect={() => {
             if (selected) window.open(sanctuaryProjects[index].url, "_blank", "noopener,noreferrer");
             else onSelect({ index, turn: placement.turn, occurrence });
@@ -120,17 +120,18 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit }: Pick<Props,
 }
 
 function Content(props: Props) {
+  const ribbonFrame = useRef<THREE.Group>(null);
   const { active, selection, onSelect } = props;
   const onNavigate = useCallback(() => onSelect(null), [onSelect]);
   const { motion, orbit } = useRibbonMotion({ enabled: active, paused: selection !== null, onUserNavigate: onNavigate });
   return <>
     <OrbitCamera orbit={orbit} />
     <StudioLight />
-    <PlayControl3D theme="cloud" ribbonMotion={motion} />
+    <PlayControl3D theme="cloud" ribbonMotion={motion} ribbonFrame={ribbonFrame} />
     <Suspense fallback={null}>
       <OrbitSky />
       <IntroSceneReveal>
-        <RibbonWorld {...props} motion={motion} orbit={orbit} />
+        <RibbonWorld {...props} motion={motion} orbit={orbit} ribbonFrame={ribbonFrame} />
       </IntroSceneReveal>
       <Ready onReady={props.onReady} />
     </Suspense>
@@ -139,7 +140,7 @@ function Content(props: Props) {
 
 export function SanctuaryScene(props: Props) {
   return <Canvas camera={{ position: [0, ORBIT_HEIGHT, ORBIT_RADIUS], fov: 42, near: 0.1, far: 650 }} dpr={[1, 1.5]}
-    gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+    gl={{ antialias: true, alpha: false, stencil: true, powerPreference: "high-performance" }}
     onCreated={({ camera, gl }) => {
       camera.lookAt(0, 0, 0);
       gl.toneMapping = THREE.ACESFilmicToneMapping;

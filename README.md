@@ -17,7 +17,7 @@ Open [localhost:3000](http://localhost:3000).
 
 ## Controls
 
-- The eye opens into two sculpted glass rings, with soft particles carrying the transition. The central sculpture begins turning as it appears, grows through two eased revolutions over 7.8 seconds, and settles on the ribbon’s center axis. The rings dissolve while the ribbon fades in; clicking the control opts into audio without restarting its movement.
+- The eye opens into two sculpted glass rings, with soft particles carrying the transition. The central sculpture begins turning as it appears, grows through two eased revolutions over 7.8 seconds, and settles on the ribbon’s center axis at camera height. That world-space anchor follows the spiral when a door opens, rather than staying at the viewport center. The rings dissolve while the ribbon fades in; clicking the control opts into audio without restarting its movement.
 - Scroll or swipe vertically to move the ribbon. Gentle continuous movement resumes in the last travel direction.
 - Select a project sculpture to bring it into focus.
 - Activate the selected sculpture again to open its project. Scroll, press Escape, or use the close control to return smoothly.

@@ -55,3 +55,20 @@ test("local dimming and reversal still work after the intro finishes", () => {
   }
   material.dispose();
 });
+
+test("solid sculptures become depth-writing opaque objects for glass transmission after revealing", () => {
+  const sculpture = new MeshPhysicalMaterial({ color: "#080a0d", metalness: 0.35 });
+  setLocalMaterialOpacity(sculpture, 0);
+  assert.equal(sculpture.transparent, true);
+  assert.equal(sculpture.depthWrite, false);
+  setLocalMaterialOpacity(sculpture, 0.5);
+  assert.equal(sculpture.transparent, true);
+  setLocalMaterialOpacity(sculpture, 1);
+  // Three includes non-transmissive, non-transparent objects in the opaque
+  // scene buffer sampled by physical glass; depth rejects glass behind them.
+  assert.equal(sculpture.transmission, 0);
+  assert.equal(sculpture.transparent, false);
+  assert.equal(sculpture.depthTest, true);
+  assert.equal(sculpture.depthWrite, true);
+  sculpture.dispose();
+});
