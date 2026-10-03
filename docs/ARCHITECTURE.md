@@ -1,15 +1,15 @@
 # Sanctuary architecture
 
-This document describes the active glass-ribbon homepage. The old staircase, rectangular portals, planets, and moving-camera design are legacy. Six new irregular glass-door studies are mounted on the ribbon.
+This document describes the active glass-ribbon homepage. The old staircase, rectangular portals, planets, and former staircase camera rig are legacy. Six new irregular glass-door studies are mounted on the ribbon.
 
 ## Entry and component map
 
 - `src/app/page.tsx` mounts `SanctuaryExperience`.
 - `src/components/sanctuary/SanctuaryExperience.tsx` owns entrance intent/readiness, selection, the project detail panel, placeholder notices, Escape handling, and error/timeout fallback. It dynamically imports the Canvas with SSR disabled.
-- `SanctuaryScene.tsx` creates the fixed camera, cloud background, studio environment, readiness marker, ribbon world, and independent social objects.
+- `SanctuaryScene.tsx` creates the orbit camera, surrounding cloud sky, studio environment, readiness marker, and ribbon world.
 - `GlassRibbon.tsx` renders the procedurally swept glass strip and fine edge highlights.
-- `ProjectArtifact.tsx` supplies the door hit target and accessible label. `GlassDoor.tsx` clones each shared GLB hierarchy, owns/disposes cloned materials, and moves only the rig's `door_role=pivot` subtree. Fixed frames remain stationary. Shape identifiers live in `src/lib/doorStudies.ts` independently of project records.
-- `/door-studies` mounts `DoorStudyExperience` and `DoorStudyScene`, reusing the cloud texture, studio lighting, and `GlassDoor`. It presents a responsive three-by-two/two-by-three comparison and individual views with hinge, dissolve, and viewing-angle controls. It deliberately bypasses the portfolio entrance for direct review.
+- `ProjectArtifact.tsx` supplies the door hit target and accessible label. `GlassDoor.tsx` clones each shared GLB hierarchy, owns/disposes cloned materials, and moves only the rig's `door_role=pivot` subtree. Fixed frames remain stationary. `ProjectSculpture.tsx` mounts the matching preserved project sculpture only for the selected door, wholly behind its leaf, and fades it in from the actual hinge progress. Shape identifiers live in `src/lib/doorStudies.ts` independently of project records.
+- `/door-studies` mounts `DoorStudyExperience` and `DoorStudyScene`, reusing the cloud texture, studio lighting, and `GlassDoor`. It presents a responsive irregular scatter and individual views with hinge, dissolve, and viewing-angle controls. It deliberately bypasses the portfolio entrance for direct review.
 - `SocialArtifacts.tsx` renders the LinkedIn and GitHub tokens and their labels outside the moving ribbon hierarchy.
 - `src/app/globals.css` supplies the entrance, overlays, typography, responsive layout, and atmosphere framing.
 
@@ -17,7 +17,7 @@ This document describes the active glass-ribbon homepage. The old staircase, rec
 
 `src/lib/ribbonGeometry.ts` supplies the helix pitch, point placement, rounded ribbon geometry, and edge geometry. A finite six-turn strip extends beyond the view. Project slots repeat along it; there is no unbounded mesh allocation.
 
-`RibbonWorld` wraps the scrolling group in a separate focus-transform group. Scroll changes the ribbon group's vertical position. The integer cycle selects the repeating project identities; the fractional cycle determines the local offset. The camera and sky are independent of this hierarchy. Social tokens may gently bob, but scrolling does not move them.
+`RibbonWorld` wraps the scrolling group in a separate focus-transform group. Scroll changes the ribbon group's vertical position. The integer cycle selects the repeating project identities; the fractional cycle determines the local offset. The camera and sky are independent of this hierarchy. Vertical input also drives a separate, continuous camera orbit; the sky stays fixed in world space, so its projected view changes with the camera.
 
 The viewport selects a narrower ribbon and smaller sculpture scale for compact screens. Model geometry remains grounded at local Y=0 with centered X/Z origins.
 
@@ -25,11 +25,11 @@ The viewport selects a narrower ribbon and smaller sculpture scale for compact s
 
 `src/lib/ribbonMotion.ts` is a pure motion integrator expressed in ribbon turns. It caps queued input and speed, eases acceleration and cruise velocity, handles either direction, and limits catch-up after a delayed frame.
 
-`src/hooks/useRibbonMotion.ts` connects wheel and vertical-touch input on `#portfolio-scroll-surface` to that integrator. It ignores interactive elements and pinch gestures, normalizes wheel units, suppresses post-swipe clicks, watches reduced-motion preferences, and clears velocities when the page becomes hidden. The render loop consumes a ref; React state is not updated for every motion frame.
+`src/hooks/useRibbonMotion.ts` connects wheel and vertical-touch input on `#portfolio-scroll-surface` to that integrator. It ignores interactive elements and pinch gestures, normalizes wheel units, suppresses post-swipe clicks, watches reduced-motion preferences, and clears velocities when the page becomes hidden. The render loop consumes refs; React state is not updated for every motion frame. The ribbon retains its cruise, but the separate orbit integrator has zero cruise and caps angular speed at 0.18 turns/second (0.09 with reduced motion). One full orbit corresponds to 3,600 wheel pixels or 2,000 vertical touch pixels. Queued input is capped for responsiveness; the accumulated angle is unrestricted in both directions. Input advances before the camera, and the camera updates before projection-dependent controls.
 
-`src/lib/ribbonFocus.ts` eases the currently rendered ribbon transform toward a selected anchor. Clearing or replacing a selection changes the destination while retaining the current pose. This addresses the old abrupt return caused by resetting a camera focus target. Reduced-motion mode keeps the overview composition instead of applying focus travel.
+`src/lib/ribbonFocus.ts` eases the currently rendered ribbon transform toward a selected anchor. Focus now also cancels the selected occurrence's random yaw and matches the camera's viewing pitch and azimuth, presenting the front face of the doorway. Translation accounts for the rotated anchor and the current camera azimuth, keeping the door centered above the audio control at every point around the orbit. Clearing or replacing a selection changes the destination while retaining the current pose, and orientation takes the shortest turn. Reduced-motion door selection settles immediately into the readable frontal view without an animated orbit.
 
-A selection records a project index and absolute ribbon turn. During selection, cruise eases to a pause. Activating the selected sculpture again opens its project URL. Scroll clears selection and begins the smooth return; the close control and Escape also return to the overview. Floating text and link indicators are not shown.
+A selection records a project index, absolute ribbon turn, and occurrence. During selection, cruise eases to a pause, the leaf opens to roughly 86 degrees, and the corresponding project sculpture appears behind it. Activating the selected door again opens its project URL. Scroll, the close control, and Escape clear selection, immediately unmount the sculpture, close the leaf, and return the ribbon's position, scale, and orientation to the overview. Inactive doors' invisible pick volumes are disabled during focus. `interactiveMeshRaycast.ts` explicitly restores Three's mesh raycast when a door becomes enabled: Fiber ignores `undefined` props, so using `undefined` would leave click detection disabled after entry or return. Floating text and link indicators are not shown.
 
 ## Entrance and readiness
 
@@ -44,7 +44,7 @@ A scene error boundary and entrance timeout expose lightweight project links. Th
 
 `src/lib/projects.ts` remains the source for the four project identities and existing URLs. `src/lib/sanctuaryContent.ts` maps those records to their presentation text and `music`, `jazz`, `atlas`, or `network` sculpture.
 
-To add a project, supply both the base project record and its Sanctuary presentation mapping; those arrays assume four entries. The ribbon cycles over six door studies, mapping each study index modulo the four project records. Selection retains both the project index and absolute ribbon turn, so repeated destinations focus the correct occurrence. Final project-to-door assignments are deferred until shape selection.
+To add a project, supply both the base project record and its Sanctuary presentation mapping; those arrays assume four entries. `doorProjectIds` in `sanctuaryContent.ts` explicitly binds shape identity to a project: Melt and Cloud → Music; Seed and Orbit → JazzTree; Fault → Guanchang; Hourglass → Columbia-Barnard Network. The project record supplies both the link and sculpture model, so random ordering cannot change either. Selection retains the project index and absolute occurrence, focusing the correct repeated door.
 
 Both social URLs are deliberately `null`. Activating a token shows a placeholder notice. Once configured, the token and label open the supplied URL with `noopener,noreferrer`. Do not infer a personal social account from a project-hosting URL.
 
@@ -54,8 +54,8 @@ Both social URLs are deliberately `null`. Activating a token shows a placeholder
 - `blender/build_sanctuary_assets.py` builds and exports the sculptures without depending on remote asset downloads.
 - `public/models/sanctuary/{music,jazz,atlas,network}.glb` use named portable materials, ground-centered origins, and glTF Y-up coordinates. Each sculpture has 4–7 material meshes; the four files total approximately 1.80 MB uncompressed.
 - `public/models/sanctuary/studio-preview.png` is an inspection render, not a runtime texture.
-- `public/textures/sanctuary/cloudscape.webp` is the generated, optimized cloud backdrop, approximately 38 KB.
-- `blender/door-studies.blend` preserves earlier scenes and adds the six-threshold studio. `blender/build_door_studies.py` reproduces six GLBs with a `door_role=pivot` empty, leaf subtree, static glass frame, pulls, and hardware. `public/models/doors/manifest.json` records export sizes, heights, and source-space pivots; runtime coordinates are glTF Y-up. Total new GLB size is 2,290,620 bytes.
+- `public/textures/sanctuary/cloudscape.webp` remains the flat backdrop for the door-study room. The homepage uses `cloudscape-360.webp`, a 1774 × 887 panoramic WebP (242,002 bytes), on a world-fixed sky sphere. `OrbitSky.tsx` blends the longitude join and poles. This is a distant sky shell, not volumetric clouds; its finite radius also supplies subtle positional parallax.
+- `blender/door-studies.blend` preserves earlier scenes and adds the six-threshold studio. `blender/build_door_studies.py` reproduces six GLBs with a `door_role=pivot` empty, leaf subtree, static glass frame, and pulls, without visible hinge/axle hardware. `public/models/doors/manifest.json` records export sizes, heights, and source-space pivots; runtime coordinates are glTF Y-up. Total new GLB size is 2,070,368 bytes.
 
 The Canvas caps DPR at 1.5 and captures a low-resolution studio environment once. Avoid full volumetric clouds, unnecessary render passes, per-frame model cloning, or expanding the finite pool. These are implementation choices, not proof of a measured frame rate; device performance still requires validation.
 
@@ -72,3 +72,5 @@ Browser validation must cover desktop and compact layouts, entrance readiness an
 ## Legacy code
 
 Most of `src/components/scene/` (excluding the reused play control and intro reveal), `useVirtualScrollIndex`, the door/orbit helpers, `public/models/*.glb`, and `blender/stairCelestial.blend` remain for reference. Their presence does not mean the active homepage loads them. The historical Blender prompt sequence under `blender/md/` describes that previous design.
+
+Door placement uses `doorPlacement.ts` with a fresh cryptographic arrangement seed for each mounted visit. Shape draws are independent per occurrence, allowing repeats and clusters rather than a six-shape sequence. Turn jitter spans 0.31 turns, lateral offset spans 84% of ribbon width, scales range from 0.72 to 1.22, and yaw covers the full circle. A visit's seed remains stable through rerenders, focus, resizing, slot recycling, and reverse scrolling. Selection uses that same seed for its anchor and facing direction. All six door GLBs prepare before entry even when the initial random draws omit one. The separate comparison room retains its asymmetric wide/narrow scatter arrangements.

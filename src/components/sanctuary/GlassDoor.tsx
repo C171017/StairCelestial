@@ -2,16 +2,17 @@
 
 import { useGLTF } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
-import type { DoorOpening, DoorStudy } from "@/lib/doorStudies";
+import { doorModelUrl, type DoorOpening, type DoorStudy } from "@/lib/doorStudies";
 
 /** A fixed cast-glass surround and an independently rigged, moving glass leaf. */
-export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false, onSelect, enabled = true }: {
+export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false, onSelect, enabled = true, openingProgress }: {
   study: DoorStudy; amount?: number; opening?: DoorOpening; dimmed?: boolean;
   onSelect?: () => void; enabled?: boolean;
+  openingProgress?: RefObject<number>;
 }) {
-  const { scene } = useGLTF(`/models/doors/${study.id}.glb`);
+  const { scene } = useGLTF(doorModelUrl(study));
   const { model, pivot, restQuaternion, materials } = useMemo(() => {
     const model = scene.clone(true);
     let pivot: THREE.Object3D | undefined;
@@ -75,10 +76,11 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
   useFrame((_, dt) => {
     const delta = Math.min(dt, 0.05);
     travel.current = reduced.current ? amount : THREE.MathUtils.damp(travel.current, amount, 7, delta);
+    if (openingProgress) openingProgress.current = travel.current;
     visibility.current = THREE.MathUtils.damp(visibility.current, dimmed ? 0 : 1, 6, delta);
     model.visible = visibility.current > 0.015;
     if (pivot && restQuaternion) {
-      rotation.setFromAxisAngle(axis, opening === "hinge" ? -travel.current * 1.12 : 0);
+      rotation.setFromAxisAngle(axis, opening === "hinge" ? -travel.current * Math.PI * 0.48 : 0);
       pivot.quaternion.copy(rotation).multiply(restQuaternion);
     }
     for (const { material, moving, opacity } of materials) {

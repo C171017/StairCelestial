@@ -2,17 +2,20 @@
 
 import { Html } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { SanctuaryProject } from "@/lib/sanctuaryContent";
 import type { DoorStudy } from "@/lib/doorStudies";
+import { interactiveMeshRaycast } from "@/lib/interactiveMeshRaycast";
 import { GlassDoor } from "./GlassDoor";
+import { ProjectSculpture } from "./ProjectSculpture";
 
 export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed }: {
   study: DoorStudy; project: SanctuaryProject; selected: boolean; enabled: boolean; compact: boolean; dimmed: boolean; onSelect: () => void;
 }) {
   const visibility = useRef(1);
   const sculpture = useRef<THREE.Group>(null);
+  const openingProgress = useRef(0);
   const hovered = useRef(false);
   const pointerStart = useRef<[number, number] | null>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -39,11 +42,15 @@ export function ProjectArtifact({ study, project, selected, enabled, onSelect, c
   }
   return (
     <group scale={compact ? 0.78 : 1}>
-      <group ref={sculpture} rotation={[0, study.angle, 0]}>
-        <GlassDoor study={study} amount={selected ? 0.32 : 0} dimmed={dimmed} />
+      <group ref={sculpture}>
+        <GlassDoor study={study} amount={selected ? 1 : 0} dimmed={dimmed} openingProgress={openingProgress} />
+        {selected && <Suspense fallback={null}>
+          <ProjectSculpture project={project} openingProgress={openingProgress} />
+        </Suspense>}
       </group>
       <mesh position={[0, 1.7, 0]}
-        onPointerDown={(e) => { e.stopPropagation(); pointerStart.current = [e.clientX, e.clientY]; }}
+        raycast={interactiveMeshRaycast(enabled)}
+        onPointerDown={(e) => { if (enabled) { e.stopPropagation(); pointerStart.current = [e.clientX, e.clientY]; } }}
         onClick={activate}
         onPointerOver={() => { if (enabled) { hovered.current = true; document.body.style.cursor = "pointer"; } }}
         onPointerOut={() => { hovered.current = false; document.body.style.cursor = ""; }}>

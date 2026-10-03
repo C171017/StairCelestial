@@ -1,6 +1,6 @@
 # Sanctuary — c171017
 
-A personal portfolio carried by an endless glass ribbon above clouds. Project sculptures travel with the ribbon; the camera, sky, and floating social objects stay independent of scrolling.
+A personal portfolio carried by an endless glass ribbon above clouds. Project sculptures travel with the ribbon; vertical scrolling also orbits the camera continuously around its center, inside a surrounding cloud sky.
 
 The current design pass restores the door metaphor with six irregular glass thresholds: Melt, Seed, Fault, Hourglass, Cloud, and Orbit. All six travel on the homepage ribbon. Visit `/door-studies` for a numbered comparison room, individual inspection, viewing-angle adjustment, and hinge/dissolve experiments. These are provisional shape studies; the six forms reuse the four existing project destinations until a final selection is made.
 
@@ -31,7 +31,7 @@ Project URLs remain in `src/lib/projects.ts`; display copy, model assignments, a
 
 The four sculptures are exported from [`blender/sanctuary-assets.blend`](blender/sanctuary-assets.blend). The reproducible builder is [`blender/build_sanctuary_assets.py`](blender/build_sanctuary_assets.py). Runtime GLBs are in `public/models/sanctuary/`; the generated cloudscape is optimized to an approximately 38 KB WebP in `public/textures/sanctuary/`.
 
-The active doors are exported from [`blender/door-studies.blend`](blender/door-studies.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py). Six independently rigged GLBs live in `public/models/doors/` (about 2.29 MB total). The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
+The active doors are exported from [`blender/door-studies.blend`](blender/door-studies.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py). Six independently rigged GLBs live in `public/models/doors/` (about 2.07 MB total). The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
 
 ## Development notes
 

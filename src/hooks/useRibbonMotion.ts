@@ -2,12 +2,10 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
-import type { MutableRefObject } from "react";
 import {
   addRibbonInput,
   advanceRibbonMotion,
   createRibbonMotion,
-  type RibbonMotionSnapshot,
 } from "@/lib/ribbonMotion";
 
 interface RibbonMotionOptions {
@@ -22,16 +20,20 @@ function isInteractive(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest(INTERACTIVE_SELECTOR));
 }
 
-/** Mount inside the Canvas. Only the ribbon consumes this position. */
-export function useRibbonMotion(options: RibbonMotionOptions): MutableRefObject<RibbonMotionSnapshot> {
+/** Independent travel and orbit: the ribbon cruises, the camera only follows input. */
+export function useRibbonMotion(options: RibbonMotionOptions) {
   const motion = useRef(createRibbonMotion());
+  const orbit = useRef(createRibbonMotion());
   const latest = useRef(options);
   const reducedMotion = useRef(false);
   const visible = useRef(true);
   latest.current = options;
 
   useEffect(() => {
-    if (options.paused || !options.enabled) motion.current.pendingInput = 0;
+    if (options.paused || !options.enabled) {
+      motion.current.pendingInput = 0;
+      orbit.current.pendingInput = 0;
+    }
   }, [options.paused, options.enabled]);
 
   useEffect(() => {
@@ -43,10 +45,12 @@ export function useRibbonMotion(options: RibbonMotionOptions): MutableRefObject<
     const updateVisibility = () => {
       visible.current = document.visibilityState !== "hidden";
       if (!visible.current) {
-        motion.current.pendingInput = 0;
-        motion.current.inputVelocity = 0;
-        motion.current.cruiseVelocity = 0;
-        motion.current.velocity = 0;
+        for (const state of [motion.current, orbit.current]) {
+          state.pendingInput = 0;
+          state.inputVelocity = 0;
+          state.cruiseVelocity = 0;
+          state.velocity = 0;
+        }
       }
     };
     updatePreference();
@@ -66,6 +70,8 @@ export function useRibbonMotion(options: RibbonMotionOptions): MutableRefObject<
         lastNavigation = now;
       }
       addRibbonInput(motion.current, pixels, reducedMotion.current);
+      // One orbit takes 3,600 wheel pixels; total turns are never clamped.
+      addRibbonInput(orbit.current, pixels * 0.5, reducedMotion.current);
     };
 
     const onWheel = (event: WheelEvent) => {
@@ -85,7 +91,8 @@ export function useRibbonMotion(options: RibbonMotionOptions): MutableRefObject<
     };
 
     const onTouchMove = (event: TouchEvent) => {
-      if (!touch || event.touches.length !== 1 || !latest.current.enabled) return;
+      if (event.touches.length !== 1) { touch = null; return; }
+      if (!touch || !latest.current.enabled) return;
       const point = event.touches[0];
       const distanceX = point.clientX - touch.x;
       const distanceY = point.clientY - touch.y;
@@ -134,7 +141,13 @@ export function useRibbonMotion(options: RibbonMotionOptions): MutableRefObject<
       paused: latest.current.paused,
       reducedMotion: reducedMotion.current,
     });
-  });
+    advanceRibbonMotion(orbit.current, delta, {
+      paused: latest.current.paused,
+      reducedMotion: reducedMotion.current,
+      cruiseSpeed: 0,
+      maxSpeed: reducedMotion.current ? 0.09 : 0.18,
+    });
+  }, -2);
 
-  return motion;
+  return { motion, orbit };
 }

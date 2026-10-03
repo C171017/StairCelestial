@@ -122,13 +122,6 @@ def line(name, points, radius, mat, parent, cyclic=False):
     obj=bpy.data.objects.new(name,data);collection.objects.link(obj)
     return add(obj,name,mat,parent)
 
-def cylinder(name,loc,radius,depth,mat,parent):
-    bpy.ops.mesh.primitive_cylinder_add(vertices=24,radius=radius,depth=depth,location=loc)
-    obj=bpy.context.object
-    mod=obj.modifiers.new('Turned edge','BEVEL');mod.width=.009;mod.segments=3
-    obj.modifiers.new('Cylinder normals','WEIGHTED_NORMAL')
-    return add(obj,name,mat,parent)
-
 def left_at(points, z):
     intersections=[]
     for i,(x1,z1) in enumerate(points):
@@ -172,23 +165,9 @@ for spec in studies:
     add(pivot,'DoorPivot',parent=root);pivot['door_role']='pivot'
     slab(leaf,pane,pivot)
     line('Moving_PolishedEdge',[(x,-.048,z) for x,z in leaf],.009,frame,pivot,True)
-    if spec.get('center_pivot'):
-        for z in (.18,height-.18):
-            cylinder('Fixed_AxleSocket',(0,0,z),.065,.20,gold,root)
-        line('Moving_PivotSpine',[(0,.025,.24),(0,.025,height-.24)],.013,silver,pivot)
-    else:
-        for z in (height*.27,height*.72):
-            x=pivot.location.x
-            cylinder('Fixed_Hinge',(x,0,z),.058,.19,gold,root)
-            target=left_at(leaf,z)+.08
-            line('Moving_HingeStrap',[(x,-.008,z),(target,-.055,z)],.028,silver,pivot)
-            support=left_at(points,z)+.045
-            line('Fixed_HingeMount',[(support,.025,z),(x,.025,z)],.022,gold,root)
+    # The leaf retains an invisible animation pivot; no exposed hinge hardware.
     hx,hz=spec['handle']
     line('Moving_Pull',[(hx,-.06,hz-.14),(hx+.045,-.17,hz-.09),(hx+.05,-.18,hz+.13),(hx+.02,-.06,hz+.19)],.024,gold,pivot)
-    # Two tiny feet visually ground the threshold without a conventional plinth.
-    for x in (-.33,.33):
-        cylinder('Fixed_Foot',(x,0,.045),.09,.09,silver,root)
     bpy.context.view_layer.update()
     bpy.ops.object.select_all(action='DESELECT')
     for o in assets[root.name]:o.select_set(True)
@@ -198,10 +177,15 @@ for spec in studies:
         export_yup=True,export_apply=True,export_extras=True,export_cameras=False,export_lights=False)
     report[name]={'bytes':os.path.getsize(path),'height':round(height,3),'objects':len(assets[root.name]),'pivot':list(pivot.location)}
 
-# Studio arrangement. Only the newly created asset roots move.
-for i,(name,objects) in enumerate(assets.items()):
-    objects[0].location=((i%3-1)*4.1,(i//3)*1.0, (1-i//3)*4.4)
-    objects[0].rotation_euler.z=math.radians(-8)
+# An irregular studio constellation, with different depths and facing directions.
+studio_poses = [
+    ((-5.0,-.6,3.8),-.63), ((-1.7,-1.0,2.5),2.65),
+    ((1.5,.8,4.9),.91), ((4.9,0,2.8),-2.38),
+    ((-3.6,.6,.2),.47), ((2.5,-.6,.6),-1.12),
+]
+for objects,(location,yaw) in zip(assets.values(),studio_poses):
+    objects[0].location=location
+    objects[0].rotation_euler.z=yaw
 
 def area(name,loc,energy,size,color,target=(0,0,3.5)):
     d=bpy.data.lights.new(name,'AREA');d.energy=energy;d.shape='RECTANGLE';d.size=size;d.size_y=size*2;d.color=color

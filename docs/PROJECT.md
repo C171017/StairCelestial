@@ -4,16 +4,16 @@
 
 Sanctuary is a bright, glassy portfolio with a cloud atmosphere, pearl surfaces, champagne highlights, and a vertically endless glass helix. It replaces the former dark celestial staircase on branch `codex/glass-ribbon`.
 
-The latest direction restores the door metaphor while retaining the bright cloud environment, glass ribbon, and fixed camera. Six strongly differentiated irregular door shapes are provisional studies for the owner to choose among.
+The latest direction restores the door metaphor while retaining the bright cloud environment and glass ribbon. Vertical scrolling now drives an unrestricted camera orbit inside a surrounding cloud sky. Six strongly differentiated irregular door shapes are provisional studies for the owner to choose among.
 
 ## Interaction contract
 
 The current presentation has no visible interface text or floating link indicators. Retain accessible names; brand marks on the social sculptures remain part of the objects. Select a project sculpture to focus it, then activate the same sculpture again to open its destination. Scroll, Escape, or the close control returns to the ribbon.
 
-- Only the ribbon and its project sculptures respond to scrolling. Keep the camera, cloud backdrop, and social objects outside the scrolling and focus transforms.
+- Vertical wheel/swipe input moves the ribbon and orbits the camera around its center with no turn limit. Keep the camera and world-fixed sky outside the ribbon scrolling/focus transforms. Horizontal input is not mapped to orbit.
 - Preserve deliberate continuous idle travel. Smooth acceleration, reversals, selection, and return; no abrupt target reset.
-- Place the six sculptural glass doors directly on the ribbon. Each has a fixed frame, moving glass leaf, and visible hinge or pivot. The current six studies reuse four project destinations; final shape assignments await the owner's selection.
-- Select a sculpture to reveal details; the project link opens its destination. Focus moves the ribbon composition, not the camera.
+- Place the six sculptural glass doors directly on the ribbon. Each has a fixed frame and moving glass leaf with an invisible animation pivot. Exposed hinges, mounting arms, and axle hardware are removed from all six. Randomize shape order, spacing, lateral placement, size, and full-circle yaw anew for each visit; preserve visited occurrences when scrolling back. Shapes always retain their dedicated project, link, and sculpture: Melt/Cloud → Music, Seed/Orbit → JazzTree, Fault → Guanchang, Hourglass → Columbia-Barnard Network.
+- Select a door to move closer and face its front. Its leaf opens and reveals the corresponding 3D project sculpture behind it; activating the selected door opens the project's destination. Returning to the default view hides the sculpture and closes the door. Focus moves and rotates the ribbon composition toward the current camera viewpoint; reduced motion settles the selected view immediately.
 - The inexpensive SVG eye entrance conceals preparation of the initial 3D scene. Do not show a raw model-loading screen. If preparation fails or exceeds the entrance timeout, provide working project links.
 - The original AudioConsentGate/EyeConsentSvg opening and PlayControl3D tetrahedron-to-docked-control choreography are restored. The click-await interval is two seconds; other opening, handoff, flight, and reduced-motion timing remains original. Cloud styling uses a pearl backdrop and restrained blue/champagne tones. Automatic entry stays silent; clicking restores the original audio consent/play behavior.
 - Respect reduced-motion preferences and distinguish a mobile swipe from a tap.
@@ -41,7 +41,7 @@ The glass ribbon and social tokens are authored in code. A generated cloud image
 
 ## Current status
 
-- The Sanctuary homepage now carries six Blender door studies. The four earlier project sculptures are preserved.
+- The Sanctuary homepage now carries six Blender door studies. The four earlier project sculptures appear behind the selected open door and disappear on return.
 - The original eye gate, play control, audio provider, intro reveal, and intro store are reused. The old staircase, planets, and orbit helpers remain unmounted.
 - Production export and eleven motion/focus tests pass; desktop and narrow browser interactions were checked.
 - Independent Astra review: 7.8/10 on round one, then 8.4/10 after refinement on round two. The requested threshold was met within the three-round limit; see [REVIEW-NOTES.md](REVIEW-NOTES.md).

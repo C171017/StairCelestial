@@ -6,14 +6,14 @@ The owner requested the essence of a door, with very different irregular shapes 
 
 ## Forms
 
-1. **Melt** — an asymmetric, softened arch with a wavering upright and gently pooled base. Pale aqua glass; side hinge.
-2. **Seed** — a leaning almond, narrowing toward a high off-center tip. Pale green glass; side hinge.
-3. **Fault** — a cut, angular shard with opposed notches and a slanted crown. Ice-blue glass; side hinge.
-4. **Hourglass** — an exaggerated pinched waist joining two unequal rounded lobes. Lilac glass; side hinge.
-5. **Cloud** — a broad, scalloped contour that wanders around a roughly enclosed passage. Champagne glass; side hinge.
-6. **Orbit** — an incomplete oval surround and a returning arc around a central leaf. Cool clear glass; central top/bottom pivot.
+1. **Melt** — an asymmetric, softened arch with a wavering upright and gently pooled base. Pale aqua glass; invisible side pivot.
+2. **Seed** — a leaning almond, narrowing toward a high off-center tip. Pale green glass; invisible side pivot.
+3. **Fault** — a cut, angular shard with opposed notches and a slanted crown. Ice-blue glass; invisible side pivot.
+4. **Hourglass** — an exaggerated pinched waist joining two unequal rounded lobes. Lilac glass; invisible side pivot.
+5. **Cloud** — a broad, scalloped contour that wanders around a roughly enclosed passage. Champagne glass; invisible side pivot.
+6. **Orbit** — an incomplete oval surround and a returning arc around a central leaf. Cool clear glass; invisible central pivot.
 
-Each consists of a separate stationary surround, glass leaf, polished edge, pull, and small metal hinge/pivot details. The source retains modifiers and editable contours. The runtime uses one shared GLB per form with instance-owned materials, transmission, restrained iridescence, and the existing cloud/studio environment.
+Each consists of a separate stationary surround, glass leaf, polished edge, pull, and an invisible animation pivot. The source retains modifiers and editable contours. The runtime uses one shared GLB per form with instance-owned materials, transmission, restrained iridescence, and the existing cloud/studio environment.
 
 ## Reference directions
 
@@ -27,4 +27,12 @@ These inform material and spatial ideas. The six silhouettes are original propos
 
 The comparison room starts with closed leaves so silhouettes can be compared. Select a number or a door to isolate it; All six or Escape returns to the collection. Hinge and Dissolve are alternative opening studies. The opening slider and turn slider work on the whole collection or the isolated model. Reduced-motion preference removes the comparison's interpolation. No choice is saved as the final design.
 
-The homepage remains text-free and retains selection, project navigation, infinite ribbon motion, and its entrance. The extra two studies provisionally reuse Music and JazzTree destinations. All original project sculptures and Blender scenes remain available.
+The homepage remains text-free and retains selection, project navigation, infinite ribbon motion, and its entrance. Selecting a door brings its face toward the fixed camera, opens the leaf, and reveals the original 3D project sculpture behind it. Close, Escape, or scroll hides that sculpture again and restores the overview. Shape identity has a permanent project/link/sculpture assignment: Melt and Cloud lead to Music, Seed and Orbit to JazzTree, Fault to Guanchang, and Hourglass to Columbia-Barnard Network. All original project sculptures and Blender scenes remain available.
+
+## Hardware and arrangement refinement
+
+The owner requested removal of all exposed hinges and regular placement. All hinge barrels, mounting arms, straps, and Orbit axle/spine meshes are removed from both GLBs and Blender source. The ribbon uses stable randomized spacing, lateral placement, size, and facing direction for every occurrence. The comparison room and Blender studio use an asymmetric arrangement with different depths and orientations. The hidden pivots preserve the optional opening experiments.
+
+The homepage also draws door shapes independently in random order, including repeats and clusters. Each visit gets a new arrangement seed with wider spacing, lateral, and size variation; scroll reversal and focus preserve that visit's existing doors. Project assignments depend on shape identity alone.
+
+The two cylindrical support feet beneath every door are also removed from all six GLBs, the editable Blender source, and the reproducible builder.

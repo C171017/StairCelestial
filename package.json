@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint src",
-    "test": "node --import tsx --test src/lib/ribbonMotion.test.ts src/lib/ribbonFocus.test.ts"
+    "test": "node --import tsx --test src/lib/*.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.0.6",

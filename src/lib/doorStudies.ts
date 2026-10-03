@@ -1,4 +1,4 @@
-/** Shape studies, deliberately independent of final project assignments. */
+/** Shape definitions; permanent project identities are mapped in sanctuaryContent. */
 export const doorStudies = [
   { id: "melt", number: "01", name: "Melt", note: "An arch softened by an impossible tide.", tint: "#b0d8d0", angle: -0.16 },
   { id: "seed", number: "02", name: "Seed", note: "A tilted seed, opening along its husk.", tint: "#c7d7aa", angle: 0.13 },
@@ -10,3 +10,6 @@ export const doorStudies = [
 
 export type DoorStudy = (typeof doorStudies)[number];
 export type DoorOpening = "hinge" | "dissolve";
+
+// Bump when replacing the exported models so existing previews shed cached GLBs.
+export const doorModelUrl = (study: DoorStudy) => `/models/doors/${study.id}.glb?v=3`;

@@ -8,6 +8,44 @@ import {
   relativeCycle,
   RIBBON_MAX_SPEED,
 } from "./ribbonMotion";
+import { ORBIT_RADIUS, ribbonOrbitPosition } from "./ribbonOrbit";
+
+test("the orbit has no idle drift and settles after explicit navigation", () => {
+  const state = createRibbonMotion();
+  const options = { cruiseSpeed: 0, maxSpeed: 0.18 };
+  for (let i = 0; i < 600; i++) advanceRibbonMotion(state, 1 / 60, options);
+  assert.equal(state.position, 0);
+  addRibbonInput(state, 900);
+  for (let i = 0; i < 1200; i++) advanceRibbonMotion(state, 1 / 120, options);
+  assert.ok(Math.abs(state.position + 0.5) < 1e-5);
+  assert.ok(Math.abs(state.velocity) < 1e-5);
+});
+
+test("camera orbit crosses every turn boundary continuously in both directions", () => {
+  for (const turns of [-10000, -2, -1, 0, 1, 2, 10000]) {
+    const before = ribbonOrbitPosition(turns - 1e-6);
+    const after = ribbonOrbitPosition(turns + 1e-6);
+    assert.ok(before.distanceTo(after) < 0.00031);
+    assert.ok(Math.abs(Math.hypot(after.x, after.z) - ORBIT_RADIUS) < 1e-10);
+    assert.ok(ribbonOrbitPosition(turns).distanceTo(ribbonOrbitPosition(0)) < 1e-10);
+  }
+  assert.ok(ribbonOrbitPosition(0.25).distanceTo(ribbonOrbitPosition(0.75)) > 47.99);
+});
+
+test("sustained input travels beyond full orbits and reverses without an angle reset", () => {
+  const state = createRibbonMotion();
+  const options = { cruiseSpeed: 0, maxSpeed: 0.18 };
+  for (let i = 0; i < 1800; i++) {
+    if (i % 20 === 0) addRibbonInput(state, 120);
+    advanceRibbonMotion(state, 1 / 60, options);
+    assert.ok(Math.abs(state.velocity) <= options.maxSpeed);
+  }
+  assert.ok(state.position < -4);
+  const before = ribbonOrbitPosition(state.position);
+  addRibbonInput(state, -1800);
+  advanceRibbonMotion(state, 1 / 60, options);
+  assert.ok(before.distanceTo(ribbonOrbitPosition(state.position)) < 0.46);
+});
 
 test("infinite copies wrap symmetrically in both scroll directions", () => {
   assert.equal(positiveModulo(-0.25, 1), 0.75);

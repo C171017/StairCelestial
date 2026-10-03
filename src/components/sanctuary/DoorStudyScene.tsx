@@ -4,7 +4,8 @@ import { Html, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { doorStudies, type DoorOpening } from "@/lib/doorStudies";
+import { doorStudies, doorModelUrl, type DoorOpening } from "@/lib/doorStudies";
+import { doorScatter } from "@/lib/doorPlacement";
 import { GlassDoor } from "./GlassDoor";
 import { Sky, StudioLight } from "./SceneEnvironment";
 
@@ -14,15 +15,15 @@ type Props = {
 };
 
 function Collection({ selected, amount, opening, angle, onSelect, onReady }: Props) {
-  useGLTF(doorStudies.map(study => `/models/doors/${study.id}.glb`));
+  useGLTF(doorStudies.map(doorModelUrl));
   const { viewport, size } = useThree();
   const groups = useRef<(THREE.Group | null)[]>([]);
   const compact = size.width < 700;
-  const cols = compact ? 2 : 3;
-  const rows = compact ? 3 : 2;
-  // Reserve space for the quiet header and comparison controls.
-  const roomHeight = viewport.height * (compact ? 0.59 : 0.61);
-  const scale = Math.min((viewport.width * 0.86) / (cols * 3.8), roomHeight / (rows * 4.5));
+  // Pack an irregular constellation into the space between header and controls.
+  const scale = Math.min(viewport.width / (compact ? 8.8 : 21), viewport.height * (compact ? .037 : .059));
+  const spreadX = viewport.width * (compact ? .30 : .36);
+  const spreadY = viewport.height * (compact ? .31 : .24);
+  const centerY = viewport.height * (compact ? .025 : .04);
   const reduced = useRef(false);
   useEffect(() => {
     const query = matchMedia("(prefers-reduced-motion: reduce)");
@@ -35,14 +36,17 @@ function Collection({ selected, amount, opening, angle, onSelect, onReady }: Pro
     const blend = reduced.current ? 1 : 1 - Math.exp(-6 * Math.min(dt, .05));
     groups.current.forEach((group, index) => {
       if (!group) return;
+      const placement = doorScatter[index];
+      const point = compact ? placement.narrow : placement.wide;
       const isSelected = selected === index;
-      const targetScale = selected === null ? scale : isSelected ? Math.min(viewport.height * .15, viewport.width * .23) : 0;
-      const x = selected === null ? (index % cols - (cols - 1) / 2) * 4.05 * scale : 0;
-      const y = selected === null ? ((rows - 1) / 2 - Math.floor(index / cols)) * 4.5 * scale - 1.55 * scale + viewport.height * .055 : -1.55 * targetScale;
+      const targetScale = selected === null ? scale * placement.scale : isSelected ? Math.min(viewport.height * .15, viewport.width * .23) : 0;
+      const x = selected === null ? point[0] * spreadX : 0;
+      const y = selected === null ? point[1] * spreadY + centerY - 1.55 * targetScale : -1.55 * targetScale;
       group.position.x = THREE.MathUtils.lerp(group.position.x, x, blend);
       group.position.y = THREE.MathUtils.lerp(group.position.y, y, blend);
+      group.position.z = THREE.MathUtils.lerp(group.position.z, selected === null ? placement.depth : 0, blend);
       group.scale.setScalar(THREE.MathUtils.lerp(group.scale.x, targetScale, blend));
-      group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, doorStudies[index].angle + angle * Math.PI / 180, blend);
+      group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, placement.yaw + angle * Math.PI / 180, blend);
       group.visible = group.scale.x > .005;
     });
   });

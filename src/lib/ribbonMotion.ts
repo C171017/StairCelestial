@@ -75,19 +75,19 @@ function approachVelocity(
 export function advanceRibbonMotion(
   motion: RibbonMotionState,
   delta: number,
-  { paused = false, reducedMotion = false } = {},
+  { paused = false, reducedMotion = false, cruiseSpeed = RIBBON_CRUISE_SPEED, maxSpeed = RIBBON_MAX_SPEED } = {},
 ): void {
   if (!Number.isFinite(delta) || delta <= 0) return;
   const duration = Math.min(delta, 0.1);
   const steps = Math.ceil(duration / (1 / 120));
   const dt = duration / steps;
-  const maxInputSpeed = reducedMotion ? 0.22 : RIBBON_MAX_SPEED - RIBBON_CRUISE_SPEED;
+  const maxInputSpeed = reducedMotion ? Math.min(0.22, maxSpeed) : maxSpeed - cruiseSpeed;
 
   for (let i = 0; i < steps; i += 1) {
     const previousInputVelocity = motion.inputVelocity;
     const previousCruiseVelocity = motion.cruiseVelocity;
     const inputTarget = paused ? 0 : clamp(motion.pendingInput * 3, -maxInputSpeed, maxInputSpeed);
-    const cruiseTarget = paused || reducedMotion ? 0 : motion.direction * RIBBON_CRUISE_SPEED;
+    const cruiseTarget = paused || reducedMotion ? 0 : motion.direction * cruiseSpeed;
 
     motion.inputVelocity = approachVelocity(
       motion.inputVelocity,
