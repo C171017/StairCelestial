@@ -1,194 +1,69 @@
-# Architecture — agent prompt
+# Sanctuary architecture
 
-Technical map of the **web app**. Read before editing scene, camera, or doors.
+This document describes the active glass-ribbon homepage. The staircase, doors, planets, and moving-camera design are legacy and are not mounted by `src/app/page.tsx`.
 
-## Folder map
+## Entry and component map
 
-```txt
-src/app/
-  page.tsx              — Home: <StairwayScene /> + <ProjectOverlay />
-  layout.tsx            — Root layout, metadata
-  globals.css           — Full-viewport, dark background
+- `src/app/page.tsx` mounts `SanctuaryExperience`.
+- `src/components/sanctuary/SanctuaryExperience.tsx` owns entrance intent/readiness, selection, the project detail panel, placeholder notices, Escape handling, and error/timeout fallback. It dynamically imports the Canvas with SSR disabled.
+- `SanctuaryScene.tsx` creates the fixed camera, cloud background, studio environment, readiness marker, ribbon world, and independent social objects.
+- `GlassRibbon.tsx` renders the procedurally swept glass strip and fine edge highlights.
+- `ProjectArtifact.tsx` loads a shared GLB, clones its object hierarchy for each repeated sculpture, and supplies a hit target and HTML label.
+- `SocialArtifacts.tsx` renders the LinkedIn and GitHub tokens and their labels outside the moving ribbon hierarchy.
+- `src/app/globals.css` supplies the entrance, overlays, typography, responsive layout, and atmosphere framing.
 
-src/components/scene/
-  StairwayScene.tsx     — <Canvas>; SceneContent runs `useVirtualScrollIndex`, passes ref to `SpiralStaircase` + `CameraRig`
-  SpiralStaircase.tsx   — Pooled stairs + door/platform groups (useFrame); reads `virtualIndexRef` (same float as camera)
-  StairSegment.tsx      — Renders one pre-cloned stair Object3D
-  PlatformLanding.tsx   — Renders one pre-cloned platform Object3D
-  ProjectDoor.tsx       — Door + preview screen + GSAP + clicks (pooled)
-  CameraRig.tsx         — Orbit camera + door-focus zoom blend (consumes `virtualIndexRef`)
-  CelestialBackground.tsx — Jupiter + ringed planet GLBs
-  Atmosphere.tsx        — fog, Stars, Milky Way plane
-  Lights.tsx            — ambient + directional + point
-  cloneScene.ts         — findChildByNamePart() helper
+## Coordinates and infinite illusion
 
-src/hooks/
-  useVirtualScrollIndex.ts — Observer deltas + intro/cruise → virtualStairIndex (store)
-  useScrollObserver.ts     — GSAP Observer on `#portfolio-scroll-surface` (wheel/touch)
+`src/lib/ribbonGeometry.ts` supplies the helix pitch, point placement, rounded ribbon geometry, and edge geometry. A finite six-turn strip extends beyond the view. Project slots repeat along it; there is no unbounded mesh allocation.
 
-src/components/ui/
-  ProjectOverlay.tsx    — HTML overlay, scroll %, open project card
-  LoadingScreen.tsx     — Canvas loading fallback
+`RibbonWorld` wraps the scrolling group in a separate focus-transform group. Scroll changes the ribbon group's vertical position. The integer cycle selects the repeating project identities; the fractional cycle determines the local offset. The camera and sky are independent of this hierarchy. Social tokens may gently bob, but scrolling does not move them.
 
-src/lib/
-  spiral.ts             — LOOP_LENGTH, placements, camera orbit, door Y offset
-  doorCameraFocus.ts    — Zoom-to-door pose, viewport framing, scroll release threshold
-  spiralPool.ts         — assignPoolSlots (floor-centered window), assignDoorPoolSlots (nearest doors + slot hysteresis)
-  models.ts             — MODEL_PATHS for all GLBs
-  projects.ts           — Project[] (data-only growth)
-  store.ts              — usePortfolioStore (Zustand)
-  scrollInput.ts        — SCROLL_SENSITIVITY, climb sign, per-frame caps
-```
+The viewport selects a narrower ribbon and smaller sculpture scale for compact screens. Model geometry remains grounded at local Y=0 with centered X/Z origins.
 
-## GLB assets
+## Motion and focus
 
-| File | Role |
-|------|------|
-| `stair_segment.glb` | One stair slab; **64 pool clones** |
-| `platform_landing.glb` | Landing; **12 pool clones** |
-| `project_door_portal.glb` | Frame + panel; **12 pool clones** |
-| `preview_screen.glb` | Plane behind door; texture applied in code |
-| `jupiter_planet.glb` | Background |
-| `ringed_planet.glb` | Background |
+`src/lib/ribbonMotion.ts` is a pure motion integrator expressed in ribbon turns. It caps queued input and speed, eases acceleration and cruise velocity, handles either direction, and limits catch-up after a delayed frame.
 
-Paths: `src/lib/models.ts` → `public/models/`
+`src/hooks/useRibbonMotion.ts` connects wheel and vertical-touch input on `#portfolio-scroll-surface` to that integrator. It ignores interactive elements and pinch gestures, normalizes wheel units, suppresses post-swipe clicks, watches reduced-motion preferences, and clears velocities when the page becomes hidden. The render loop consumes a ref; React state is not updated for every motion frame.
 
-**Naming quirk:** Blender export may suffix nodes (e.g. `door_01_panel.001`). Code uses `findChildByNamePart(root, "panel")` — partial name match, not exact string.
+`src/lib/ribbonFocus.ts` eases the currently rendered ribbon transform toward a selected anchor. Clearing or replacing a selection changes the destination while retaining the current pose. This addresses the old abrupt return caused by resetting a camera focus target. Reduced-motion mode keeps the overview composition instead of applying focus travel.
 
-## Spiral layout (`src/lib/spiral.ts`)
+A selection records a project index and absolute ribbon turn. During selection, cruise eases to a pause. Scroll clears selection and begins the smooth return. The detail close control, Escape, and selecting the same sculpture also return to the overview.
 
-| Constant | Value | Purpose |
-|----------|-------|---------|
-| `LOOP_LENGTH` | 28 | One full XZ turn; angle uses `index % LOOP_LENGTH` |
-| `STAIR_POOL_SIZE` | 64 | Active stair instances around camera |
-| `DOOR_POOL_SIZE` | 12 | Active door+platform groups in view |
-| `DOOR_POOL_SEARCH_RADIUS` | 56 | Virtual steps ±center when collecting door slot candidates |
-| `SPIRAL_RADIUS` | 11 | Helix radius for stair/platform placement |
-| `STAIR_HEIGHT_STEP` | 0.52 | Vertical rise per stair (Y is unbounded) |
-| `STAIR_ANGLE_STEP` | 2π/28 | Rotation per loop step |
-| `CAMERA_ORBIT_RADIUS` | 25 | Fixed camera distance from central axis (`SPIRAL_RADIUS + 14`) |
-| `CAMERA_Y_OFFSET` | 3 | Camera height above current stair index |
-| `CAMERA_LOOK_AT_Y_OFFSET` | 1.2 | Look-at on void center `(0, y + offset, 0)` |
+## Entrance and readiness
 
-Door spacing: `DOOR_STEP = max(6, floor(LOOP_LENGTH / projects.length))`. For 4 projects, doors at virtual indices 0, 7, 14, 21…
+The SVG eye and HTML entrance render independently of the lazy 3D scene. Clicking the entrance records intent. The reveal waits until assets have resolved, `compileAsync` completes, and the scene advances several frames. Readiness and entry intent are separate states.
 
-Functions:
+A scene error boundary and entrance timeout expose links to all four projects. This fallback is deliberately lightweight. The full sound system and ordinary navigation are outside this pass; the old audio gate is not mounted.
 
-- `getStairPlacement(virtualIndex)` — XZ from loop modulo; Y from full index
-- `getPlatformPlacement` / `getDoorPlacement` — outward offsets
-- `getContinuousOrbitAngle(virtualIndex)` — unbounded angle for camera (no modulo)
-- `isDoorStairIndex` / `getDoorSlotIndex` / `getProjectForStairIndex`
-- `DOOR_Y_OFFSET_ABOVE_PLATFORM` — derived from GLB bounds so door bottom sits on platform top (~1.75), not a hand-tuned `0.12`
+## Content and external links
 
-**When stairs/doors float or clip:** tune `DOOR_Y_OFFSET` / platform offsets here first, not in Blender, unless scale is fundamentally wrong.
+`src/lib/projects.ts` remains the source for the four project identities and existing URLs. `src/lib/sanctuaryContent.ts` maps those records to their presentation text and `music`, `jazz`, `atlas`, or `network` sculpture.
 
-## Infinite illusion (pool + fog)
+To add a project, supply both the base project record and its Sanctuary presentation/model mapping; the current mapping arrays assume four entries. This reconstruction no longer uses door indices to lay out the active experience.
 
-```txt
-GSAP Observer on #portfolio-scroll-surface → unboundedOffset → virtualStairIndex
-64 pooled stairs + door pool slots reposition each frame
-XZ repeats every LOOP_LENGTH; Y keeps climbing
-Fog (#030508, near 22, far 95) softens distant geometry and recycled segments
-```
+Both social URLs are deliberately `null`. Activating a token shows a placeholder notice. Once configured, the token and label open the supplied URL with `noopener,noreferrer`. Do not infer a personal social account from a project-hosting URL.
 
-**Add a project (no Blender):** append to `projects` in `src/lib/projects.ts` + preview under `public/previews/`. `DOOR_STEP` auto-adjusts from project count (min 6 steps apart).
+## Assets and rendering budget
 
-## Scroll integration (`useScrollObserver.ts` + `useVirtualScrollIndex.ts`)
+- `blender/sanctuary-assets.blend` contains the four sculptures and a studio inspection scene, preserving the original default scene.
+- `blender/build_sanctuary_assets.py` builds and exports the sculptures without depending on remote asset downloads.
+- `public/models/sanctuary/{music,jazz,atlas,network}.glb` use named portable materials, ground-centered origins, and glTF Y-up coordinates. Each sculpture has 4–7 material meshes; the four files total approximately 1.80 MB uncompressed.
+- `public/models/sanctuary/studio-preview.png` is an inspection render, not a runtime texture.
+- `public/textures/sanctuary/cloudscape.webp` is the generated, optimized cloud backdrop, approximately 38 KB.
 
-Unified wheel/touch/pointer via GSAP **Observer** on [`page.tsx`](../src/app/page.tsx) `#portfolio-scroll-surface` (`touch-action: none`). Tuning in [`scrollInput.ts`](../src/lib/scrollInput.ts).
+The Canvas caps DPR at 1.5 and captures a low-resolution studio environment once. Avoid full volumetric clouds, unnecessary render passes, per-frame model cloning, or expanding the finite pool. These are implementation choices, not proof of a measured frame rate; device performance still requires validation.
 
-1. **Seed** `unboundedOffset` at `SCROLL_START_OFFSET` (0.5) — symmetric climb/descend runway.
-2. **User input** (only when `introPlayPhase === "active"`): Observer `onChange` accumulates `pixelsToOffsetDelta(deltaY)` into a pending ref; each frame applies a capped step (`MAX_OFFSET_STEP_PER_FRAME` ≈ 0.06) to `unboundedOffset`.
-3. **Idle motion** when no user delta: intro ramp via `introEpochMs` + `introMotionBlend` before first scroll; after first scroll, slow **cruise** along `lastScrollDirection` at `AUTO_CRUISE_OFFSET_SPEED`. Paused while a door is focused and user is not scrolling.
-4. `virtualStairIndex = unboundedOffset × CLIMB_SCALE` (28 steps per full offset range); index may go negative.
-5. Door focus release: if `|virtualStairIndex - focusScrollAnchor| > SCROLL_FOCUS_RELEASE_THRESHOLD`, call `resetDoors()`.
-
-**Scene wiring:** `useVirtualScrollIndex()` runs once in `StairwayScene` `SceneContent`; the returned ref is passed to `SpiralStaircase` and `CameraRig`.
-
-Dev: `window.__scrollDebug` exposes `unboundedOffset`, `pendingDelta`, `virtualIndex`, `maxDisplayIndexDelta`.
-
-## Scroll camera
-
-- `StairwayScene`: `<Canvas>` only (no Drei scroll DOM)
-- **Orbit mode:** `getContinuousOrbitAngle` + fixed `CAMERA_ORBIT_RADIUS`; looks at void center
-- **Focus mode:** blends toward `getFocusCameraPose()` when `doorFocusTarget` is set (see below)
-- Canvas FOV `58`; `scrollProgress` in UI = position within current loop (0–1)
-
-## Door interaction & zoom
-
-**User flow**
-
-1. **First click** on any visible pooled door → open panel + preview texture + **camera zooms to that door**
-2. **Second click** (same door, while open) → `window.open(project.url)`
-3. **Scroll away** from anchor position → zoom returns to orbit, door closes, overlay clears
-
-**`doorCameraFocus.ts`**
-
-- `worldRootToFocusTarget()` — focus point from the door root’s **world matrix** (correct for pooled slots)
-- `getFocusCameraPose()` — distance from FOV + aspect; extra **viewport frame bias** lowers look-at so the portal sits centered (stronger on portrait / narrow widths)
-- Tune vertical framing: `DOOR_LOOK_AT_HEIGHT`, `getViewportFrameBias()`, camera `position.y` offset in `getFocusCameraPose`
-- `SCROLL_FOCUS_RELEASE_THRESHOLD` — scroll delta before releasing focus
-
-**`CameraRig.tsx`**
-
-- `focusBlend` lerps 0↔1 between orbit pose and focus pose
-- Uses stored `doorFocusTarget` from the click (not recomputed from a stale index alone)
-
-## Door state machine
-
-**Store:** `src/lib/store.ts`
-
-| Field | Meaning |
-|-------|---------|
-| `activeDoorId` | `pool-door-0` … `pool-door-11` |
-| `openedDoorId` | Door currently open |
-| `currentProject` | Project linked to open door |
-| `virtualStairIndex` | Unbounded climb index |
-| `doorPoolVirtualIndices` | Per-slot virtual stair index (-1 = hidden) |
-| `scrollProgress` | Loop-normalized 0–1 for UI |
-| `focusedDoorId` | Door receiving camera zoom (`pool-door-0` … `11`) |
-| `doorFocusTarget` | World-space look-at + forward for zoom framing |
-| `focusVirtualIndex` | Stair index of focused door (metadata) |
-| `focusScrollAnchor` | `virtualStairIndex` when focus started — scroll release uses **this**, not `focusVirtualIndex` |
-
-**Interaction** (`ProjectDoor.tsx`):
-
-1. First pointer down → `setDoorFocus` + open + preview from `getProjectForStairIndex(virtualIndex)`
-2. Second pointer down → `window.open(project.url)`
-3. When a pool slot’s virtual index changes, door closes and preview texture reloads
-
-`projects.ts` `doorIndex` is legacy slot order; pooled doors use `getProjectForStairIndex(virtualIndex)`.
-
-**Current projects** (edit in `projects.ts`): Music, Stars, Guanchang, Columbia-Barnard Network — preview images still placeholder SVGs under `public/previews/`.
-
-## What lives in code vs Blender
-
-| In GLB | In Three.js code |
-|--------|------------------|
-| Stairs, platforms, doors, planets | Starfield (`Stars`), fog, Milky Way plane |
-| Door mesh + emissive materials | Door open animation, preview texture |
-| | Virtual scroll + segment pool |
-| | Door-focus camera zoom + viewport framing |
-| | HTML overlay UI |
-
-## Build / run
+## Validation commands
 
 ```bash
-npm run dev    # localhost:3000
-npm run build  # must pass before PR
+npm test
+npm run lint
+npm run build
 ```
 
-`page.tsx` uses `dynamic(..., { ssr: false })` for Canvas — do not remove without a plan for SSR.
+Browser validation must cover desktop and compact layouts, entrance readiness and failure, scroll continuity across positive/negative cycles, focus interruption and return, social independence, touch tap/drag separation, and reduced motion. Record observed results rather than assuming tests establish visual quality.
 
-## Common agent mistakes to avoid
+## Legacy code
 
-- Merging all stairs into one mesh export
-- Center pivot on door panel
-- Driving climb from uncapped per-frame scroll deltas (spikes on mobile — use `clampOffsetStep`)
-- Applying modulo to camera orbit angle (360° snap each lap)
-- Thousands of star meshes instead of `Stars` or instanced points
-- Putting infinite loop logic inside GLB instead of recycling transforms
-- Attaching Observer to the wrong element (must be `#portfolio-scroll-surface` on `main`)
-- Cloning GLB per frame instead of reusing pool clones + updating transforms
-- Releasing door focus when `|index - focusVirtualIndex| > threshold` (use `focusScrollAnchor` instead)
-- Forgetting to update `docs/` after changing door/zoom/scroll UX (see [README.md](./README.md) § Keeping docs in sync)
+`src/components/scene/`, the old UI/audio gate, `useVirtualScrollIndex`, the door/orbit helpers, old Zustand scene state, `public/models/*.glb`, and `blender/stairCelestial.blend` remain for reference. Their presence does not mean the active homepage loads them. The historical Blender prompt sequence under `blender/md/` describes that previous design.

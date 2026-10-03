@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint src",
+    "test": "node --import tsx --test src/lib/ribbonMotion.test.ts src/lib/ribbonFocus.test.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.0.6",

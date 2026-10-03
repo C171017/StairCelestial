@@ -1,140 +1,45 @@
-# Web implementation phases — agent prompt
+# Sanctuary implementation and validation
 
-Phases for the **Next.js / R3F app**. Blender is complete; do not repeat `blender/md/01–06` unless user requests re-export.
+The active reconstruction is on `codex/glass-ribbon`. This checklist replaces the old W1–W6 staircase/door phases; those phases are historical and must not guide the active scene.
 
-Mark phase status in [PROJECT.md](./PROJECT.md) when done.
+## 1. Foundation and assets — implemented
 
----
+- Replace the mounted homepage with `SanctuaryExperience` and a lazily loaded R3F scene.
+- Create a bright cloud atmosphere and a continuous, rounded glass helix.
+- Build four recognizable sculptures in Blender; retain the editable source and reproducible export script.
+- Optimize the generated cloudscape to an approximately 38 KB WebP.
+- Preserve all four existing project destinations and keep both social destinations as intentional placeholders.
 
-## W1 — Scaffold & GLB smoke test ✅ Done
+## 2. Interaction reconstruction — implemented and browser checked
 
-**Goal:** App runs; each GLB loads once without errors.
+- Move only the ribbon and project sculptures in response to scrolling.
+- Preserve gentle continuous travel, with controlled acceleration and reversal.
+- Replace doors with directly selectable sculptures and project details.
+- Ease the current ribbon transform through focus changes and return, avoiding the old abrupt target reset.
+- Keep the camera, background, and social objects independent of scroll and focus transforms.
+- Use an inexpensive eye entrance while assets and shaders prepare; provide project links if the scene cannot become ready.
+- Support compact layouts, reduced motion, and touch drag/tap separation.
 
-**Key files:** `StairwayScene.tsx`, `StairSegment.tsx`, `public/models/`
+## 3. Validation — build, tests, and browser checks passed
 
----
+Eleven automated motion/focus tests and the production build pass. Browser checks covered the following; physical phone benchmarking remains a follow-up:
 
-## W2 — Spiral alignment ✅ Mostly done
+- Entrance behavior before, during, and after preparation; slow/error fallback.
+- Smooth scroll, reversal, and repeated-cycle boundaries in both directions.
+- Selecting every project, switching selection, interrupting focus, and returning.
+- Stable social/background placement while scrolling and focusing.
+- Correct project URLs and honest placeholder behavior for social URLs.
+- Desktop and narrow layouts, touch gestures, keyboard-accessible labels, and reduced motion.
+- Resource cost and frame behavior on representative devices before making performance claims.
 
-**Goal:** Stairs, platforms, and doors sit correctly relative to each other and match Blender scale.
+No completed production measurements or deployment readiness are asserted here.
 
-**Done:**
+## 4. Independent design review — accepted at 8.4/10
 
-- `DOOR_Y_OFFSET_ABOVE_PLATFORM` in `spiral.ts` from GLB mesh bounds (doors on platform tops)
-- Visual pass in browser — doors no longer clip through slabs
+The user requested an Astra review scored from 0 to 10, with 10 representing an award-level production result. Aim for at least 8. If a review is below 8, incorporate its concrete improvement directions and request another review, for at most three attempts total.
 
-**Remaining (optional):**
+Round one scored 7.8/10. Correcting mobile cloud proportions and reducing focus clutter produced 8.4/10 in round two. Astra verified desktop and portrait interactions directly. No third round was needed. Details and the owner's remaining decisions are in [REVIEW-NOTES.md](REVIEW-NOTES.md).
 
-- Fine-tune `SPIRAL_RADIUS`, `STAIR_HEIGHT_STEP`, planet positions in `CelestialBackground.tsx`
+## Deferred scope
 
-**Do not:** Re-export GLBs unless scale is wrong by ~10× or more
-
----
-
-## W3 — Camera & scroll feel ✅ Mostly done
-
-**Goal:** Smooth ascent; stable camera; far geometry fades in fog.
-
-**Implemented:**
-
-- GSAP Observer on `#portfolio-scroll-surface` + `useVirtualScrollIndex` (unified wheel/touch)
-- `useVirtualScrollIndex` — wrap-aware offset integration (see [ARCHITECTURE.md](./ARCHITECTURE.md))
-- `CameraRig` — orbit + **door-focus zoom blend** (`doorCameraFocus.ts`)
-- Fog in `Atmosphere.tsx` — `near: 14`, `far: 85`
-- Focus release on scroll via `focusScrollAnchor` (not door stair index)
-
-**Optional tuning:**
-
-- `CameraRig` `CAMERA_LERP` / `FOCUS_BLEND_LERP`, FOV in `StairwayScene.tsx`
-- `doorCameraFocus.ts` — `DOOR_LOOK_AT_HEIGHT`, `getViewportFrameBias()` for vertical centering
-- `SCROLL_SENSITIVITY` / `MAX_OFFSET_STEP_PER_FRAME` in `src/lib/scrollInput.ts` if scroll feels slow/fast
-
----
-
-## W4 — Doors, previews & project data (in progress)
-
-**Goal:** Production-ready project wiring and reliable door interaction.
-
-**Done:**
-
-- Real project URLs in `projects.ts` (Music, Stars, Guanchang, Columbia-Barnard Network)
-- First click → open + preview + zoom; second click → URL
-- Scroll away → `resetDoors()` (zoom out + close)
-- Zoom works for **any** visible pooled door (`focusScrollAnchor` + world-space focus target)
-
-**Tasks:**
-
-1. Add real preview images to `public/previews/` (PNG/WebP; update `previewImage` paths)
-2. Verify hinge: panel opens on hinge side; fix axis in `ProjectDoor.tsx` if needed
-3. Optional: keyboard accessible focus
-
-**Done when:**
-
-- Projects repeat correctly each lap via `getProjectForStairIndex`
-- Preview textures are real screenshots, not SVG placeholders
-- Only one door open at a time
-
-**Door IDs in store:** `pool-door-0` … `pool-door-3` (not `door-0`)
-
----
-
-## W5 — Atmosphere & visual polish
-
-**Goal:** Premium, mysterious, calm — not noisy or overexposed.
-
-**Tasks:**
-
-1. Tune `Lights.tsx` intensities and colors
-2. Refine `Atmosphere.tsx`: star count, Milky Way opacity
-3. Restrain emissive door strips if too bright
-4. Optional: light post-processing bloom only
-
-### Saturn (ringed planet) — in-code pass done
-
-**Implemented in web (no Blender re-export):**
-
-- Screen-fixed NDC anchor in `CelestialBackground.tsx` (no horizontal swing on scroll)
-- Cinematic textures in `public/textures/saturn/` + `applySaturnMaterials` in `saturnMaterials.ts`
-- Rim Fresnel + backside atmosphere shell + dedicated planet lights
-
-**Evaluate in browser; use Blender only if still lacking:**
-
-| Issue | Blender follow-up |
-|-------|-------------------|
-| Ring looks flat / pancake | Rebuild ring (torus or multi-plane) |
-| Texture stretching on poles or ring | Re-unwrap UVs |
-| Silhouette / tilt wrong for composition | Adjust mesh pose in Blender |
-| Needs close-up surface detail | Bake normal/roughness maps into GLB |
-| Jupiter should match Saturn quality | Same texture pipeline for `jupiter_planet.glb` |
-
----
-
-## W6 — Infinite illusion, mobile, deploy
-
-**Goal:** Performance-safe endless stair + shipped site.
-
-| Task | Status |
-|------|--------|
-| Segment pool (14 stairs, 4 doors) + `spiralPool.ts` | **Done** |
-| Unified scroll input (`useScrollObserver` + `useVirtualScrollIndex`) | **Done** |
-| Mobile: DPR cap, star count, touch door taps | **Todo** |
-| `npm run build` + Vercel deploy | **Todo** |
-
-**Do not:** Add true infinite geometry, raw `scroll.delta` climb, or a physics engine for MVP
-
----
-
-## Phase picker for agents
-
-| User asks for… | Start phase |
-|----------------|-------------|
-| “doors broken / won’t open” | W4 |
-| “zoom wrong / door low on screen” | W3 — `doorCameraFocus.ts` |
-| “zoom only works on first door” | W3 — use `focusScrollAnchor`, not door index |
-| “stairs floating / wrong layout” | W2 |
-| “scroll jumps / stutter” | W3 — tune `src/lib/scrollInput.ts` sensitivity / caps |
-| “looks flat / lighting” | W5 |
-| “slow on phone / deploy” | W6 |
-| “new GLB from Blender” | W2 after re-export |
-
-Always read [ARCHITECTURE.md](./ARCHITECTURE.md) before editing scene code.
+Sound design, a conventional navigation system, personal social URLs, and deployment are separate follow-up work. Retain the old implementation for reference and rollback, but do not mount its audio, planets, doors, or orbiting camera in the Sanctuary experience.

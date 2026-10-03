@@ -1,98 +1,49 @@
-# Project — agent prompt
+# Project direction
 
-## What this is
+## Active experience
 
-A **personal portfolio homepage** built as a 3D web experience:
+Sanctuary is a bright, glassy portfolio with a cloud atmosphere, pearl surfaces, champagne highlights, and a vertically endless glass helix. It replaces the former dark celestial staircase on branch `codex/glass-ribbon`.
 
-- An **endless-feeling celestial spiral staircase** in space
-- **Scroll** moves a guided third-person camera up the **outer edge** of the spiral
-- **Project doors** on platform landings: **first click** opens door + preview + **zooms camera to the door**; **second click** opens project URL; **scroll away** returns to spiral view
-- Must stay **smooth on desktop and mobile** (zoom framing is aspect-aware in `doorCameraFocus.ts`)
+The user's current direction supersedes earlier instructions about planets, doors, orbiting cameras, and dark materials.
 
-## Visual direction (do not drift)
+## Interaction contract
 
-```txt
-Slow wide spiral staircase
-Third-person camera outside the spiral, fixed orbit radius, looking at the void center
-Modern graphite project doors with thin cyan-white emissive accents
-One large distant Jupiter-like planet, one smaller ringed planet
-Subtle Milky Way band, sparse starfield
-Fog/mist hiding repetition
-```
+- Only the ribbon and its project sculptures respond to scrolling. Keep the camera, cloud backdrop, and social objects outside the scrolling and focus transforms.
+- Preserve deliberate continuous idle travel. Smooth acceleration, reversals, selection, and return; no abrupt target reset.
+- Place project sculptures directly on the ribbon. There are no project doors.
+- Select a sculpture to reveal details; the project link opens its destination. Focus moves the ribbon composition, not the camera.
+- The inexpensive SVG eye entrance conceals preparation of the initial 3D scene. Do not show a raw model-loading screen. If preparation fails or exceeds the entrance timeout, provide working project links.
+- Respect reduced-motion preferences and distinguish a mobile swipe from a tap.
 
-**Avoid:** fantasy castles, medieval doors, spaceship interiors, characters, clutter, heavy simulations, huge textures, true infinite mesh count.
+Sound design and ordinary navigation are explicitly deferred. Do not re-enable legacy audio or add a conventional menu as part of this reconstruction.
 
-## Hard rules (repeat in every 3D change)
+## Content
 
-```txt
-Keep geometry modular, low-poly, clearly named, export-ready for Three.js.
-Door panel must be separate from frame, with hinge-side pivot (not center pivot).
-Do not build a truly infinite staircase — recycle segments + fog + camera illusion.
-New portfolio entries are data-only (projects.ts + preview image), not new door GLBs.
-```
+Retain these existing destinations:
 
-## Stack
+- Music — `https://music.c171017.com`
+- JazzTree — `https://jazztree.c171017.com`
+- Guanchang — `https://guanchang.me`
+- Columbia-Barnard Network — `https://c171017.github.io/Social-Network-Columbia-Barnard/`
 
-```txt
-Next.js 15 (App Router) + TypeScript
-React Three Fiber + @react-three/drei
-GSAP (door animation)
-Zustand (door + scroll state)
-Tailwind CSS 4
-Blender → GLB in public/models/
-Deploy target: Vercel
-```
+Both social destinations are intentionally placeholders for this pass. Keep `github` and `linkedin` unconfigured in `src/lib/sanctuaryContent.ts` until the owner supplies or approves the personal URLs; the interface explains the missing link when activated.
 
-Deeper stack rationale: [`blender/md/threejs-portfolio-tech-stack.md`](../blender/md/threejs-portfolio-tech-stack.md) (note: scroll section in code uses `useVirtualScrollIndex`, not raw `scroll.delta`).
+## Asset direction
 
-## Status checklist
+Use smoothly beveled, recognizable objects with coherent materials: a turntable, brass saxophone, cartographic globe, and pearl-node constellation. Blender source and an executable builder live in `blender/`; portable GLBs live in `public/models/sanctuary/`. The original Blender scene was preserved during asset creation.
 
-Update this section when you complete a milestone.
+The glass ribbon and social tokens are authored in code. A generated cloud image is served as an approximately 38 KB WebP. Keep textures and geometry finite; imply infinity through recycling, composition, and offscreen geometry.
 
-| Track | Item | Status |
-|-------|------|--------|
-| Blender | Modular GLBs exported to `public/models/` | **Done** |
-| Blender | Door panel hinge pivot verified in Blender | **Verify in browser** |
-| Web | Next.js + R3F scaffold | **Done** |
-| Web | Pooled helix (14 stairs, 4 doors) + GLB load | **Done** |
-| Web | Scroll camera (fixed orbit, void look-at) | **Done** |
-| Web | Seamless infinite scroll (lap wraps) | **Done** |
-| Web | Door click → open → second click → URL | **Done** |
-| Web | Door-focus camera zoom (any pooled door) | **Done** |
-| Web | Atmosphere (fog, stars, Milky Way, planets) | **Done (tune)** |
-| Web | Real project URLs in `src/lib/projects.ts` | **Done** |
-| Web | Real preview images (replace SVG placeholders) | **Todo** |
-| Web | Spiral/door alignment (`DOOR_Y_OFFSET` from GLB bounds) | **Done** |
-| Web | Mobile performance pass | **Todo** |
-| Web | Deploy Vercel | **Todo** |
+## Current status
 
-## Current focus
+- The Sanctuary homepage and four Blender sculptures are implemented.
+- The old scene, audio, stores, and orbit helpers remain unmounted for reference and rollback.
+- Production export and eleven motion/focus tests pass; desktop and narrow browser interactions were checked.
+- Independent Astra review: 7.8/10 on round one, then 8.4/10 after refinement on round two. The requested threshold was met within the three-round limit; see [REVIEW-NOTES.md](REVIEW-NOTES.md).
+- There is no claim of measured device performance or deployment readiness.
 
-**Phase W4–W6** (see [WEB-PHASES.md](./WEB-PHASES.md)): real preview images for doors, mobile perf, deploy. Door zoom/framing: tune `src/lib/doorCameraFocus.ts` if composition feels off.
+## Contributor guidance
 
-## Agent instructions
+Read [ARCHITECTURE.md](ARCHITECTURE.md) before editing the scene. Keep performance-sensitive motion outside React state updates per frame, preserve finite geometry, and dispose owned resources. Run the relevant motion checks and production build after substantive changes, then record the actual results in [WEB-PHASES.md](WEB-PHASES.md).
 
-- Prefer **small, focused diffs** — match existing patterns in `src/`
-- Before changing layout, scroll, or doors, read `spiral.ts`, `doorCameraFocus.ts`, `useVirtualScrollIndex.ts`, and [ARCHITECTURE.md](./ARCHITECTURE.md)
-- **Update docs in the same change** when behavior or UX differs from [docs/](./README.md) — see **Keeping docs in sync** in [docs/README.md](./README.md)
-- Do **not** join stairs/doors into one mesh in Blender re-exports
-- Do **not** add heavy post-processing or physics unless the user asks
-- After substantive changes, run `npm run build` and note any manual browser checks
-- Do **not** commit `.cursor/` debug logs or stray root `.blend` files (see `.gitignore`)
-
-## Key paths
-
-```txt
-src/app/page.tsx              — homepage, dynamic Canvas import
-src/hooks/useVirtualScrollIndex.ts — scroll → virtualStairIndex
-src/components/scene/         — all R3F scene components
-src/lib/spiral.ts             — helix + orbit camera + door placement Y
-src/lib/doorCameraFocus.ts    — zoom pose + viewport centering (tune framing here)
-src/lib/spiralPool.ts         — pool slot assignment
-src/lib/projects.ts           — portfolio entries
-src/lib/store.ts              — Zustand
-public/models/*.glb           — exported assets
-public/previews/              — preview images for doors
-blender/stairCelestial.blend  — source scene (tracked)
-blender/md/                   — Blender MCP prompts (archive)
-```
+Update current docs when behavior changes. Treat `blender/md/` and the old scene modules as historical references, not active requirements.

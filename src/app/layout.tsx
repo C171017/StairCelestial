@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "⊙",
-  description: "Interactive 3D portfolio along an endless celestial spiral staircase.",
+  description: "A world of curiosities. Projects and experiments along an infinite glass ribbon above the clouds.",
   icons: {
     icon: [
       { url: "/favicon.ico?v=2", sizes: "32x32" },
