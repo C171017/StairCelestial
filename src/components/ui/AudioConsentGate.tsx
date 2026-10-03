@@ -36,8 +36,6 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
   const overlayRef = useRef<HTMLDivElement>(null);
   const controlRef = useRef<HTMLDivElement>(null);
   const eyeApertureRef = useRef<SVGPathElement>(null);
-  const dissolveWarpRef = useRef<SVGFEDisplacementMapElement>(null);
-  const dissolveBlurRef = useRef<SVGFEGaussianBlurElement>(null);
   const eyeInteriorRef = useRef<SVGGElement>(null);
   const upperLidRef = useRef<SVGPathElement>(null);
   const lowerLidRef = useRef<SVGPathElement>(null);
@@ -221,8 +219,6 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
       y: 0,
     });
     gsap.set(sclera, { opacity: 0 });
-    gsap.set(dissolveWarpRef.current, { attr: { scale: 0 } });
-    gsap.set(dissolveBlurRef.current, { attr: { stdDeviation: 0 } });
     gsap.set(eyeInterior, { opacity: 1 });
     gsap.set([iris, pupil, highlight], { opacity: 1 });
 
@@ -344,11 +340,6 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
       const vanishStart = starRevealStart + t.openEyeHold;
       const eyeArtwork = [upper, lower, sclera, eyeInterior];
       const dissolveDuration = theme === "cloud" ? CONTROL_EYE_DISSOLVE_SECONDS : t.eyeVanishAfterOpen;
-      if (theme === "cloud") {
-        tl.to(dissolveWarpRef.current, { attr: { scale: 9 }, duration: dissolveDuration, ease: "sine.in" }, vanishStart);
-        tl.to(dissolveBlurRef.current, { attr: { stdDeviation: 1.1 }, duration: dissolveDuration, ease: "sine.in" }, vanishStart);
-        tl.to(control, { scale: 1.025, duration: dissolveDuration, ease: "sine.inOut" }, vanishStart);
-      }
 
       tl.to(
         eyeArtwork,
@@ -378,8 +369,6 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
 
   const eyeRefs = {
     eyeAperture: eyeApertureRef,
-    dissolveWarp: dissolveWarpRef,
-    dissolveBlur: dissolveBlurRef,
     eyeInterior: eyeInteriorRef,
     upperLid: upperLidRef,
     lowerLid: lowerLidRef,

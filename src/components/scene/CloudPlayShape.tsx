@@ -4,10 +4,11 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { RIBBON_CRUISE_SPEED, type RibbonMotionSnapshot } from "@/lib/ribbonMotion";
-import type { ControlEntrance } from "@/lib/controlEntrance";
+import { CONTROL_SHAPE_FORMED_SECONDS, type ControlEntrance } from "@/lib/controlEntrance";
 import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 import { createPlayShapeGeometry } from "@/lib/playShapeGeometry";
-import { createIntroSphereGeometry } from "@/lib/introSphereGeometry";
+import { createIntroIrisGeometry } from "@/lib/introIrisGeometry";
+import { createIntroIrisMaterial } from "@/lib/introIrisMaterial";
 
 
 export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance }: {
@@ -23,14 +24,14 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
   const bodyMaterial = useRef<THREE.MeshPhysicalMaterial>(null);
   const introMesh = useRef<THREE.Mesh>(null);
   const bodyMesh = useRef<THREE.Mesh>(null);
-  const introMaterial = useRef<THREE.MeshPhysicalMaterial>(null);
+  const intro = useMemo(createIntroIrisMaterial, []);
   const pearl = useMemo(() => new THREE.Color("#f4f1e9"), []);
   const obsidian = useMemo(() => new THREE.Color("#080a0d"), []);
   const spinAxis = useMemo(() => new THREE.Vector3(0.25, 1, 0.12).normalize(), []);
   const shape = useMemo(createPlayShapeGeometry, []);
-  const sphere = useMemo(() => {
+  const iris = useMemo(() => {
     const target = createPlayShapeGeometry();
-    const geometry = createIntroSphereGeometry(target.geometry, 0.29 / scale);
+    const geometry = createIntroIrisGeometry(target.geometry, 0.29 / scale);
     target.geometry.dispose();
     return geometry;
   }, [scale]);
@@ -49,10 +50,11 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
   useEffect(() => () => {
     shape.geometry.dispose(); edges.geometry.dispose(); edges.material.dispose();
   }, [shape, edges]);
-  useEffect(() => () => sphere.dispose(), [sphere]);
+  useEffect(() => () => iris.dispose(), [iris]);
+  useEffect(() => () => intro.material.dispose(), [intro]);
   useFrame((_, dt) => {
     const p = entrance.current;
-    const forming = p.sphereMorph < 1;
+    const forming = p.shapeMorph < 1;
     // Integrate speed so ribbon acceleration never causes a jump in orientation.
     // The base spin continues even when the ribbon settles to a stop.
     if (active && !reducedMotion.current) {
@@ -67,17 +69,17 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
     }
     if (introMesh.current) {
       introMesh.current.visible = forming;
-      if (introMesh.current.morphTargetInfluences) introMesh.current.morphTargetInfluences[0] = p.sphereMorph;
+      if (introMesh.current.morphTargetInfluences) introMesh.current.morphTargetInfluences[0] = p.shapeMorph;
     }
     if (bodyMesh.current) bodyMesh.current.visible = !forming;
-    if (introMaterial.current) {
-      setLocalMaterialOpacity(introMaterial.current, p.reveal);
-      introMaterial.current.color.copy(pearl).lerp(obsidian, p.sphereMorph);
-      introMaterial.current.metalness = THREE.MathUtils.lerp(0.08, 0.35, p.sphereMorph);
-      introMaterial.current.roughness = THREE.MathUtils.lerp(0.22, 0.14, p.sphereMorph);
-    }
-    edges.material.opacity = forming ? 0 : 0.22;
-    // Finish the sphere-to-tetrahedron before responding to an early audio click.
+    setLocalMaterialOpacity(intro.material, p.reveal);
+    intro.material.color.copy(pearl).lerp(obsidian, p.shapeMorph);
+    intro.material.metalness = THREE.MathUtils.lerp(0.08, 0.35, p.shapeMorph);
+    intro.material.roughness = THREE.MathUtils.lerp(0.22, 0.14, p.shapeMorph);
+    intro.detail.value = 1 - THREE.MathUtils.smoothstep(p.shapeMorph, 0, 0.65);
+    edges.material.opacity = reducedMotion.current ? 0.22
+      : 0.22 * THREE.MathUtils.smoothstep(p.elapsed, CONTROL_SHAPE_FORMED_SECONDS, CONTROL_SHAPE_FORMED_SECONDS + 0.4);
+    // Finish the iris-to-tetrahedron before responding to an early audio click.
     const target = playing && !forming ? 1 : 0;
     if (progress.current === target) return;
     const next = reducedMotion.current ? target : THREE.MathUtils.damp(progress.current, target, 5.5, Math.min(dt, 0.05));
@@ -87,11 +89,7 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
     edges.geometry = new THREE.EdgesGeometry(shape.geometry, 20);
   });
   return <group ref={spinGroup} scale={scale}>
-    <mesh ref={introMesh} args={[sphere]}>
-      <meshPhysicalMaterial ref={introMaterial} color="#f4f1e9"
-        metalness={0.08} roughness={0.22} clearcoat={1} clearcoatRoughness={0.055}
-        envMapIntensity={1.8} depthTest depthWrite />
-    </mesh>
+    <mesh ref={introMesh} args={[iris]} material={intro.material} />
     <mesh ref={bodyMesh} geometry={shape.geometry} visible={false}>
       <meshPhysicalMaterial ref={bodyMaterial} color="#080a0d"
         metalness={0.35} roughness={0.14} clearcoat={1} clearcoatRoughness={0.055}

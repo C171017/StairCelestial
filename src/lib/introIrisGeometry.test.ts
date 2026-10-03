@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as THREE from "three";
 import { createPlayShapeGeometry } from "./playShapeGeometry";
-import { createIntroSphereGeometry } from "./introSphereGeometry";
+import { createIntroIrisGeometry } from "./introIrisGeometry";
 
-test("sphere morph preserves the sculpture's exact face planes and corners", () => {
+test("iris morph preserves the sculpture's exact face planes and corners", () => {
   const shape = createPlayShapeGeometry();
-  const sphere = createIntroSphereGeometry(shape.geometry, 0.315);
-  const positions = sphere.getAttribute("position");
-  const target = sphere.morphAttributes.position[0];
+  const iris = createIntroIrisGeometry(shape.geometry, 0.315);
+  const positions = iris.getAttribute("position");
+  const target = iris.morphAttributes.position[0];
   const original = shape.geometry.getAttribute("position");
   const planes: THREE.Plane[] = [];
   const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
@@ -19,10 +19,14 @@ test("sphere morph preserves the sculpture's exact face planes and corners", () 
   }
   for (let i = 0; i < positions.count; i++) {
     a.fromBufferAttribute(positions, i);
-    assert.ok(Math.abs(a.length() - 0.315) < 1e-6);
+    assert.ok(Math.abs(Math.hypot(a.x, a.y, a.z / 0.18) - 0.315) < 1e-6);
+    assert.ok(Math.abs(a.z) <= 0.315 * 0.18 + 1e-6);
+    const uv = iris.getAttribute("uv");
+    assert.ok(Math.abs(uv.getX(i) - (a.x / 0.315 * 0.5 + 0.5)) < 1e-6);
+    assert.ok(Math.abs(uv.getY(i) - (a.y / 0.315 * 0.5 + 0.5)) < 1e-6);
     a.fromBufferAttribute(target, i);
     assert.ok(planes.some(plane => Math.abs(plane.distanceToPoint(a)) < 1e-6));
-    b.fromBufferAttribute(sphere.morphAttributes.normal[0], i);
+    b.fromBufferAttribute(iris.morphAttributes.normal[0], i);
     assert.ok(Math.abs(b.length() - 1) < 1e-6);
   }
   for (let i = 0; i < original.count; i++) {
@@ -33,6 +37,6 @@ test("sphere morph preserves the sculpture's exact face planes and corners", () 
     }
     assert.ok(found, "Every original corner must survive the morph");
   }
-  sphere.dispose();
+  iris.dispose();
   shape.geometry.dispose();
 });

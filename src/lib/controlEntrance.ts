@@ -1,4 +1,4 @@
-/** One clock carries the eye handoff, sphere formation and sculpture entrance.
+/** One clock carries the eye handoff, iris shaping and sculpture entrance.
  * Changing the interaction phase must never restart any of these motions. */
 export const CONTROL_ENTRANCE_SECONDS = 9.05;
 export const CONTROL_EYE_DISSOLVE_SECONDS = 0.85;
@@ -22,17 +22,18 @@ export function entranceTurnProgress(value: number) {
 
 export function sampleControlEntrance(elapsed: number, reducedMotion = false) {
   if (reducedMotion) return {
-    elapsed, reveal: 1, travel: 1, turn: 0, sphereMorph: 1,
+    elapsed, reveal: 1, travel: 1, turn: 0, shapeMorph: 1,
   };
-  // Form the object at the eye's center before moving it into the scene.
-  const t = clamp((elapsed - CONTROL_SHAPE_FORMED_SECONDS) / (CONTROL_ENTRANCE_SECONDS - CONTROL_SHAPE_FORMED_SECONDS));
+  // Shape, shading, and travel share a continuous clock with no sphere hold.
+  const t = clamp(elapsed / CONTROL_ENTRANCE_SECONDS);
+  const shapeMorph = smooth(elapsed / CONTROL_SHAPE_FORMED_SECONDS);
   return {
     elapsed,
-    reveal: smooth(elapsed / 0.65),
-    sphereMorph: smooth((elapsed - 1.25) / (CONTROL_SHAPE_FORMED_SECONDS - 1.25)),
+    reveal: smooth(elapsed / CONTROL_EYE_DISSOLVE_SECONDS),
+    shapeMorph,
     travel: entranceTurnProgress(t),
-    turn: entranceTurnProgress(t) * Math.PI * 2 * CONTROL_ENTRANCE_TURNS,
-
+    turn: entranceTurnProgress(t) * Math.PI * 2 * CONTROL_ENTRANCE_TURNS
+      * smooth(shapeMorph / 0.55),
   };
 }
 

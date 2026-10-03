@@ -1,20 +1,25 @@
 import * as THREE from "three";
 
 /** Subdivide the actual sculpture faces, then project that same surface onto a
- * sphere. The GPU morph ends on the exact original faces, including their edges. */
-export function createIntroSphereGeometry(target: THREE.BufferGeometry, radius: number) {
+ * shallow iris lens. One continuous GPU morph adds depth and forms the exact
+ * original faces, including their edges; there is no intermediate sphere. */
+export function createIntroIrisGeometry(target: THREE.BufferGeometry, radius: number) {
   const source = target.getAttribute("position");
-  const sphere: number[] = [], solid: number[] = [];
-  const sphereNormals: number[] = [], solidNormals: number[] = [];
+  const iris: number[] = [], solid: number[] = [];
+  const irisNormals: number[] = [], solidNormals: number[] = [];
+  const uv: number[] = [];
+  const depth = 0.18;
   const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
   const point = new THREE.Vector3(), normal = new THREE.Vector3(), direction = new THREE.Vector3();
   const divisions = 16;
   const emit = (u: number, v: number) => {
     point.copy(a).multiplyScalar(1 - u - v).addScaledVector(b, u).addScaledVector(c, v);
     direction.copy(point).normalize();
-    sphere.push(direction.x * radius, direction.y * radius, direction.z * radius);
+    iris.push(direction.x * radius, direction.y * radius, direction.z * radius * depth);
+    uv.push(direction.x * 0.5 + 0.5, direction.y * 0.5 + 0.5);
     solid.push(point.x, point.y, point.z);
-    sphereNormals.push(direction.x, direction.y, direction.z);
+    direction.set(direction.x, direction.y, direction.z / depth).normalize();
+    irisNormals.push(direction.x, direction.y, direction.z);
     solidNormals.push(normal.x, normal.y, normal.z);
   };
   for (let face = 0; face < source.count; face += 3) {
@@ -36,8 +41,9 @@ export function createIntroSphereGeometry(target: THREE.BufferGeometry, radius: 
     }
   }
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(sphere, 3));
-  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(sphereNormals, 3));
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(iris, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(irisNormals, 3));
   geometry.morphAttributes.position = [new THREE.Float32BufferAttribute(solid, 3)];
   geometry.morphAttributes.normal = [new THREE.Float32BufferAttribute(solidNormals, 3)];
   geometry.computeBoundingSphere();
