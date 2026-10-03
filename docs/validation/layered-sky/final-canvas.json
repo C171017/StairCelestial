@@ -1,0 +1,18 @@
+{
+  "cloudArtwork": "8192",
+  "cloudLandmarkX": "3357.36",
+  "cloudLandmarkZ": "-246.02",
+  "cloudPaused": "false",
+  "cloudTime": "185.225",
+  "engine": "three.js r175",
+  "height": 1267,
+  "orbitTurns": "0.0000",
+  "skyDrawCalls": "101",
+  "skyEffectsPhase": "185.225",
+  "skyFrameMs": "13.34",
+  "skyGpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+  "skyMode": "layered",
+  "skySceneChildren": "3",
+  "skyTextures": "12",
+  "width": 2560
+}

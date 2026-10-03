@@ -1,0 +1,103 @@
+{
+  "faceSize": 6144,
+  "format": "cubemap",
+  "order": [
+    "px",
+    "nx",
+    "py",
+    "ny",
+    "pz",
+    "nz"
+  ],
+  "cameraPosition": [
+    0,
+    2.8,
+    0
+  ],
+  "faces": [
+    {
+      "name": "px",
+      "direction": [
+        1,
+        0,
+        0
+      ],
+      "up": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "nx",
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "up": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "py",
+      "direction": [
+        0,
+        1,
+        0
+      ],
+      "up": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "ny",
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "up": [
+        0,
+        0,
+        -1
+      ]
+    },
+    {
+      "name": "pz",
+      "direction": [
+        0,
+        0,
+        1
+      ],
+      "up": [
+        0,
+        -1,
+        0
+      ]
+    },
+    {
+      "name": "nz",
+      "direction": [
+        0,
+        0,
+        -1
+      ],
+      "up": [
+        0,
+        -1,
+        0
+      ]
+    }
+  ],
+  "panoramaTarget": [
+    24576,
+    12288
+  ],
+  "colorSpace": "sRGB",
+  "note": "Frozen layered-cloud artwork. Convert to equirectangular for the 24K reference; runtime uses separate cloud textures."
+}

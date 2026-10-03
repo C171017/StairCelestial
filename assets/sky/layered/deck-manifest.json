@@ -1,0 +1,11 @@
+{
+  "source": "assets/sky/source/panorama-8k-master.png",
+  "crop": [
+    2700,
+    2450,
+    1400,
+    1400
+  ],
+  "overlap": 210,
+  "blend": "symmetric, linear light on both axes"
+}

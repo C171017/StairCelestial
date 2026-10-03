@@ -120,6 +120,12 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
 }
 
 function Content(props: Props) {
+  const { size, setDpr } = useThree();
+  useEffect(() => {
+    // A large desktop already supplies enough screen pixels for this artwork.
+    // Avoid rendering the glass at 4K+ merely because the display is high-DPI.
+    setDpr(Math.min(window.devicePixelRatio, size.width >= 1500 ? 1 : 1.5));
+  }, [setDpr, size.width]);
   const ribbonFrame = useRef<THREE.Group>(null);
   const { active, selection, onSelect } = props;
   const onNavigate = useCallback(() => onSelect(null), [onSelect]);
@@ -140,12 +146,15 @@ function Content(props: Props) {
 }
 
 export function SanctuaryScene(props: Props) {
-  return <Canvas camera={{ position: [0, ORBIT_HEIGHT, ORBIT_RADIUS], fov: 42, near: 0.1, far: 650 }} dpr={[1, 1.5]}
+  return <Canvas camera={{ position: [0, ORBIT_HEIGHT, ORBIT_RADIUS], fov: 42, near: 0.1, far: 2400 }} dpr={[1, 1.5]}
     gl={{ antialias: true, alpha: false, stencil: true, powerPreference: "high-performance" }}
     onCreated={({ camera, gl }) => {
       camera.lookAt(0, 0, 0);
       gl.toneMapping = THREE.ACESFilmicToneMapping;
       gl.toneMappingExposure = 1.05;
+      // Refraction samples the completed sky at roughly CSS-pixel resolution;
+      // glass silhouettes still use the full, antialiased canvas resolution.
+      gl.transmissionResolutionScale = 2 / 3;
       gl.setClearColor("#dceaf0");
     }}><Content {...props} /></Canvas>;
 }

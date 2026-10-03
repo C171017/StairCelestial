@@ -37,7 +37,7 @@ The active assets are six original pearl-ceramic thresholds with clear glass lea
 
 `/door-studies` is a separate comparison room with numbered labels, all-six and individual views, a turn control, and reversible hinge/dissolve experiments. The text-free homepage and existing entrance remain intact. Shape selection is the purpose of this pass; movement is exploratory.
 
-The glass ribbon and social tokens are authored in code. The surrounding cloud panorama uses an 8192 × 4096 WebP on larger screens (1.3 MB), a 4096 × 2048 version on smaller screens (559 KB), and the original low-resolution sky during loading. The separate door-study room uses an upscaled flat 4K backdrop (173 KB). Keep textures and geometry finite; imply infinity through recycling, composition, and offscreen geometry.
+The glass ribbon and social tokens are authored in code. The surrounding sky now combines a cloud-free static plate with independently flowing cumulus and cirrus, plus world-anchored shooting stars. Four individually upscaled 4K banks form a compressed 8K desktop atlas and 4K compact atlas, with complete WebP fallbacks. The 24K rendered reference and original masters live outside public assets. The separate door-study room retains its flat 4K backdrop. Keep textures and geometry finite; imply infinity through recycling, composition, and offscreen geometry.
 
 ## Current status
 
@@ -50,5 +50,7 @@ The glass ribbon and social tokens are authored in code. The surrounding cloud p
 ## Contributor guidance
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md) before editing the scene. Keep performance-sensitive motion outside React state updates per frame, preserve finite geometry, and dispose owned resources. Run the relevant motion checks and production build after substantive changes, then record the actual results in [WEB-PHASES.md](WEB-PHASES.md).
+
+Before sky or cloud asset work, read [SKY-IMPLEMENTATION.md](SKY-IMPLEMENTATION.md) for the current renderer and [SKY-ASSET-NOTES.md](SKY-ASSET-NOTES.md) for observed upscaling, alpha, compression, and lifecycle pitfalls. [SKY-DESIGN-PLAN.md](SKY-DESIGN-PLAN.md) retains the original scored options; option A was selected.
 
 Update current docs when behavior changes. Treat `blender/md/` and the old scene modules as historical references, not active requirements.

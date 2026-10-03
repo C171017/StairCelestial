@@ -29,7 +29,7 @@ A new sound design and conventional navigation remain deferred. The original int
 
 Project URLs remain in `src/lib/projects.ts`; display copy, model assignments, and social destinations are in `src/lib/sanctuaryContent.ts`.
 
-The four sculptures are exported from [`blender/sanctuary-assets.blend`](blender/sanctuary-assets.blend). The reproducible builder is [`blender/build_sanctuary_assets.py`](blender/build_sanctuary_assets.py). Runtime GLBs are in `public/models/sanctuary/`; cloud textures are in `public/textures/sanctuary/`: the orbit uses an 8K panorama (1.3 MB) on larger screens and a 4K version (559 KB) on smaller screens, with the original as a loading fallback. The door-study room uses a 4K flat backdrop (173 KB).
+The four sculptures are exported from [`blender/sanctuary-assets.blend`](blender/sanctuary-assets.blend). The reproducible builder is [`blender/build_sanctuary_assets.py`](blender/build_sanctuary_assets.py). Runtime GLBs are in `public/models/sanctuary/`. The orbit sky uses a fixed plate, flowing cloud image layers, and shooting stars. Textures are in `public/textures/sanctuary/layers/`: an 8K desktop cloud atlas and a 4K compact atlas, with WebP fallbacks. Original artwork and the 24K rendered reference are retained in `assets/sky/`. The door-study room keeps its flat 4K backdrop.
 
 The active pearl-ceramic and champagne-gold doors are exported from [`blender/door-studies.blend`](blender/door-studies.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py). Six independently rigged GLBs live in `public/models/doors/` (about 2.11 MB total). Their coordinated colors are shared through `src/lib/doorPalette.json`. The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
 
@@ -37,6 +37,9 @@ The active pearl-ceramic and champagne-gold doors are exported from [`blender/do
 
 - [Project direction and scope](docs/PROJECT.md)
 - [Current architecture](docs/ARCHITECTURE.md)
+- [Proposed flowing-cloud sky and scored options](docs/SKY-DESIGN-PLAN.md)
+- [Sky upscaling experiments and reusable lessons](docs/SKY-ASSET-NOTES.md)
+- [Implemented layered sky, resolution, and validation](docs/SKY-IMPLEMENTATION.md)
 - [Implementation and validation checklist](docs/WEB-PHASES.md)
 
 The active implementation is `src/components/sanctuary/`. Older `src/components/scene/`, door/orbit modules, and `blender/md/` describe the legacy version, not the current design.

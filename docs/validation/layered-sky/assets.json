@@ -1,0 +1,380 @@
+{
+  "date": "2026-10-03",
+  "jobs": [
+    {
+      "asset": "cumulus-0",
+      "id": "45db0b3d-406d-4a8d-b31f-88d5ee09f0b6",
+      "status": "completed",
+      "model": "bytedance_image_upscale",
+      "resolution": "4k",
+      "remove_bg": false
+    },
+    {
+      "asset": "cumulus-1",
+      "id": "abf88ce9-7220-48a4-b915-d258e7d71ad6",
+      "status": "completed",
+      "model": "bytedance_image_upscale",
+      "resolution": "4k",
+      "remove_bg": false
+    },
+    {
+      "asset": "cumulus-2",
+      "id": "bbfefb32-c49c-48f1-8dc9-214c07350343",
+      "status": "completed",
+      "model": "bytedance_image_upscale",
+      "resolution": "4k",
+      "remove_bg": false
+    },
+    {
+      "asset": "cumulus-3",
+      "id": "31b7db3d-9ada-4776-8453-54b32f53dbf4",
+      "status": "completed",
+      "model": "bytedance_image_upscale",
+      "resolution": "4k",
+      "remove_bg": false
+    }
+  ],
+  "failedWispJobs": [
+    "1056f3f7-863a-40c0-b32d-bbb837f38171",
+    "f8c85e18-7fef-4a69-9b2a-38999a1ac447"
+  ],
+  "files": [
+    {
+      "path": "assets/sky/source/panorama-8k-master.png",
+      "bytes": 41492834,
+      "sha256": "8c9569031149df9b50208a25ae43baa508cf5b13d85897d1e65cf381ec784c87",
+      "width": 8192,
+      "height": 4096,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/source/tile-0-4k.png",
+      "bytes": 10199036,
+      "sha256": "bd27fe27d10fdc54786461bd9f876661f78f6fcf934a53f59b5a4b0700e0210f",
+      "width": 4096,
+      "height": 4096,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/source/tile-1-4k.png",
+      "bytes": 9193891,
+      "sha256": "be7928a30584a43a1db34545441f30d4b8197fed083a8a2c2d1ee18780374072",
+      "width": 4096,
+      "height": 4096,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/source/tile-2-4k.png",
+      "bytes": 9841367,
+      "sha256": "b5c60d5abc0db91fd5edb26d400151cf98d8ea82a86a55d4fcd733ef8ce50238",
+      "width": 4096,
+      "height": 4096,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/source/tile-3-4k.png",
+      "bytes": 18853234,
+      "sha256": "ff040387dce70963304cc0e1e2a9c12a9fbdbc78f191b8ef73d285aef2934edf",
+      "width": 4096,
+      "height": 4096,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/cirrus-premult.png",
+      "bytes": 2397392,
+      "sha256": "f80dd39b2906fe424eeb5078d22bbf7b73873d6c994b5757388404962a33a9ba",
+      "width": 2048,
+      "height": 1024,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cirrus-source.png",
+      "bytes": 1302671,
+      "sha256": "ae115c0741ff8073f9b1fadf2559353041cabf8cd1504283df59e0d24fe4c769",
+      "width": 1774,
+      "height": 887,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-0-4k.png",
+      "bytes": 7014362,
+      "sha256": "91038a85a673b2b9897726c4158dd0c907b27ec72d193b248b1aa6ce5e05d8e9",
+      "width": 4096,
+      "height": 4096,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/cumulus-0-premult.png",
+      "bytes": 13158719,
+      "sha256": "943505b008244987820a3993db66b6d6d5c598f9d1fb966c3549282ce3f39391",
+      "width": 4096,
+      "height": 4096,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-0-restored.png",
+      "bytes": 15579780,
+      "sha256": "2f6eca38576bf52cd9a24cc18289ad98033e7fd46510164d2f079d0bd9d6ee9e",
+      "width": 4096,
+      "height": 4096,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-0-source.png",
+      "bytes": 497027,
+      "sha256": "810dd10d6e568e3596902fd6d82453b81fcb6421b05be83e2453ed397098d750",
+      "width": 627,
+      "height": 627,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-1-4k.png",
+      "bytes": 6120894,
+      "sha256": "0acafe48b0d1793739b9488902362c73ec639cd7a17ff353ee1f7560edb3e75b",
+      "width": 4096,
+      "height": 4096,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/cumulus-1-premult.png",
+      "bytes": 11963219,
+      "sha256": "eecfea111f523a18b5071d59a387036d5e44f0c3d06f7ae341849c3857a3bc66",
+      "width": 4096,
+      "height": 4096,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-1-restored.png",
+      "bytes": 14324491,
+      "sha256": "85e3e5ffa7fb0890bbc186ef6bc8a6f15b361c9d50f69d2f5281817f2baec246",
+      "width": 4096,
+      "height": 4096,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-1-source.png",
+      "bytes": 468364,
+      "sha256": "a65a791bf83b5e235658b3978777d18d30b80499dcfd3635ffce60b250b3b83a",
+      "width": 627,
+      "height": 627,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-2-4k.png",
+      "bytes": 6671334,
+      "sha256": "f82e963f58ac1fcd8b6d73fdc9896c5e0da4637dc281f1651286ad9f5ba766bf",
+      "width": 4096,
+      "height": 4096,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/cumulus-2-premult.png",
+      "bytes": 12737514,
+      "sha256": "5bb4e697646dc06af09ca0b1030c138b46e5ce364b9d9dcb695311ac460b2457",
+      "width": 4096,
+      "height": 4096,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-2-source.png",
+      "bytes": 470996,
+      "sha256": "d000066919c5210def8cddaab5ac06cc2602832f1d8fc68d9c6d3669e428a9d0",
+      "width": 627,
+      "height": 627,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-3-4k.png",
+      "bytes": 7206026,
+      "sha256": "4bd961f49100a8f815d1736acb1298a4f424f352ff1cbb33da4d43255a9fce11",
+      "width": 4096,
+      "height": 4096,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/cumulus-3-premult.png",
+      "bytes": 13213178,
+      "sha256": "185bdd354773442bef8256f422e83867c47702e5e8a08dc5a68fcfeeaee2b1e3",
+      "width": 4096,
+      "height": 4096,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-3-source.png",
+      "bytes": 492253,
+      "sha256": "0bed9ce75921838ca2436b969a88534dda0e0f909bdcb6a592f2b2a48e979730",
+      "width": 627,
+      "height": 627,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-8192-etc1s.ktx2",
+      "bytes": 6275067,
+      "sha256": "8e627399d082e82f592b5aba1f58853ba1f35893942f490b39c8cd7065ee5c18"
+    },
+    {
+      "path": "assets/sky/layered/cumulus-8192-uastc.ktx2",
+      "bytes": 24587574,
+      "sha256": "fb259f1aa61b32196c92939805c440486e2949efb426e357e05f9c4500deb2f6"
+    },
+    {
+      "path": "assets/sky/layered/cumulus-atlas-2048.png",
+      "bytes": 4939026,
+      "sha256": "ad20d794c5e8a938c48dfa96ca5398c3ff22b0fa30c95cc7299c168c5fc65560",
+      "width": 2048,
+      "height": 2048,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-atlas-4096.png",
+      "bytes": 16631609,
+      "sha256": "d0de0f2c4b2960cc2d525cf792787241f7533efc97baf6100f1a5d059b28eacd",
+      "width": 4096,
+      "height": 4096,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-atlas-8k.png",
+      "bytes": 64593278,
+      "sha256": "e7902328d547684d47f47da75cb13d45e47def3adf3a975f56174aaec41c7e76",
+      "width": 8192,
+      "height": 8192,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/cumulus-atlas-source.png",
+      "bytes": 1385005,
+      "sha256": "711078b707619e76cd5991f68602219e6eddd7ffc0c844e369a06d858934838d",
+      "width": 1254,
+      "height": 1254,
+      "channels": 4
+    },
+    {
+      "path": "assets/sky/layered/deck-manifest.json",
+      "bytes": 183,
+      "sha256": "b65ba3b002ef5e8ade11cc54dbcad4e6b9c38efeb522dfa5ba9a7c0ac2ed1ac6"
+    },
+    {
+      "path": "assets/sky/layered/deck-source.png",
+      "bytes": 5687155,
+      "sha256": "4f54e60141e52986da7093611732aa2c5567ac408d74d1b30089ec1404b7469e",
+      "width": 2048,
+      "height": 2048,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/deck-tile.png",
+      "bytes": 2892488,
+      "sha256": "fd0131fbbb99f8aef115a7ee1c6ef5d2687856cc6d68439d145e3b9df4865ec7",
+      "width": 1400,
+      "height": 1400,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/pilot-check.jpg",
+      "bytes": 97332,
+      "sha256": "562733948a580b9a14ddc4711eb49a8db30c80367e0c7c093bf1170e2b0df602",
+      "width": 1024,
+      "height": 1024,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/restore-check.jpg",
+      "bytes": 56653,
+      "sha256": "3fa08f8bc85b2297dfe2d751e262bb452eaba83b41f94da9f6d4a3a525aad383",
+      "width": 1024,
+      "height": 1024,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/second-check.jpg",
+      "bytes": 49830,
+      "sha256": "e0c8039e0658a27a58b0ba380b2449ba19a893f7ed1eed14e05d9b68d7583551",
+      "width": 1024,
+      "height": 1024,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/layered/source-check.jpg",
+      "bytes": 29373,
+      "sha256": "f1f80d4d7bea748ac514240eb43c6dec32d7dab54b48c1d1a31f03d9fc0ab0a7",
+      "width": 627,
+      "height": 627,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/master-24k/layered-sky-24576.png",
+      "bytes": 69083269,
+      "sha256": "71cd2a2da08f7ad0e614d8df57a1f621d4991706b1de1e7562158d12ae001231",
+      "width": 24576,
+      "height": 12288,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/master-24k/layered-sky-4096.png",
+      "bytes": 4055297,
+      "sha256": "66b5d8cbd97843755473fa4b03dca0a9bb8c7bfb1db6414a092637ca109eb66b",
+      "width": 4096,
+      "height": 2048,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/master-24k/preview.jpg",
+      "bytes": 432014,
+      "sha256": "22b856185dbbf07310b1029ed192e2e040ccde04b45bf32b74cedce869837cce",
+      "width": 3072,
+      "height": 1536,
+      "channels": 3
+    },
+    {
+      "path": "assets/sky/master-24k/wrap-check.png",
+      "bytes": 229198,
+      "sha256": "e66d6dd42728bf8424fefa82837bae6bd59d56f0ed2c27467af2034782273e3b",
+      "width": 384,
+      "height": 900,
+      "channels": 4
+    },
+    {
+      "path": "public/textures/sanctuary/layers/cirrus.webp",
+      "bytes": 609904,
+      "sha256": "7d0b30eded1d649194446b285d8a4d685797fa50d03aa8960fd75cd3ca22ee07",
+      "width": 2048,
+      "height": 1024,
+      "channels": 4
+    },
+    {
+      "path": "public/textures/sanctuary/layers/cumulus-2048.webp",
+      "bytes": 742008,
+      "sha256": "3e6e80d5059ba6bfc9e14c380fc1e0e3ed2813edade1006341069093965cc18e",
+      "width": 2048,
+      "height": 2048,
+      "channels": 4
+    },
+    {
+      "path": "public/textures/sanctuary/layers/cumulus-4096.ktx2",
+      "bytes": 1840118,
+      "sha256": "db1bb25936491acb4e4a6a68fba00781cdb661c94956ccc2364bd4a8aa4c5290"
+    },
+    {
+      "path": "public/textures/sanctuary/layers/cumulus-4096.webp",
+      "bytes": 1720854,
+      "sha256": "762bf68c5be8ac11dccf68d4944278c38b7d24b4ff05b0eacecca2160134c2df",
+      "width": 4096,
+      "height": 4096,
+      "channels": 4
+    },
+    {
+      "path": "public/textures/sanctuary/layers/cumulus-8192.ktx2",
+      "bytes": 6275067,
+      "sha256": "8e627399d082e82f592b5aba1f58853ba1f35893942f490b39c8cd7065ee5c18"
+    },
+    {
+      "path": "public/textures/sanctuary/layers/sky-clean.webp",
+      "bytes": 4148,
+      "sha256": "aa9c7ca2e218d9a3440a3fb15e514aef27bee66124184ea6b2246dd641897510",
+      "width": 1024,
+      "height": 512,
+      "channels": 3
+    }
+  ]
+}

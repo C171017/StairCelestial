@@ -12,6 +12,7 @@ const vertexShader = `
   void main() {
     effectUv = uv;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    gl_Position.z = gl_Position.w * 0.999999;
   }
 `;
 
@@ -54,7 +55,7 @@ const glintShader = `
   }
 `;
 
-/** World-anchored meteors and slow glints, independent of the sky's video pixels. */
+/** World-anchored meteors and slow glints, drawn behind the cloud layers. */
 export function SkyEffects({ active = true, time }: { active?: boolean; time?: RefObject<number> }) {
   const group = useRef<THREE.Group>(null);
   const elapsed = useRef(0);
@@ -132,7 +133,7 @@ export function SkyEffects({ active = true, time }: { active?: boolean; time?: R
     }
   });
 
-  return <group ref={group} visible={false}>
+  return <group ref={group} visible={false} name="sky-effects">
     {resources.items.map(({ mesh }, i) => <primitive key={i} object={mesh} dispose={null} />)}
   </group>;
 }

@@ -1,0 +1,5 @@
+{
+  "joinMeanRgbDelta255": 0.1614040798611111,
+  "neighborMeanRgbDelta255": 0.14227973090277776,
+  "note": "Adjacent pixel differences, not a perceptual-quality score. The join crop was also visually inspected."
+}

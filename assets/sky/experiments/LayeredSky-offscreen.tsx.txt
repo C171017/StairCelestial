@@ -1,0 +1,84 @@
+"use client";
+
+import { useFBO } from "@react-three/drei";
+import { createPortal, useFrame, useThree } from "@react-three/fiber";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { FlowingClouds } from "./FlowingClouds";
+import { SkyEffects } from "./SkyEffects";
+import type { RefObject } from "react";
+import { exportSkyMaster } from "./exportSky";
+
+export function LayeredSky({ paused=false, deformation=true, timeOverride=null, exporter }: { paused?:boolean;deformation?:boolean;timeOverride?:number|null;exporter?:RefObject<((progress:(value:string)=>void)=>Promise<void>)|null> }) {
+  const {gl,size,camera} = useThree();
+  const time = useRef(0);
+  const stopped = useRef(false);
+  const skip = useRef(true);
+  const frameStats=useRef({seconds:0,frames:0});
+  // Portal containers must survive effect/memo replay during live editing.
+  const [scene] = useState(()=>new THREE.Scene());
+  const [skyCamera]=useState(()=>new THREE.PerspectiveCamera());
+  // The sky is soft artwork; render at CSS-pixel detail on large displays.
+  // Foreground glass keeps the Canvas DPR, and narrow screens retain 1.5x.
+  const ratio=Math.min(gl.getPixelRatio(),size.width<700?1.5:1);
+  const target=useFBO(Math.round(size.width*ratio),Math.round(size.height*ratio),{type:THREE.UnsignedByteType,depthBuffer:false,stencilBuffer:false});
+  const uniforms=useMemo(()=>({sky:{value:target.texture}}),[target.texture]);
+  useEffect(()=>{
+    if(!exporter)return;
+    const action=(progress:(value:string)=>void)=>exportSkyMaster(gl,scene,progress);
+    exporter.current=action;
+    return()=>{if(exporter.current===action)exporter.current=null;};
+  },[exporter,gl,scene]);
+  useEffect(()=>{
+    const preference=matchMedia("(prefers-reduced-motion: reduce)");
+    const sync=()=>{stopped.current=preference.matches||document.hidden;skip.current=true;};
+    sync();preference.addEventListener("change",sync);document.addEventListener("visibilitychange",sync);
+    return()=>{preference.removeEventListener("change",sync);document.removeEventListener("visibilitychange",sync);};
+  },[]);
+  useFrame((_,delta)=>{
+    if(timeOverride!==null)time.current=timeOverride;
+    else if(skip.current)skip.current=false;
+    else if(!stopped.current&&!paused)time.current+=Math.min(delta,0.1);
+    if(process.env.NODE_ENV==="development"){
+      gl.domElement.dataset.skyMode="layered";
+      gl.domElement.dataset.cloudTime=time.current.toFixed(3);
+      gl.domElement.dataset.cloudPaused=String(stopped.current||paused);
+      gl.domElement.dataset.skySceneChildren=String(scene.children.length);
+      if(!stopped.current&&!paused&&delta>0&&delta<0.25){
+        frameStats.current.seconds+=delta;frameStats.current.frames++;
+        if(frameStats.current.seconds>=2){
+          gl.domElement.dataset.skyFrameMs=(1000*frameStats.current.seconds/frameStats.current.frames).toFixed(2);
+          gl.domElement.dataset.skyTextures=String(gl.info.memory.textures);
+          frameStats.current={seconds:0,frames:0};
+        }
+      }
+    }
+  },-0.9);
+  useFrame(()=>{
+    skyCamera.copy(camera as THREE.PerspectiveCamera);
+    skyCamera.far=3000;skyCamera.updateProjectionMatrix();skyCamera.updateMatrixWorld();
+    const previous=gl.getRenderTarget();
+    const xr=gl.xr.enabled;
+    gl.xr.enabled=false;
+    gl.setRenderTarget(target);gl.clear();gl.render(scene,skyCamera);
+    gl.setRenderTarget(previous);gl.xr.enabled=xr;
+  },-0.5);
+  return <>
+    {createPortal(<>
+      <mesh renderOrder={-3000} raycast={()=>null}>
+        <sphereGeometry args={[1800,64,32]}/>
+        <shaderMaterial side={THREE.BackSide} depthWrite={false} toneMapped={false}
+          vertexShader={`varying vec3 direction;void main(){direction=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+          fragmentShader={`varying vec3 direction;void main(){vec3 d=normalize(direction);float elevation=d.y;vec3 blue=vec3(0.23,0.46,0.76);vec3 horizon=vec3(0.91,0.88,0.73);vec3 below=vec3(0.43,0.59,0.77);vec3 color=mix(horizon,blue,smoothstep(-0.10,0.28,elevation));color=mix(color,below,smoothstep(0.0,0.65,-elevation));float glow=pow(max(0.0,dot(d,normalize(vec3(-0.5,0.04,-0.8)))),10.0)*exp(-elevation*elevation*14.0);color+=vec3(0.10,0.065,0.012)*glow;gl_FragColor=vec4(color,1.0);#include <colorspace_fragment>}`.replace(';#include',';\n#include')}/>
+      </mesh>
+      <SkyEffects active={!paused}/>
+      <Suspense fallback={null}><FlowingClouds time={time} deformation={deformation}/></Suspense>
+    </>,scene,{camera:skyCamera})}
+    <mesh renderOrder={-1000} frustumCulled={false} raycast={()=>null}>
+      <planeGeometry args={[2,2]}/>
+      <shaderMaterial uniforms={uniforms} depthWrite={false} depthTest={false} toneMapped={false}
+        vertexShader={`varying vec2 uvScreen;void main(){uvScreen=uv;gl_Position=vec4(position.xy,1.0,1.0);}`}
+        fragmentShader={`uniform sampler2D sky;varying vec2 uvScreen;void main(){gl_FragColor=texture2D(sky,uvScreen);\n#include <colorspace_fragment>\n}`}/>
+    </mesh>
+  </>;
+}

@@ -1,0 +1,39 @@
+{
+  "source": "public/textures/sanctuary/cloudscape-360.webp",
+  "width": 1774,
+  "height": 887,
+  "tiles": [
+    {
+      "index": 0,
+      "left": 0,
+      "sourceWidth": 887,
+      "sourceHeight": 887,
+      "input": "tile-0.webp",
+      "output": "tile-0-4k.png"
+    },
+    {
+      "index": 1,
+      "left": 443,
+      "sourceWidth": 887,
+      "sourceHeight": 887,
+      "input": "tile-1.webp",
+      "output": "tile-1-4k.png"
+    },
+    {
+      "index": 2,
+      "left": 887,
+      "sourceWidth": 887,
+      "sourceHeight": 887,
+      "input": "tile-2.webp",
+      "output": "tile-2-4k.png"
+    },
+    {
+      "index": 3,
+      "left": 1330,
+      "sourceWidth": 887,
+      "sourceHeight": 887,
+      "input": "tile-3.webp",
+      "output": "tile-3-4k.png"
+    }
+  ]
+}

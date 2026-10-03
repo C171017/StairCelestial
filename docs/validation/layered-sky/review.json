@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-03",
+  "browser": "Chrome, local preview",
+  "gpu": "ANGLE Metal Renderer: Apple M4",
+  "runtime": "Three.js r175",
+  "checks": {
+    "cloudTravel": {
+      "viewportWidth": 2560,
+      "seconds": [10, 15],
+      "projectedLandmarkX": [757.69, 811.42],
+      "displacementCssPixels": 53.73,
+      "viewportWidthPercent": 2.098828125,
+      "note": "Tracked world-cloud center with fixed camera; paired screenshots and actual motion recording were also inspected. Travel varies with viewing direction."
+    },
+    "orbit": {
+      "input": "Native vertical wheel scrolling on the homepage",
+      "forwardFromTurns": 0,
+      "forwardToTurns": -4.1056,
+      "reverseFromTurns": -4.1056,
+      "reverseToTurns": -0.9925,
+      "observed": "Continuous camera/background relationship, with no bound or visible join in sampled views."
+    },
+    "responsive": {
+      "desktopDefault": [2560, 1267],
+      "compact": [393, 852],
+      "loadedCloudAtlasWidths": [8192, 4096],
+      "physicalPhoneTested": false
+    },
+    "reducedMotion": {
+      "method": "Chrome DevTools Emulate CSS prefers-reduced-motion: reduce",
+      "paused": true,
+      "clockReadingA": 220.202,
+      "clockReadingB": 220.202,
+      "restoredPreference": true,
+      "resumedClockReading": 269.474
+    },
+    "shootingStar": {
+      "cloudTime": 3.106,
+      "observed": "Visible warm white trail above the lower cloud banks; screenshot retained."
+    },
+    "longTimes": {
+      "sampledSeconds": [600, 36000],
+      "observed": "Finite positions and a complete cloud composition at both sampled times.",
+      "note": "Accelerated fixed-time samples, not a claim of a ten-hour or uninterrupted ten-minute soak."
+    },
+    "performance": {
+      "warmSkyOnlyFrameMs": [16.73, 13.33],
+      "warmCompactFullSceneFrameMs": [13.33, 13.43],
+      "warmDesktopFullSceneFinalSampleMs": 13.33,
+      "earlierFullSceneLargeHighDpiSamplesMs": [67.10, 68.63],
+      "finalDesktopNativeResolutionIntermediateSampleMs": 34.54,
+      "note": "Two-second mean frame intervals from the displayed canvas. Early duplicate/occluded tabs, active asset work, and supersampled full-scene rendering produced much slower samples. The final renderer caps large desktop DPR at 1 and composites the sky once. These are spot checks, not a sustained multi-device performance certification."
+    },
+    "automated": {
+      "testsPassed": 67,
+      "lint": "passed",
+      "productionBuild": "passed",
+      "typeCheck": "passed"
+    }
+  }
+}

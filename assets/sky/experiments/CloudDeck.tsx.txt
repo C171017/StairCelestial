@@ -1,0 +1,19 @@
+"use client";
+import {useTexture} from '@react-three/drei';
+import {useFrame} from '@react-three/fiber';
+import {useEffect,useMemo,type RefObject} from 'react';
+import * as THREE from 'three';
+
+export function CloudDeck({time}:{time:RefObject<number>}){
+  const source=useTexture('/textures/sanctuary/layers/deck.webp');
+  const texture=useMemo(()=>{const t=source.clone();t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;t.needsUpdate=true;return t;},[source]);
+  const uniforms=useMemo(()=>({artwork:{value:texture},wind:{value:new THREE.Vector2()}}),[texture]);
+  useFrame(()=>{uniforms.wind.value.set((time.current*2.8)%1100,(time.current*.65)%1100);},-0.7);
+  useEffect(()=>()=>texture.dispose(),[texture]);
+  return <mesh position={[0,-120,0]} rotation={[-Math.PI/2,0,0]} renderOrder={-50} raycast={()=>null}>
+    <planeGeometry args={[4500,4500]}/>
+    <shaderMaterial transparent depthTest={false} depthWrite={false} side={THREE.DoubleSide} toneMapped={false} uniforms={uniforms}
+      vertexShader={`varying vec3 world;void main(){world=(modelMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*viewMatrix*vec4(world,1.0);gl_Position.z=gl_Position.w*.999;}`}
+      fragmentShader={`uniform sampler2D artwork;uniform vec2 wind;varying vec3 world;void main(){vec2 uv=(world.xz-wind)/1100.0;vec3 color=texture2D(artwork,uv).rgb;float distance=length(world.xz);float haze=smoothstep(500.0,1500.0,distance);color=mix(color,vec3(.72,.77,.79),haze*.75);float opacity=1.0-smoothstep(1000.0,1900.0,distance);gl_FragColor=vec4(color,opacity);\n#include <colorspace_fragment>\n}`}/>
+  </mesh>;
+}

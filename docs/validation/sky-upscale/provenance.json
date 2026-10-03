@@ -1,0 +1,55 @@
+{
+  "recorded": "2026-10-03",
+  "inspected_head": "8bf83d0",
+  "note": "Hashes and metadata preserved; temporary binary masters are not backed up by this record. See SKY-ASSET-NOTES.md.",
+  "files": [
+    {
+      "path": "public/textures/sanctuary/cloudscape-360.webp",
+      "bytes": 242002,
+      "sha256": "3668a329db0fa174181c0fed71d6fec7aec316c82257dda84dd4c90da79c5ee2",
+      "temporary": false
+    },
+    {
+      "path": "public/textures/sanctuary/cloudscape-360-8k.webp",
+      "bytes": 1313292,
+      "sha256": "430596b60c26dfb849aec5a4693cd7734ccc9ddbd995a5c44e216333b462895a",
+      "temporary": false
+    },
+    {
+      "path": "public/textures/sanctuary/cloudscape-360-4k.webp",
+      "bytes": 559154,
+      "sha256": "e4d531fb31cb5bb4d74cdfd5226130a8348a678795c8c65ec38209b6723bd9dc",
+      "temporary": false
+    },
+    {
+      "path": "/private/tmp/sky-upscale-test/panorama-master.png",
+      "bytes": 41492834,
+      "sha256": "8c9569031149df9b50208a25ae43baa508cf5b13d85897d1e65cf381ec784c87",
+      "temporary": true
+    },
+    {
+      "path": "/private/tmp/sky-upscale-test/tile-0-4k.png",
+      "bytes": 10199036,
+      "sha256": "bd27fe27d10fdc54786461bd9f876661f78f6fcf934a53f59b5a4b0700e0210f",
+      "temporary": true
+    },
+    {
+      "path": "/private/tmp/sky-upscale-test/tile-1-4k.png",
+      "bytes": 9193891,
+      "sha256": "be7928a30584a43a1db34545441f30d4b8197fed083a8a2c2d1ee18780374072",
+      "temporary": true
+    },
+    {
+      "path": "/private/tmp/sky-upscale-test/tile-2-4k.png",
+      "bytes": 9841367,
+      "sha256": "b5c60d5abc0db91fd5edb26d400151cf98d8ea82a86a55d4fcd733ef8ce50238",
+      "temporary": true
+    },
+    {
+      "path": "/private/tmp/sky-upscale-test/tile-3-4k.png",
+      "bytes": 18853234,
+      "sha256": "ff040387dce70963304cc0e1e2a9c12a9fbdbc78f191b8ef73d285aef2934edf",
+      "temporary": true
+    }
+  ]
+}
