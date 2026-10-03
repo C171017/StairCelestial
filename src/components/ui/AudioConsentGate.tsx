@@ -29,7 +29,9 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function AudioConsentGate() {
+export function AudioConsentGate({ theme = "original" }: { theme?: "original" | "cloud" }) {
+  const backdrop = theme === "cloud" ? "#edf3f5" : "#030508";
+  const clearBackdrop = theme === "cloud" ? "rgba(237, 243, 245, 0)" : "rgba(3, 5, 8, 0)";
   const overlayRef = useRef<HTMLDivElement>(null);
   const controlRef = useRef<HTMLDivElement>(null);
   const eyeApertureRef = useRef<SVGPathElement>(null);
@@ -182,7 +184,7 @@ export function AudioConsentGate() {
 
     if (overlay) {
       gsap.set(overlay, {
-        backgroundColor: "#030508",
+        backgroundColor: backdrop,
         opacity: 1,
       });
       overlay.style.pointerEvents = "auto";
@@ -237,7 +239,7 @@ export function AudioConsentGate() {
       });
       if (overlay) {
         gsap.to(overlay, {
-          backgroundColor: "rgba(3, 5, 8, 0)",
+          backgroundColor: clearBackdrop,
           duration: t.starCrossfade,
           ease: "sine.inOut",
         });
@@ -254,7 +256,7 @@ export function AudioConsentGate() {
           introStarsOpacity: 1,
         });
         if (overlay) {
-          gsap.set(overlay, { backgroundColor: "rgba(3, 5, 8, 0)" });
+          gsap.set(overlay, { backgroundColor: clearBackdrop });
         }
       };
 
@@ -348,7 +350,7 @@ export function AudioConsentGate() {
       timelineRef.current?.kill();
       timelineRef.current = null;
     };
-  }, [finishPlayControlHandoff, reducedMotion, showPlayControl, setIntroReveal]);
+  }, [backdrop, clearBackdrop, finishPlayControlHandoff, reducedMotion, showPlayControl, setIntroReveal]);
 
   if (!visible) return null;
 
@@ -370,7 +372,9 @@ export function AudioConsentGate() {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 grid h-dvh w-dvw place-items-center bg-[#030508]"
+      className="fixed inset-0 z-50 grid h-dvh w-dvw place-items-center"
+      data-eye-theme={theme}
+      style={{ backgroundColor: backdrop }}
       role="dialog"
       aria-label="Site intro"
       aria-modal={introPlayPhase !== "active"}
@@ -378,6 +382,7 @@ export function AudioConsentGate() {
       <div
         ref={controlRef}
         className={`${EYE_CONTROL_SIZE_CLASS} flex items-center justify-center pointer-events-none`}
+        style={{ filter: theme === "cloud" ? "invert(1) hue-rotate(180deg) saturate(.35)" : undefined }}
         aria-hidden
       >
         <EyeConsentSvg refs={eyeRefs} />

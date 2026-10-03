@@ -1,14 +1,17 @@
 "use client";
 
-import { Environment, Lightformer, useTexture } from "@react-three/drei";
+import { Environment, Hud, Lightformer, useTexture } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { useRibbonMotion } from "@/hooks/useRibbonMotion";
-import { positiveModulo } from "@/lib/ribbonMotion";
+import { type RibbonMotionSnapshot, positiveModulo } from "@/lib/ribbonMotion";
 import { advanceRibbonFocus, createRibbonFocus } from "@/lib/ribbonFocus";
 import { ribbonPoint, RIBBON_PITCH } from "@/lib/ribbonGeometry";
 import { sanctuaryProjects } from "@/lib/sanctuaryContent";
+import { doorStudies } from "@/lib/doorStudies";
+import { IntroSceneReveal } from "@/components/scene/IntroSceneReveal";
+import { PlayControl3D } from "@/components/scene/PlayControl3D";
 import { GlassRibbon } from "./GlassRibbon";
 import { ProjectArtifact } from "./ProjectArtifact";
 import { SocialArtifacts } from "./SocialArtifacts";
@@ -20,7 +23,7 @@ type Props = {
   onReady: () => void; onPlaceholder: (name: string) => void;
 };
 
-function Sky() {
+export function Sky() {
   const texture = useTexture("/textures/sanctuary/cloudscape.webp");
   const { scene, size } = useThree();
   useEffect(() => {
@@ -39,7 +42,7 @@ function Sky() {
   return null;
 }
 
-function StudioLight() {
+export function StudioLight() {
   return <>
     <ambientLight intensity={1.0} color="#e4f1ff" />
     <directionalLight position={[-8, 12, 10]} intensity={3.3} color="#fff2d9" />
@@ -50,6 +53,7 @@ function StudioLight() {
       <Lightformer form="rect" intensity={3} color="#ffffff" position={[7, 3, 3]} scale={[3, 15, 1]} rotation={[0, -Math.PI / 3, 0]} />
       <Lightformer form="rect" intensity={4} color="#daeaff" position={[0, 10, 0]} scale={[20, 5, 1]} rotation={[Math.PI / 2, 0, 0]} />
       <Lightformer form="rect" intensity={0.2} color="#314657" position={[0, -5, -10]} scale={[20, 4, 1]} />
+      <Lightformer form="rect" intensity={0.15} color="#213847" position={[3, 3, 7]} scale={[1.3, 14, 1]} rotation={[0, -Math.PI / 7, 0]} />
     </Environment>
   </>;
 }
@@ -72,7 +76,7 @@ function Ready({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-function RibbonWorld({ active, selection, onSelect }: Pick<Props, "active" | "selection" | "onSelect">) {
+function RibbonWorld({ active, selection, onSelect, motion }: Pick<Props, "active" | "selection" | "onSelect"> & { motion: RefObject<RibbonMotionSnapshot> }) {
   const { size } = useThree();
   const compact = size.width < 650;
   const radius = compact ? 2.6 : 5.7;
@@ -81,8 +85,6 @@ function RibbonWorld({ active, selection, onSelect }: Pick<Props, "active" | "se
   const scrollGroup = useRef<THREE.Group>(null);
   const [cycle, setCycle] = useState(0);
   const cycleRef = useRef(0);
-  const onNavigate = useCallback(() => onSelect(null), [onSelect]);
-  const motion = useRibbonMotion({ enabled: active, paused: selection !== null, onUserNavigate: onNavigate });
   const anchor = useMemo(() => new THREE.Vector3(), []);
   const focus = useRef(createRibbonFocus());
   const reduced = useRef(false);
@@ -102,7 +104,7 @@ function RibbonWorld({ active, selection, onSelect }: Pick<Props, "active" | "se
     if (selection) {
       ribbonPoint(selection.turn - cycle, radius, anchor);
       anchor.y -= (position - cycle) * RIBBON_PITCH;
-      anchor.y += compact ? 0.8 : 1;
+      anchor.y += compact ? 1.15 : 1.45;
     }
     advanceRibbonFocus(focus.current, selection ? anchor : null, delta, {
       focusScale: compact ? 1.55 : 1.7, reducedMotion: reduced.current,
@@ -114,24 +116,49 @@ function RibbonWorld({ active, selection, onSelect }: Pick<Props, "active" | "se
   return <group ref={transform}><group ref={scrollGroup} position={[0, -(motion.current.position - cycle) * RIBBON_PITCH, 0]}>
     <GlassRibbon radius={radius} width={width} focused={!!selection} />
     {slots.map((slot) => {
-      const index = positiveModulo(slot + cycle * 3, sanctuaryProjects.length);
+      const studyIndex = positiveModulo(slot + cycle * 3, doorStudies.length);
+      const index = studyIndex % sanctuaryProjects.length;
       const turn = slot / 3;
       const position = ribbonPoint(turn, radius);
       const selected = !!selection && Math.abs(selection.turn - turn - cycle) < 0.00001;
       return <group key={slot} position={[position.x, position.y + 0.11, position.z]}>
-        <ProjectArtifact project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
-          compact={compact} onSelect={() => onSelect(selected ? null : { index, turn: turn + cycle })} />
+        <ProjectArtifact study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
+          compact={compact} onSelect={() => {
+            if (selected) window.open(sanctuaryProjects[index].url, "_blank", "noopener,noreferrer");
+            else onSelect({ index, turn: turn + cycle });
+          }} />
       </group>;
     })}
   </group></group>;
 }
 
 function Content(props: Props) {
-  return <Suspense fallback={null}>
-    <Sky /><StudioLight /><RibbonWorld {...props} />
-    <SocialArtifacts enabled={props.active} onPlaceholder={props.onPlaceholder} />
-    <Ready onReady={props.onReady} />
-  </Suspense>;
+  const { active, selection, onSelect } = props;
+  const onNavigate = useCallback(() => onSelect(null), [onSelect]);
+  const motion = useRibbonMotion({ enabled: active, paused: selection !== null, onUserNavigate: onNavigate });
+  return <>
+    <StudioLight />
+    <Hud>
+      <Environment resolution={128} frames={1}>
+        <color attach="background" args={["#151c25"]} />
+        <Lightformer form="rect" intensity={8} color="#fff5e8" position={[-3, 4, 5]} scale={[3, 7, 1]} rotation={[0, -0.45, 0]} />
+        <Lightformer form="rect" intensity={6} color="#dceeff" position={[4, 1, 4]} scale={[1, 6, 1]} rotation={[0, 0.7, 0]} />
+        <Lightformer form="rect" intensity={5} color="#ffffff" position={[0, 6, 1]} scale={[7, 2, 1]} rotation={[Math.PI / 2, 0, 0]} />
+      </Environment>
+      <ambientLight intensity={1.1} color="#edf5ff" />
+      <directionalLight position={[-8, 12, 10]} intensity={2.2} color="#fff2d9" />
+      <directionalLight position={[8, 3, -4]} intensity={0.6} color="#b8d8eb" />
+      <PlayControl3D theme="cloud" />
+    </Hud>
+    <Suspense fallback={null}>
+      <Sky />
+      <IntroSceneReveal>
+        <RibbonWorld {...props} motion={motion} />
+        <SocialArtifacts motion={motion} enabled={props.active} onPlaceholder={props.onPlaceholder} />
+      </IntroSceneReveal>
+      <Ready onReady={props.onReady} />
+    </Suspense>
+  </>;
 }
 
 export function SanctuaryScene(props: Props) {

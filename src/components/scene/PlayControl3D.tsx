@@ -30,6 +30,7 @@ import {
   setInteractiveHoverScale,
   setPointerCursor,
 } from "@/lib/interactiveHoverZoom";
+import { CloudPlayShape } from "./CloudPlayShape";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
 
 function prefersReducedMotion(): boolean {
@@ -102,7 +103,8 @@ type FlyPose = {
   billboard: number;
 };
 
-export function PlayControl3D() {
+export function PlayControl3D({ theme = "original" }: { theme?: "original" | "cloud" }) {
+  const cloud = theme === "cloud";
   const groupRef = useRef<THREE.Group>(null);
   const hoverVisualRef = useRef<THREE.Group>(null);
   const hoverTweenRef = useRef<gsap.core.Tween | null>(null);
@@ -153,24 +155,27 @@ export function PlayControl3D() {
   const controlBodyMaterial = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#d2c8b7",
-        emissive: "#8a7d68",
-        emissiveIntensity: 0.3,
-        roughness: 0.8,
-        metalness: 0,
+        color: cloud ? "#ccdde2" : "#d2c8b7",
+        emissive: cloud ? "#728e98" : "#8a7d68",
+        emissiveIntensity: cloud ? 0.08 : 0.3,
+        roughness: cloud ? 0.26 : 0.8,
+        metalness: cloud ? 0.22 : 0,
+        depthTest: !cloud,
+        depthWrite: !cloud,
         flatShading: true,
       }),
-    [],
+    [cloud],
   );
   const controlEdgeMaterial = useMemo(
     () =>
       new THREE.LineBasicMaterial({
-        color: "#79d4df",
+        color: cloud ? "#7697a1" : "#79d4df",
+        depthTest: !cloud,
         opacity: 0.46,
         transparent: true,
         toneMapped: false,
       }),
-    [],
+    [cloud],
   );
   const tetrahedronEdgeGeometry = useMemo(
     () => new THREE.EdgesGeometry(tetrahedronGeometry, 24),
@@ -193,12 +198,13 @@ export function PlayControl3D() {
   const innerRingMaterial = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
-        color: "#79d4df",
+        color: cloud ? "#7697a1" : "#79d4df",
+        depthTest: !cloud,
         transparent: true,
         opacity: 0.58,
         toneMapped: false,
       }),
-    [],
+    [cloud],
   );
   const softRingGeometry = useMemo(
     () =>
@@ -213,11 +219,12 @@ export function PlayControl3D() {
   const softRingMaterial = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
-        color: "#59636a",
+        color: cloud ? "#b4a58c" : "#59636a",
+        depthTest: !cloud,
         transparent: true,
         opacity: 0.55,
       }),
-    [],
+    [cloud],
   );
 
   const cubeGeometry = useMemo(() => {
@@ -535,7 +542,7 @@ export function PlayControl3D() {
     }
     faceOnQuaternion.copy(group.quaternion);
 
-    if (phase !== "awaitClick") {
+    if (phase !== "awaitClick" && !cloud) {
       dockEuler.set(pose.tiltX, pose.tiltY, pose.tiltZ);
       dockQuaternion.setFromEuler(dockEuler);
       group.quaternion
@@ -558,13 +565,15 @@ export function PlayControl3D() {
   };
 
   return (
-    <group ref={groupRef} visible={false}>
+    <group ref={groupRef} visible={false} renderOrder={cloud ? 100 : 0}>
       <group ref={hoverVisualRef}>
         <group ref={chromeGroupRef}>
           <mesh geometry={softRingGeometry} material={softRingMaterial} />
           <mesh geometry={innerRingGeometry} material={innerRingMaterial} />
         </group>
 
+        {cloud && <CloudPlayShape playing={soundEnabled} scale={getPlayControlMobileSizeScale(size.width, size.height)} />}
+        <group visible={!cloud}>
         <mesh
           ref={playMeshRef}
           geometry={tetrahedronGeometry}
@@ -588,6 +597,7 @@ export function PlayControl3D() {
           material={controlEdgeMaterial}
           visible={false}
         />
+        </group>
       </group>
 
       <mesh ref={hitRef} geometry={hitGeometry} {...pointerHandlers}>

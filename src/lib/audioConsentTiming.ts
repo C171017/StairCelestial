@@ -11,7 +11,7 @@ export const AUDIO_CONSENT_TIMING = {
   eyeVanishAfterOpen: 0.58,
   starCrossfade: 1.2,
   /** Wait for click before auto-enter (3D play control). */
-  clickAwaitDuration: 5,
+  clickAwaitDuration: 2,
   /** Triangle flies to viewport dock while main scene reveals. */
   flyDuration: 1.05,
   mainRevealDuration: 1.05,

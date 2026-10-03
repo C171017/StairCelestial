@@ -31,7 +31,7 @@ export function createRibbonMotion(): RibbonMotionState {
     pendingInput: 0,
     inputVelocity: 0,
     cruiseVelocity: 0,
-    direction: 1,
+    direction: -1,
   };
 }
 
@@ -45,10 +45,12 @@ export function addRibbonInput(
   reducedMotion = false,
 ): void {
   if (!Number.isFinite(pixels) || Math.abs(pixels) < 0.1) return;
-  motion.direction = Math.sign(pixels);
+  // Reverse idle travel and wheel/swipe travel in the same coordinate system.
+  const travel = -pixels / RIBBON_TURN_PIXELS;
+  motion.direction = Math.sign(travel);
   // Prevent a long sequence of wheel events from queuing seconds of travel.
   motion.pendingInput = clamp(
-    motion.pendingInput + (pixels / RIBBON_TURN_PIXELS) * (reducedMotion ? 0.6 : 1),
+    motion.pendingInput + travel * (reducedMotion ? 0.6 : 1),
     -0.65,
     0.65,
   );
@@ -90,11 +92,11 @@ export function advanceRibbonMotion(
     motion.inputVelocity = approachVelocity(
       motion.inputVelocity,
       inputTarget,
-      reducedMotion ? 18 : 12,
-      paused ? 1.8 : 0.9,
+      reducedMotion ? 18 : paused ? 12 : 18,
+      paused ? 1.8 : reducedMotion ? 0.9 : 1.35,
       dt,
     );
-    motion.cruiseVelocity = approachVelocity(motion.cruiseVelocity, cruiseTarget, 3.8, 0.12, dt);
+    motion.cruiseVelocity = approachVelocity(motion.cruiseVelocity, cruiseTarget, paused ? 3.8 : 4.75, paused ? 0.12 : 0.15, dt);
 
     let inputTravel = (previousInputVelocity + motion.inputVelocity) * 0.5 * dt;
     if (!paused) {

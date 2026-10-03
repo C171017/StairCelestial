@@ -1,27 +1,17 @@
 "use client";
 
-import { Html, useGLTF } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { SanctuaryProject } from "@/lib/sanctuaryContent";
+import type { DoorStudy } from "@/lib/doorStudies";
+import { GlassDoor } from "./GlassDoor";
 
-export function ProjectArtifact({ project, selected, enabled, onSelect, compact, dimmed }: {
-  project: SanctuaryProject; selected: boolean; enabled: boolean; compact: boolean; dimmed: boolean; onSelect: () => void;
+export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed }: {
+  study: DoorStudy; project: SanctuaryProject; selected: boolean; enabled: boolean; compact: boolean; dimmed: boolean; onSelect: () => void;
 }) {
-  const { scene } = useGLTF(`/models/sanctuary/${project.model}.glb`);
-  const { model, materials } = useMemo(() => {
-    const model = scene.clone(true);
-    const materials: THREE.Material[] = [];
-    model.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return;
-      object.material = Array.isArray(object.material) ? object.material.map((m: THREE.Material) => m.clone()) : object.material.clone();
-      materials.push(...(Array.isArray(object.material) ? object.material : [object.material]));
-    });
-    return { model, materials };
-  }, [scene]);
   const visibility = useRef(1);
-  useEffect(() => () => materials.forEach(m => m.dispose()), [materials]);
   const sculpture = useRef<THREE.Group>(null);
   const hovered = useRef(false);
   const pointerStart = useRef<[number, number] | null>(null);
@@ -35,11 +25,6 @@ export function ProjectArtifact({ project, selected, enabled, onSelect, compact,
     sculpture.current.scale.lerp(scaleTarget.setScalar(target), 1 - Math.exp(-8 * dt));
     visibility.current = THREE.MathUtils.damp(visibility.current, dimmed ? 0 : 1, 6, Math.min(dt, 0.05));
     sculpture.current.visible = visibility.current > 0.015;
-    for (const material of materials) {
-      material.opacity = visibility.current;
-      material.transparent = visibility.current < 0.999;
-      material.depthWrite = visibility.current >= 0.999;
-    }
     if (button.current) {
       sculpture.current.getWorldPosition(projected).project(camera);
       button.current.hidden = dimmed || projected.y > (compact && !selected ? 0.55 : 0.9) || projected.y < -0.84 || Math.abs(projected.x) > 0.88 || projected.z > 1;
@@ -54,21 +39,19 @@ export function ProjectArtifact({ project, selected, enabled, onSelect, compact,
   }
   return (
     <group scale={compact ? 0.78 : 1}>
-      <group ref={sculpture}>
-        <primitive object={model} />
+      <group ref={sculpture} rotation={[0, study.angle, 0]}>
+        <GlassDoor study={study} amount={selected ? 0.32 : 0} dimmed={dimmed} />
       </group>
-      <mesh position={[0, 1, 0]}
+      <mesh position={[0, 1.7, 0]}
         onPointerDown={(e) => { e.stopPropagation(); pointerStart.current = [e.clientX, e.clientY]; }}
         onClick={activate}
         onPointerOver={() => { if (enabled) { hovered.current = true; document.body.style.cursor = "pointer"; } }}
         onPointerOut={() => { hovered.current = false; document.body.style.cursor = ""; }}>
-        <boxGeometry args={[2.8, 2.6, 2.5]} />
+        <boxGeometry args={[2.7, 3.5, 0.8]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       <Html center position={[0, -0.38, 0.8]} distanceFactor={20} zIndexRange={[20, 0]} style={{ pointerEvents: enabled ? "auto" : "none" }}>
-        <button ref={button} className={`artifact-label${selected ? " is-selected" : ""}`} onClick={onSelect} disabled={!enabled} aria-label={`Explore ${project.title}`}>
-          <span>{project.number}</span><span>{project.title === "Columbia-Barnard Network" ? "Connections" : project.title}</span><span aria-hidden>↗</span>
-        </button>
+        <button ref={button} className={`artifact-label${selected ? " is-selected" : ""}`} onClick={onSelect} disabled={!enabled} aria-label={`${study.number} ${study.name} — explore ${project.title}`} />
       </Html>
     </group>
   );

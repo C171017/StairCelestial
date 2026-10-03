@@ -1,0 +1,30 @@
+# Six possible passages
+
+October 2, 2026. Original shape studies for the Sanctuary cloud-and-glass space.
+
+The owner requested the essence of a door, with very different irregular shapes and a hinge-like opening mechanism. All six are modeled in Blender, placed on the homepage ribbon, and presented together at `/door-studies`. They are proposals for selection, not a final choice of six project doors.
+
+## Forms
+
+1. **Melt** — an asymmetric, softened arch with a wavering upright and gently pooled base. Pale aqua glass; side hinge.
+2. **Seed** — a leaning almond, narrowing toward a high off-center tip. Pale green glass; side hinge.
+3. **Fault** — a cut, angular shard with opposed notches and a slanted crown. Ice-blue glass; side hinge.
+4. **Hourglass** — an exaggerated pinched waist joining two unequal rounded lobes. Lilac glass; side hinge.
+5. **Cloud** — a broad, scalloped contour that wanders around a roughly enclosed passage. Champagne glass; side hinge.
+6. **Orbit** — an incomplete oval surround and a returning arc around a central leaf. Cool clear glass; central top/bottom pivot.
+
+Each consists of a separate stationary surround, glass leaf, polished edge, pull, and small metal hinge/pivot details. The source retains modifiers and editable contours. The runtime uses one shared GLB per form with instance-owned materials, transmission, restrained iridescence, and the existing cloud/studio environment.
+
+## Reference directions
+
+- [Nendo / WonderGlass, Melt (2019)](https://www.nendo.jp/en/works/melt_wg/) — glass shaped by viscosity and gravity; a reference for softened edges and the feeling of a rigid material becoming pliant.
+- [Tony Cragg, Listeners (2015)](https://www.tony-cragg.com/works/sculptures/2010-2019/listeners-1.html) — glass sculpture; a material and organic-volume reference.
+- [Olafur Eliasson, Inhale, exhale (2018)](https://olafureliasson.net/artwork/inhale-exhale-2018) — overlapping transparent color; a reference for subtle material layering and perception.
+
+These inform material and spatial ideas. The six silhouettes are original proposals, not reproductions of the referenced artworks.
+
+## Reviewing
+
+The comparison room starts with closed leaves so silhouettes can be compared. Select a number or a door to isolate it; All six or Escape returns to the collection. Hinge and Dissolve are alternative opening studies. The opening slider and turn slider work on the whole collection or the isolated model. Reduced-motion preference removes the comparison's interpolation. No choice is saved as the final design.
+
+The homepage remains text-free and retains selection, project navigation, infinite ribbon motion, and its entrance. The extra two studies provisionally reuse Music and JazzTree destinations. All original project sculptures and Blender scenes remain available.

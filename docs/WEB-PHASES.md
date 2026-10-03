@@ -34,6 +34,14 @@ Eleven automated motion/focus tests and the production build pass. Browser check
 
 No completed production measurements or deployment readiness are asserted here.
 
+### Movement refinement — October 2, 2026
+
+- Reversed the initial cruise and wheel/swipe mapping together.
+- Increased normal input acceleration and response, plus cruise acceleration and response, by 25%; retained speed limits, selection braking, and reduced-motion behavior.
+- All twelve motion/focus tests and the production export passed. Lint passed with the existing audio effect cleanup warning in `useSiteAudio.tsx`.
+- Checked the desktop preview while scrolling and reversing direction. Compact layout and touch were not rechecked for this adjustment.
+- Follow-up: increased normal wheel/swipe acceleration and response another 20%. All twelve tests and production export passed, with the existing audio cleanup warning. This follow-up was not browser rechecked.
+
 ## 4. Independent design review — accepted at 8.4/10
 
 The user requested an Astra review scored from 0 to 10, with 10 representing an award-level production result. Aim for at least 8. If a review is below 8, incorporate its concrete improvement directions and request another review, for at most three attempts total.

@@ -24,7 +24,7 @@ test("wheel displacement and cruise are consistent at 30 and 120 fps", () => {
     return state;
   };
   assert.ok(Math.abs(simulate(30).position - simulate(120).position) < 0.0001);
-  assert.ok(simulate(120).position > 0.49);
+  assert.ok(simulate(120).position < -0.49);
 });
 
 test("large and reversing inputs respect the velocity limit", () => {
@@ -34,7 +34,7 @@ test("large and reversing inputs respect the velocity limit", () => {
     advanceRibbonMotion(state, 1 / 120);
     assert.ok(Math.abs(state.velocity) <= RIBBON_MAX_SPEED + 1e-10);
   }
-  assert.equal(state.direction, -1);
+  assert.equal(state.direction, 1);
 });
 
 test("reduced motion remains stationary without explicit input", () => {
@@ -49,9 +49,26 @@ test("selection smoothly stops cruise and release resumes without a jump", () =>
   for (let i = 0; i < 180; i += 1) advanceRibbonMotion(state, 1 / 60);
   const beforePause = state.position;
   for (let i = 0; i < 180; i += 1) advanceRibbonMotion(state, 1 / 60, { paused: true });
-  assert.ok(state.position - beforePause < 0.01);
+  assert.ok(Math.abs(state.position - beforePause) < 0.01);
   assert.ok(Math.abs(state.velocity) < 0.000001);
   const beforeResume = state.position;
   advanceRibbonMotion(state, 1 / 60);
-  assert.ok(state.position - beforeResume < 0.0001);
+  assert.ok(Math.abs(state.position - beforeResume) < 0.0001);
+});
+
+test("idle travel and both input directions use the reversed movement", () => {
+  const idle = createRibbonMotion();
+  const down = createRibbonMotion();
+  const up = createRibbonMotion();
+  addRibbonInput(down, 720);
+  addRibbonInput(up, -720);
+  for (let i = 0; i < 120; i += 1) {
+    advanceRibbonMotion(idle, 1 / 120);
+    advanceRibbonMotion(down, 1 / 120);
+    advanceRibbonMotion(up, 1 / 120);
+  }
+  assert.ok(idle.position < 0);
+  assert.ok(down.position < idle.position);
+  assert.ok(up.position > 0);
+  assert.ok(Math.abs(down.position + up.position) < 1e-10);
 });
