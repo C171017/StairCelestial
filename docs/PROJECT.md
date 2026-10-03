@@ -41,7 +41,7 @@ The glass ribbon and social tokens are authored in code. A generated cloud image
 
 ## Current status
 
-- The Sanctuary homepage and four Blender sculptures are implemented.
+- The Sanctuary homepage now carries six Blender door studies. The four earlier project sculptures are preserved.
 - The original eye gate, play control, audio provider, intro reveal, and intro store are reused. The old staircase, planets, and orbit helpers remain unmounted.
 - Production export and eleven motion/focus tests pass; desktop and narrow browser interactions were checked.
 - Independent Astra review: 7.8/10 on round one, then 8.4/10 after refinement on round two. The requested threshold was met within the three-round limit; see [REVIEW-NOTES.md](REVIEW-NOTES.md).

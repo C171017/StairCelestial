@@ -1,12 +1,12 @@
 "use client";
 
-import { Html } from "@react-three/drei";
+import { Html, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { doorStudies, type DoorOpening } from "@/lib/doorStudies";
 import { GlassDoor } from "./GlassDoor";
-import { Sky, StudioLight } from "./SanctuaryScene";
+import { Sky, StudioLight } from "./SceneEnvironment";
 
 type Props = {
   selected: number | null; amount: number; opening: DoorOpening; angle: number;
@@ -14,13 +14,14 @@ type Props = {
 };
 
 function Collection({ selected, amount, opening, angle, onSelect, onReady }: Props) {
+  useGLTF(doorStudies.map(study => `/models/doors/${study.id}.glb`));
   const { viewport, size } = useThree();
   const groups = useRef<(THREE.Group | null)[]>([]);
   const compact = size.width < 700;
   const cols = compact ? 2 : 3;
   const rows = compact ? 3 : 2;
   // Reserve space for the quiet header and comparison controls.
-  const roomHeight = viewport.height * (compact ? 0.69 : 0.65);
+  const roomHeight = viewport.height * (compact ? 0.59 : 0.61);
   const scale = Math.min((viewport.width * 0.86) / (cols * 3.8), roomHeight / (rows * 4.5));
   const reduced = useRef(false);
   useEffect(() => {
@@ -37,7 +38,7 @@ function Collection({ selected, amount, opening, angle, onSelect, onReady }: Pro
       const isSelected = selected === index;
       const targetScale = selected === null ? scale : isSelected ? Math.min(viewport.height * .15, viewport.width * .23) : 0;
       const x = selected === null ? (index % cols - (cols - 1) / 2) * 4.05 * scale : 0;
-      const y = selected === null ? ((rows - 1) / 2 - Math.floor(index / cols)) * 4.5 * scale - 1.55 * scale + viewport.height * .035 : -1.55 * targetScale;
+      const y = selected === null ? ((rows - 1) / 2 - Math.floor(index / cols)) * 4.5 * scale - 1.55 * scale + viewport.height * .055 : -1.55 * targetScale;
       group.position.x = THREE.MathUtils.lerp(group.position.x, x, blend);
       group.position.y = THREE.MathUtils.lerp(group.position.y, y, blend);
       group.scale.setScalar(THREE.MathUtils.lerp(group.scale.x, targetScale, blend));

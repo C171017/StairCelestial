@@ -15,32 +15,37 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
   const { model, pivot, restQuaternion, materials } = useMemo(() => {
     const model = scene.clone(true);
     let pivot: THREE.Object3D | undefined;
-    const materials: { material: THREE.MeshStandardMaterial; moving: boolean; opacity: number }[] = [];
-    const clones = new Map<string, THREE.MeshStandardMaterial>();
+    const materials: { material: THREE.Material; moving: boolean; opacity: number }[] = [];
+    const clones = new Map<string, THREE.Material>();
     model.traverse(object => {
       if (object.userData.door_role === "pivot") pivot = object;
-      if (!(object instanceof THREE.Mesh)) return;
+      const mesh = object as THREE.Mesh;
+      if (!mesh.isMesh) return;
       const moving = object.name.startsWith("Moving_");
-      const clone = (original: THREE.MeshStandardMaterial) => {
+      const clone = (original: THREE.Material) => {
         const key = `${original.uuid}:${moving}`;
         const existing = clones.get(key);
         if (existing) return existing;
         const material = original.clone();
         let opacity = 1;
         // Consistent transmission and a subtle interference sheen in the cloud light.
-        if (material instanceof THREE.MeshPhysicalMaterial && material.name.includes("Glass")) {
-          material.color.lerp(new THREE.Color("#f2fbff"), moving ? 0.62 : 0.38);
-          material.transmission = 1;
-          material.roughness = moving ? 0.045 : 0.035;
-          material.thickness = moving ? 0.16 : 0.38;
-          material.ior = 1.46;
-          material.iridescence = moving ? 0.13 : 0.24;
-          material.iridescenceIOR = 1.3;
-          material.iridescenceThicknessRange = [100, 280];
-          material.envMapIntensity = moving ? 0.8 : 1.25;
-          material.attenuationColor.set(study.tint);
-          material.attenuationDistance = 3;
-          opacity = moving ? 0.55 : 0.86;
+        const glass = material as THREE.MeshPhysicalMaterial;
+        if (glass.isMeshPhysicalMaterial && material.name.includes("Glass")) {
+          glass.color.lerp(new THREE.Color("#f2fbff"), moving ? 0.62 : 0.38);
+          glass.transmission = 1;
+          glass.roughness = moving ? 0.045 : 0.035;
+          glass.thickness = moving ? 0.16 : 0.38;
+          glass.ior = 1.46;
+          glass.iridescence = moving ? 0.13 : 0.24;
+          glass.iridescenceIOR = 1.3;
+          glass.iridescenceThicknessRange = [100, 280];
+          glass.envMapIntensity = moving ? 0.8 : 1.25;
+          glass.attenuationColor.set(study.tint);
+          glass.attenuationDistance = 3;
+          // Closed volumes already include both surfaces. Drawing backfaces again
+          // stacks the alpha and makes a clear leaf read as a frosted solid.
+          glass.side = THREE.FrontSide;
+          opacity = moving ? 0.38 : 0.72;
         }
         material.transparent = true;
         material.opacity = opacity;
@@ -49,7 +54,7 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
         materials.push({ material, moving, opacity });
         return material;
       };
-      object.material = Array.isArray(object.material) ? object.material.map(clone) : clone(object.material);
+      mesh.material = Array.isArray(mesh.material) ? mesh.material.map(clone) : clone(mesh.material);
     });
     return { model, pivot, restQuaternion: pivot?.quaternion.clone(), materials };
   }, [scene, study.tint]);

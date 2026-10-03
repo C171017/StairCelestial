@@ -21,7 +21,7 @@ export function createPlayShapeGeometry() {
     new THREE.Vector3(0, 0, 1), -Math.atan2(tip.y, tip.x),
   );
   const cubeRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.34, -0.48, -0.04));
-  const triangleTilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.08, -0.62, 0));
+  const triangleTilt = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.26, -0.95, -0.06));
   const triangleRotation = triangleTilt.clone().multiply(faceRotation).multiply(align);
   const rotation = new THREE.Quaternion();
   const indices: number[] = [];

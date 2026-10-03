@@ -2,9 +2,10 @@
 
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import gsap from "gsap";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { useSiteAudio } from "@/hooks/useSiteAudio";
+import type { RibbonMotionSnapshot } from "@/lib/ribbonMotion";
 import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
 import {
   getDynamicViewportSize,
@@ -103,7 +104,7 @@ type FlyPose = {
   billboard: number;
 };
 
-export function PlayControl3D({ theme = "original" }: { theme?: "original" | "cloud" }) {
+export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "original" | "cloud"; ribbonMotion?: RefObject<RibbonMotionSnapshot> }) {
   const cloud = theme === "cloud";
   const groupRef = useRef<THREE.Group>(null);
   const hoverVisualRef = useRef<THREE.Group>(null);
@@ -182,8 +183,8 @@ export function PlayControl3D({ theme = "original" }: { theme?: "original" | "cl
     [tetrahedronGeometry],
   );
   const hitGeometry = useMemo(
-    () => new THREE.SphereGeometry(PLAY_IRIS_LOCAL_RADIUS, 12, 8),
-    [],
+    () => new THREE.SphereGeometry(cloud ? 0.17 : PLAY_IRIS_LOCAL_RADIUS, 12, 8),
+    [cloud],
   );
   const innerRingGeometry = useMemo(
     () =>
@@ -318,6 +319,9 @@ export function PlayControl3D({ theme = "original" }: { theme?: "original" | "cl
       controlViewport.width,
       controlViewport.height,
     );
+    // The cloud control lives on the ribbon's axis, with a physical world size.
+    // Its mobile mesh already has the shared 2x size multiplier.
+    if (cloud) dockScaleRef.current = size.width < 650 ? 6 : 13;
     mobileShapeScaleRef.current = getPlayControlMobileSizeScale(
       controlViewport.width,
       controlViewport.height,
@@ -326,8 +330,10 @@ export function PlayControl3D({ theme = "original" }: { theme?: "original" | "cl
     const phase = usePortfolioStore.getState().introPlayPhase;
     if (phase === "hidden" || phase === "awaitClick") {
       flyPoseRef.current.scale = introScaleRef.current;
+    } else if (cloud && phase === "active") {
+      flyPoseRef.current.scale = dockScaleRef.current;
     }
-  }, [applyMobileShapeScale, camera, size.height, size.width]);
+  }, [applyMobileShapeScale, camera, cloud, size.height, size.width]);
 
   useLayoutEffect(() => {
     syncScaleFromViewport();
@@ -502,12 +508,15 @@ export function PlayControl3D({ theme = "original" }: { theme?: "original" | "cl
     const pose = flyPoseRef.current;
     getViewportAnchorPosition(
       camera,
-      { x: pose.ndcX, y: pose.ndcY },
-      pose.distance,
+      cloud ? PLAY_INTRO_NDC : { x: pose.ndcX, y: pose.ndcY },
+      cloud ? PLAY_INTRO_VIEW_DISTANCE : pose.distance,
       worldPos,
       ndcScratch,
       rayScratch,
     );
+    // Finish the intro at the helix's world-space center. Sharing the main
+    // scene lets glass transmission and depth naturally include this object.
+    if (cloud) worldPos.multiplyScalar(pose.billboard);
     group.position.copy(worldPos);
 
     const baseScale = pose.scale;
@@ -565,14 +574,14 @@ export function PlayControl3D({ theme = "original" }: { theme?: "original" | "cl
   };
 
   return (
-    <group ref={groupRef} visible={false} renderOrder={cloud ? 100 : 0}>
+    <group ref={groupRef} visible={false}>
       <group ref={hoverVisualRef}>
         <group ref={chromeGroupRef}>
           <mesh geometry={softRingGeometry} material={softRingMaterial} />
           <mesh geometry={innerRingGeometry} material={innerRingMaterial} />
         </group>
 
-        {cloud && <CloudPlayShape playing={soundEnabled} scale={getPlayControlMobileSizeScale(size.width, size.height)} />}
+        {cloud && <CloudPlayShape playing={soundEnabled} active={introPlayPhase === "active"} ribbonMotion={ribbonMotion} scale={getPlayControlMobileSizeScale(size.width, size.height)} />}
         <group visible={!cloud}>
         <mesh
           ref={playMeshRef}

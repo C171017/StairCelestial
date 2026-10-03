@@ -33,8 +33,9 @@ function extrudedLogo(kind: "github" | "linkedin") {
   return geometry;
 }
 
-function SocialToken({ kind, position, onPlaceholder, enabled, motion }: {
+function SocialToken({ kind, position, orbitDepth, onPlaceholder, enabled, motion }: {
   motion: RefObject<RibbonMotionSnapshot>;
+  orbitDepth: number;
   kind: "github" | "linkedin"; position: [number, number, number]; onPlaceholder: (name: string) => void; enabled: boolean;
 }) {
   const group = useRef<THREE.Group>(null);
@@ -71,17 +72,13 @@ function SocialToken({ kind, position, onPlaceholder, enabled, motion }: {
       logo.current.rotation.set(0.04, direction * 0.18, direction * -0.09);
       return;
     }
-    // Roam across the scene, with an irregular path independent of the slow spin.
-    // Ease out of the starting positions and keep horizontal travel inside the layout.
-    const travel = Math.abs(position[0]);
-    const entrance = 1 - Math.exp(-t * 0.6);
-    const roamingX = position[0] * 0.15 + travel * (
-      Math.sin(t * 0.34 + phase) * 0.62 + Math.sin(t * 0.57 + phase * 2) * 0.13
-    );
+    // Horizontal XZ ellipse around the staircase; altitude stays fixed.
+    // Opposite starting phases keep the two satellites separated on the orbit.
+    const orbitAngle = t * 0.34 + (kind === "linkedin" ? Math.PI : 0);
     group.current.position.set(
-      THREE.MathUtils.lerp(position[0], roamingX, entrance),
-      position[1] + entrance * (Math.sin(t * 0.42 + phase * 1.3) * 1.4 + Math.sin(t * 0.67 + phase) * 0.4),
-      position[2] + entrance * Math.sin(t * 0.31 + phase) * 0.85,
+      Math.abs(position[0]) * Math.cos(orbitAngle),
+      position[1],
+      orbitDepth * Math.sin(orbitAngle),
     );
     logo.current.rotation.set(
       0.04 + Math.sin(spin * 0.08 + phase) * 0.16,
@@ -113,11 +110,14 @@ function SocialToken({ kind, position, onPlaceholder, enabled, motion }: {
 export function SocialArtifacts({ enabled, onPlaceholder, motion }: { enabled: boolean; onPlaceholder: (name: string) => void; motion: RefObject<RibbonMotionSnapshot> }) {
   const { viewport, size } = useThree();
   const compact = size.width < 650;
-  const x = compact ? viewport.width * 0.31 : Math.min(viewport.width * 0.36, 9.5);
+  // Both ellipse axes clear the ribbon's outer edge, including the logo itself.
+  const scale = compact ? 0.8 : 1;
+  const x = compact ? 4.4 : Math.max(7.8, Math.min(viewport.width * 0.36, 9.5));
+  const orbitDepth = (compact ? 4.1 : 7.6) / scale;
   return (
-    <group scale={compact ? 0.8 : 1}>
-      <SocialToken motion={motion} kind="linkedin" position={[-x / (compact ? 0.8 : 1), compact ? 8.4 : 2.6, 0]} enabled={enabled} onPlaceholder={onPlaceholder} />
-      <SocialToken motion={motion} kind="github" position={[x / (compact ? 0.8 : 1), compact ? 8.4 : -1.6, 0]} enabled={enabled} onPlaceholder={onPlaceholder} />
+    <group scale={scale}>
+      <SocialToken orbitDepth={orbitDepth} motion={motion} kind="linkedin" position={[-x / scale, compact ? 8.4 : 2.6, 0]} enabled={enabled} onPlaceholder={onPlaceholder} />
+      <SocialToken orbitDepth={orbitDepth} motion={motion} kind="github" position={[x / scale, compact ? 8.4 : -1.6, 0]} enabled={enabled} onPlaceholder={onPlaceholder} />
     </group>
   );
 }

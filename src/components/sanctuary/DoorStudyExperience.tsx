@@ -2,14 +2,15 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Component, useEffect, useState, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
 import { doorStudies, type DoorOpening } from "@/lib/doorStudies";
 
 const Scene = dynamic(() => import("./DoorStudyScene").then(m => m.DoorStudyScene), { ssr: false });
 
-class StudyBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+class StudyBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch() { this.props.onError(); }
   render() {
     return this.state.failed ? <div className="study-error">The 3D preview couldn’t load. <Link href="/">Return to the ribbon</Link>.</div> : this.props.children;
   }
@@ -21,6 +22,9 @@ export function DoorStudyExperience() {
   const [amount, setAmount] = useState(0);
   const [angle, setAngle] = useState(0);
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const onReady = useCallback(() => setReady(true), []);
+  const onError = useCallback(() => setFailed(true), []);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if ((event.target as HTMLElement).matches("input")) return;
@@ -35,13 +39,13 @@ export function DoorStudyExperience() {
   const study = selected === null ? null : doorStudies[selected];
   return <main className="door-study-room">
     <div className="door-study-canvas" aria-label="Six original glass door studies in a cloud gallery">
-      <StudyBoundary><Scene selected={selected} amount={amount} opening={opening} angle={angle} onSelect={choose} onReady={() => setReady(true)} /></StudyBoundary>
+      <StudyBoundary onError={onError}><Scene selected={selected} amount={amount} opening={opening} angle={angle} onSelect={choose} onReady={onReady} /></StudyBoundary>
     </div>
     <header className="study-heading">
       <div><span className="study-eyebrow">SANCTUARY / FORM STUDIES</span><h1>Possible passages.</h1><p>Six ways to open somewhere else.</p></div>
       <Link href="/" className="study-ribbon-link">On the ribbon <span aria-hidden="true">↗</span></Link>
     </header>
-    {!ready && <div className="study-loading" role="status">Gathering the glass…</div>}
+    {!ready && !failed && <div className="study-loading" role="status">Gathering the glass…</div>}
     <footer className="study-controls">
       <div className="study-selection" aria-live="polite">
         <span>{study ? `${study.number} / ${study.name}` : "01—06 / The collection"}</span>
