@@ -2,7 +2,7 @@
  * Changing the interaction phase must never restart any of these motions. */
 export const CONTROL_ENTRANCE_SECONDS = 7.8;
 export const CONTROL_EYE_DISSOLVE_SECONDS = 1.8;
-export const CONTROL_ENTRANCE_TURNS = 1.5;
+export const CONTROL_ENTRANCE_TURNS = 2;
 
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 const smooth = (value: number) => {

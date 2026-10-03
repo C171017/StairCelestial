@@ -37,7 +37,7 @@ The active assets are six original cast-glass thresholds: Melt, Seed, Fault, Hou
 
 `/door-studies` is a separate comparison room with numbered labels, all-six and individual views, a turn control, and reversible hinge/dissolve experiments. The text-free homepage and existing entrance remain intact. Shape selection is the purpose of this pass; movement is exploratory.
 
-The glass ribbon and social tokens are authored in code. A generated cloud image is served as an approximately 38 KB WebP. Keep textures and geometry finite; imply infinity through recycling, composition, and offscreen geometry.
+The glass ribbon and social tokens are authored in code. The surrounding cloud panorama uses an 8192 × 4096 WebP on larger screens (1.3 MB), a 4096 × 2048 version on smaller screens (559 KB), and the original low-resolution sky during loading. The separate door-study room uses an upscaled flat 4K backdrop (173 KB). Keep textures and geometry finite; imply infinity through recycling, composition, and offscreen geometry.
 
 ## Current status
 

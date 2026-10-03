@@ -5,6 +5,7 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { doorModelUrl, type DoorOpening, type DoorStudy } from "@/lib/doorStudies";
+import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 
 /** A fixed cast-glass surround and an independently rigged, moving glass leaf. */
 export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false, onSelect, enabled = true, openingProgress }: {
@@ -85,8 +86,7 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
     }
     for (const { material, moving, opacity } of materials) {
       const dissolve = opening === "dissolve" && moving ? 1 - travel.current * 0.96 : 1;
-      material.opacity = opacity * visibility.current * dissolve;
-      material.depthWrite = material.opacity > 0.98;
+      setLocalMaterialOpacity(material, opacity * visibility.current * dissolve);
     }
   });
   function activate(event: ThreeEvent<MouseEvent>) {

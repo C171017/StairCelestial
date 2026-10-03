@@ -4,14 +4,17 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { createRibbonEdge, createRibbonGeometry } from "@/lib/ribbonGeometry";
+import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 
 export function GlassRibbon({ radius, width, focused }: { radius: number; width: number; focused: boolean }) {
   const material = useRef<THREE.MeshPhysicalMaterial>(null);
+  const localOpacity = useRef(0.62);
   const geometry = useMemo(() => createRibbonGeometry(radius, width), [radius, width]);
   const edges = useMemo(() => [createRibbonEdge(radius - width / 2 + 0.025), createRibbonEdge(radius + width / 2 - 0.025)], [radius, width]);
   useEffect(() => () => { geometry.dispose(); edges.forEach((edge) => edge.dispose()); }, [geometry, edges]);
   useFrame((_, dt) => {
-    if (material.current) material.current.opacity = THREE.MathUtils.damp(material.current.opacity, focused ? 0.27 : 0.62, 5, Math.min(dt, 0.05));
+    localOpacity.current = THREE.MathUtils.damp(localOpacity.current, focused ? 0.27 : 0.62, 5, Math.min(dt, 0.05));
+    if (material.current) setLocalMaterialOpacity(material.current, localOpacity.current);
   });
   return (
     <group>

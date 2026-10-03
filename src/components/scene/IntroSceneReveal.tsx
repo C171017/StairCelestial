@@ -4,39 +4,11 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { usePortfolioStore } from "@/lib/store";
+import { setIntroMaterialOpacity } from "@/lib/materialReveal";
 
 type IntroSceneRevealProps = {
   children: ReactNode;
 };
-
-type RevealMaterialData = {
-  introRevealBaseDepthWrite?: boolean;
-  introRevealBaseOpacity?: number;
-  introRevealBaseTransparent?: boolean;
-};
-
-function applyRevealOpacity(material: THREE.Material, opacity: number) {
-  const data = material.userData as RevealMaterialData;
-  if (data.introRevealBaseOpacity === undefined) {
-    data.introRevealBaseOpacity = material.opacity;
-    data.introRevealBaseTransparent = material.transparent;
-    data.introRevealBaseDepthWrite = material.depthWrite;
-  }
-
-  const baseOpacity = data.introRevealBaseOpacity ?? 1;
-  const baseTransparent = data.introRevealBaseTransparent ?? false;
-  const baseDepthWrite = data.introRevealBaseDepthWrite ?? true;
-  const nextTransparent = baseTransparent || opacity < 0.995 || baseOpacity < 0.995;
-  const transparencyChanged = material.transparent !== nextTransparent;
-
-  material.opacity = baseOpacity * opacity;
-  material.transparent = nextTransparent;
-  material.depthWrite = baseDepthWrite;
-
-  if (transparencyChanged) {
-    material.needsUpdate = true;
-  }
-}
 
 function applyObjectRevealOpacity(object: THREE.Object3D, opacity: number) {
   object.traverse((child) => {
@@ -45,7 +17,7 @@ function applyObjectRevealOpacity(object: THREE.Object3D, opacity: number) {
     const materials = Array.isArray(child.material)
       ? child.material
       : [child.material];
-    materials.forEach((material) => applyRevealOpacity(material, opacity));
+    materials.forEach((material) => setIntroMaterialOpacity(material, opacity));
   });
 }
 
@@ -70,7 +42,7 @@ export function IntroSceneReveal({ children }: IntroSceneRevealProps) {
     const opacity = usePortfolioStore.getState().introMainOpacity;
     group.visible = opacity > 0.002;
 
-    if (Math.abs(opacity - lastOpacityRef.current) < 0.002) return;
+    if (opacity === lastOpacityRef.current) return;
     lastOpacityRef.current = opacity;
     applyObjectRevealOpacity(group, opacity);
   });

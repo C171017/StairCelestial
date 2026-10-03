@@ -476,7 +476,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
         beginEnter(true);
         return;
       }
-      if (phase !== "active") return;
+      if (phase !== "active" && !(cloud && phase === "entering")) return;
 
       const next = !soundEnabled;
       setSoundEnabled(next);
@@ -490,6 +490,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion }: { theme?: "o
     },
     [
       beginEnter,
+      cloud,
       fadeAmbientIn,
       fadeAmbientOut,
       setSoundEnabled,

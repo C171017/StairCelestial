@@ -3,16 +3,21 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
+import { createControlReflections } from "@/lib/controlReflections";
 import type { ControlEntrance } from "@/lib/controlEntrance";
 import { PLAY_INNER_RING_LOCAL_RADIUS, PLAY_PRIMARY_RING_LOCAL_RADIUS } from "@/lib/eyeControlMetrics";
 
-function glassMaterial(color: string) {
+function ringMaterial(kind: "obsidian" | "glass", reflections: THREE.Texture) {
+  const dark = kind === "obsidian";
+  const color = dark ? "#080a0d" : "#e1f5fa";
   const dissolve = { value: 0 };
   const material = new THREE.MeshPhysicalMaterial({
-    color, metalness: 0, roughness: 0.1, transmission: 0.94,
-    thickness: 0.12, ior: 1.46, clearcoat: 1, clearcoatRoughness: 0.08,
-    envMapIntensity: 1.25, transparent: true, opacity: 0, depthWrite: false,
-    attenuationColor: new THREE.Color(color), attenuationDistance: 1.8,
+    color, metalness: dark ? 0.35 : 0, roughness: dark ? 0.13 : 0.065,
+    transmission: dark ? 0 : 0.98,
+    thickness: 0.12, ior: 1.46, clearcoat: 1, clearcoatRoughness: 0.055,
+    envMap: dark ? reflections : null,
+    envMapIntensity: dark ? 1.8 : 1.1, transparent: true, opacity: 0, depthWrite: false,
+    attenuationColor: new THREE.Color(color), attenuationDistance: 3.5,
   });
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uDissolve = dissolve;
@@ -37,11 +42,15 @@ function glassMaterial(color: string) {
 export function IntroGlassRings({ entrance }: { entrance: RefObject<ControlEntrance> }) {
   const outer = useRef<THREE.Mesh>(null);
   const inner = useRef<THREE.Mesh>(null);
-  const materials = useMemo(() => [glassMaterial("#f0e6d6"), glassMaterial("#bcdce6")], []);
-  useEffect(() => () => materials.forEach(({ material }) => material.dispose()), [materials]);
+  const reflections = useMemo(createControlReflections, []);
+  const materials = useMemo(() => [ringMaterial("obsidian", reflections), ringMaterial("glass", reflections)], [reflections]);
+  useEffect(() => () => {
+    materials.forEach(({ material }) => material.dispose());
+    reflections.dispose();
+  }, [materials, reflections]);
   useFrame(() => {
     const p = entrance.current;
-    materials[0].material.opacity = p.outerOpacity * 0.88;
+    materials[0].material.opacity = p.outerOpacity;
     materials[1].material.opacity = p.innerOpacity * 0.9;
     materials[0].dissolve.value = p.outerDissolve;
     materials[1].dissolve.value = p.innerDissolve;
@@ -58,10 +67,10 @@ export function IntroGlassRings({ entrance }: { entrance: RefObject<ControlEntra
   });
   return <group>
     <mesh ref={outer} material={materials[0].material}>
-      <torusGeometry args={[PLAY_PRIMARY_RING_LOCAL_RADIUS, 0.0095, 20, 160]} />
+      <torusGeometry args={[PLAY_PRIMARY_RING_LOCAL_RADIUS, 0.014, 24, 160]} />
     </mesh>
     <mesh ref={inner} material={materials[1].material} position={[0, 0, 0.008]}>
-      <torusGeometry args={[PLAY_INNER_RING_LOCAL_RADIUS, 0.0075, 20, 128]} />
+      <torusGeometry args={[PLAY_INNER_RING_LOCAL_RADIUS, 0.011, 24, 128]} />
     </mesh>
   </group>;
 }

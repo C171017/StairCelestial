@@ -12,4 +12,4 @@ export type DoorStudy = (typeof doorStudies)[number];
 export type DoorOpening = "hinge" | "dissolve";
 
 // Bump when replacing the exported models so existing previews shed cached GLBs.
-export const doorModelUrl = (study: DoorStudy) => `/models/doors/${study.id}.glb?v=3`;
+export const doorModelUrl = (study: DoorStudy) => `/models/doors/${study.id}.glb?v=${study.id === "orbit" ? 4 : 3}`;

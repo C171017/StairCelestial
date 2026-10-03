@@ -6,8 +6,9 @@ import { useEffect } from "react";
 import * as THREE from "three";
 
 export function Sky() {
-  const texture = useTexture("/textures/sanctuary/cloudscape.webp");
-  const { scene, size } = useThree();
+  const { scene, size, gl } = useThree();
+  const texture = useTexture(gl.capabilities.maxTextureSize >= 4096
+    ? "/textures/sanctuary/cloudscape-4k.webp" : "/textures/sanctuary/cloudscape.webp");
   useEffect(() => {
     texture.colorSpace = THREE.SRGBColorSpace;
     const image = texture.image as { width: number; height: number };
@@ -39,4 +40,3 @@ export function StudioLight() {
     </Environment>
   </>;
 }
-

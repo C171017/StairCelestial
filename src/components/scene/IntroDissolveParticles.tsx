@@ -64,7 +64,7 @@ export function IntroDissolveParticles({ entrance, reduced }: {
         p.y += age * age * 0.009;
         p.z += sin(age + aSeed.z * 6.28) * age * 0.014;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-        gl_PointSize = (1.8 + aSeed.w * 3.0) * uDpr * (1.0 - life * 0.55);
+        gl_PointSize = (2.4 + aSeed.w * 3.4) * uDpr * (1.0 - life * 0.55);
       }
     `,
     fragmentShader: `

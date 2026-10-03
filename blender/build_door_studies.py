@@ -155,10 +155,6 @@ for spec in studies:
     ring(points,inner,frame,spec.get('broken',False))
     if not spec.get('broken',False):
         line('Fixed_SilverSeam',[(x,-.134,z) for x,z in inset(points,.97,.98,cy)],.007,silver,root,True)
-    else:
-        # The returning arc overlaps in depth, leaving a deliberate missing seam.
-        arc=outline([(-.84,.50),(-1.43,1.20),(-1.43,2.30),(-.64,3.15),(.16,3.27),(.91,2.77)],steps=8)
-        line('Fixed_OrbitEcho',[(x,.16,z) for x,z in arc[:40]],.038,frame,root)
     pivot=bpy.data.objects.new('DoorPivot',None);collection.objects.link(pivot)
     pivot.location=(0 if spec.get('center_pivot') else min(x for x,_ in inner)-.035,0,cy)
     bpy.context.view_layer.update()
