@@ -33,7 +33,7 @@ Both social destinations are intentionally placeholders for this pass. Keep `git
 
 ## Asset direction
 
-The active assets are six original cast-glass thresholds: Melt, Seed, Fault, Hourglass, Cloud, and Orbit. They vary in contour and proportion, with subtle sea-glass tints and restrained silver/champagne hardware. Source and builder are `blender/door-studies.blend` and `blender/build_door_studies.py`; portable GLBs live in `public/models/doors/`. The prior sculptures and original Blender scenes are preserved.
+The active assets are six original pearl-ceramic thresholds with clear glass leaves: Melt, Seed, Fault, Hourglass, Cloud, and Orbit. Their ivory, sage, ice-blue, blush, cream, and lavender tints share the same glazed finish, champagne-gold lining, and warm inner light. The palette lives in `src/lib/doorPalette.json`. Source and builder are `blender/door-studies.blend` and `blender/build_door_studies.py`; portable GLBs live in `public/models/doors/`. The prior sculptures and original Blender scenes are preserved.
 
 `/door-studies` is a separate comparison room with numbered labels, all-six and individual views, a turn control, and reversible hinge/dissolve experiments. The text-free homepage and existing entrance remain intact. Shape selection is the purpose of this pass; movement is exploratory.
 

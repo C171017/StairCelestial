@@ -151,11 +151,18 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
     if (!sceneBootstrapped) return;
     const t = AUDIO_CONSENT_TIMING;
     const store = usePortfolioStore.getState();
+    // Effect replay must not restart an entrance whose DOM handoff has already
+    // completed. The active overlay has no DOM refs and cannot restart safely.
+    if (store.introPlayPhase !== "hidden") {
+      finishPlayControlHandoff();
+      if (overlayRef.current) gsap.set(overlayRef.current, { backgroundColor: clearBackdrop });
+      if (store.introPlayPhase === "active") completeIntro();
+      return;
+    }
     if (store.introEpochMs === null) {
       store.setIntroEpochMs(performance.now());
     }
 
-    store.setIntroPlayPhase("hidden");
     starRevealDoneRef.current = false;
     runStarRevealRef.current = null;
     setIntroReveal({
@@ -365,7 +372,7 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
       gsap.killTweensOf(revealState);
       if (overlay) gsap.killTweensOf(overlay);
     };
-  }, [backdrop, clearBackdrop, finishPlayControlHandoff, reducedMotion, sceneBootstrapped, showPlayControl, setIntroReveal, theme]);
+  }, [backdrop, clearBackdrop, completeIntro, finishPlayControlHandoff, reducedMotion, sceneBootstrapped, showPlayControl, setIntroReveal, theme]);
 
   if (!visible) return null;
 

@@ -6,14 +6,14 @@ The owner requested the essence of a door, with very different irregular shapes 
 
 ## Forms
 
-1. **Melt** — an asymmetric, softened arch with a wavering upright and gently pooled base. Pale aqua glass; invisible side pivot.
-2. **Seed** — a leaning almond, narrowing toward a high off-center tip. Pale green glass; invisible side pivot.
-3. **Fault** — a cut, angular shard with opposed notches and a slanted crown. Ice-blue glass; invisible side pivot.
-4. **Hourglass** — an exaggerated pinched waist joining two unequal rounded lobes. Lilac glass; invisible side pivot.
-5. **Cloud** — a broad, scalloped contour that wanders around a roughly enclosed passage. Champagne glass; invisible side pivot.
-6. **Orbit** — an incomplete oval surround and a returning arc around a central leaf. Cool clear glass; invisible central pivot.
+1. **Melt** — an asymmetric, softened arch with a wavering upright and gently pooled base. Pearl ivory ceramic; invisible side pivot.
+2. **Seed** — a leaning almond, narrowing toward a high off-center tip. Soft sage ceramic; invisible side pivot.
+3. **Fault** — a cut, angular shard with opposed notches and a slanted crown. Ice-blue ceramic; invisible side pivot.
+4. **Hourglass** — an exaggerated pinched waist joining two unequal rounded lobes. Shell blush ceramic; invisible side pivot.
+5. **Cloud** — a broad, scalloped contour that wanders around a roughly enclosed passage. Vanilla cream ceramic; invisible side pivot.
+6. **Orbit** — one complete, continuous oval surround around a central leaf, with no detached outer arc or frame gaps. Mist lavender ceramic; invisible central pivot.
 
-Each consists of a separate stationary surround, glass leaf, polished edge, pull, and an invisible animation pivot. The source retains modifiers and editable contours. The runtime uses one shared GLB per form with instance-owned materials, transmission, restrained iridescence, and the existing cloud/studio environment.
+Each consists of a stationary glazed ceramic surround, champagne-gold inner lining and pull, warm light strips on both frame faces, clear glass leaf, polished edge, and an invisible animation pivot. `src/lib/doorPalette.json` supplies one coherent palette to both the Blender builder and Three.js. The source retains editable contours and bevel modifiers. The runtime shares GLB geometry while owning materials per instance so entrance, dimming, and glass/hardware dissolution stay independent. The stationary trim remains visible when the leaf opens. A single cloud/studio environment capture supplies view-dependent reflections; the emissive strips do not simulate bounced illumination or caustics.
 
 ## Reference directions
 

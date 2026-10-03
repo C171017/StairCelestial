@@ -25,12 +25,14 @@ const meteorShader = `
     float y = (effectUv.y - 0.5) * 2.0;
     float tail = smoothstep(0.0, 0.015, behind)
       * (1.0 - smoothstep(0.025, 0.29, behind));
-    float core = exp(-y * y * 190.0) * tail;
-    float halo = exp(-y * y * 19.0) * tail * 0.2;
-    vec2 tip = vec2((effectUv.x - head) * 48.0, y);
-    float headGlow = exp(-dot(tip, tip) * 24.0);
+    // The sky is bright daylight. A roughly 2–3 px core and a warm, soft halo
+    // remain readable at normal page size without a flashing exposure change.
+    float core = exp(-y * y * 70.0) * tail;
+    float halo = exp(-y * y * 13.0) * tail * 0.34;
+    vec2 tip = vec2((effectUv.x - head) * 30.0, y);
+    float headGlow = exp(-dot(tip, tip) * 11.0);
     float alpha = clamp(core + halo + headGlow, 0.0, 1.0) * opacity;
-    vec3 color = mix(vec3(1.0, 0.88, 0.61), vec3(1.0, 0.99, 0.94),
+    vec3 color = mix(vec3(1.0, 0.73, 0.34), vec3(1.0, 0.99, 0.94),
       clamp(core + headGlow, 0.0, 1.0));
     gl_FragColor = vec4(color, alpha);
     #include <colorspace_fragment>
@@ -82,7 +84,7 @@ export function SkyEffects({ active = true, time }: { active?: boolean; time?: R
       outward.set(Math.sin(effect.azimuth), 0, Math.cos(effect.azimuth));
       rotation.makeBasis(right, up, outward);
       mesh.quaternion.setFromRotationMatrix(rotation).multiply(tilt.setFromAxisAngle(zAxis, effect.tilt));
-      mesh.scale.set(effect.kind === "meteor" ? 60 : 3, effect.kind === "meteor" ? 2.5 : 3, 1);
+      mesh.scale.set(effect.kind === "meteor" ? 60 : 3, effect.kind === "meteor" ? 4 : 3, 1);
       mesh.visible = false;
       mesh.renderOrder = -90;
       mesh.raycast = ignoreRaycast;
@@ -112,7 +114,7 @@ export function SkyEffects({ active = true, time }: { active?: boolean; time?: R
     for (const item of resources.items) item.material.dispose();
   }, [resources]);
 
-  useFrame((_, delta) => {
+  useFrame(({ gl }, delta) => {
     if (!group.current) return;
     group.current.visible = active && !paused.current;
     if (!group.current.visible) return;
@@ -121,6 +123,7 @@ export function SkyEffects({ active = true, time }: { active?: boolean; time?: R
       return;
     }
     elapsed.current = time ? time.current : advanceSkyEffectsTime(elapsed.current, delta, false);
+    if (process.env.NODE_ENV === "development") gl.domElement.dataset.skyEffectsPhase = elapsed.current.toFixed(3);
     for (const { effect, material, mesh } of resources.items) {
       sampleSkyEffect(effect, elapsed.current, sample.current);
       mesh.visible = sample.current.opacity > 0;

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
 import { doorStudies, type DoorOpening } from "@/lib/doorStudies";
+import palette from "@/lib/doorPalette.json";
 
 const Scene = dynamic(() => import("./DoorStudyScene").then(m => m.DoorStudyScene), { ssr: false });
 
@@ -38,7 +39,7 @@ export function DoorStudyExperience() {
   function choose(index: number | null) { setSelected(index); setAmount(0); setAngle(0); }
   const study = selected === null ? null : doorStudies[selected];
   return <main className="door-study-room">
-    <div className="door-study-canvas" aria-label="Six original glass door studies in a cloud gallery">
+    <div className="door-study-canvas" aria-label="Six pearl ceramic and champagne gold doors in a cloud gallery">
       <StudyBoundary onError={onError}><Scene selected={selected} amount={amount} opening={opening} angle={angle} onSelect={choose} onReady={onReady} /></StudyBoundary>
     </div>
     <header className="study-heading">
@@ -48,7 +49,7 @@ export function DoorStudyExperience() {
     {!ready && !failed && <div className="study-loading" role="status">Gathering the glass…</div>}
     <footer className="study-controls">
       <div className="study-selection" aria-live="polite">
-        <span>{study ? `${study.number} / ${study.name}` : "01—06 / The collection"}</span>
+        <span>{study ? `${study.number} / ${study.name} · ${palette.doors[study.id].name}` : "01—06 / Pearl ceramic & champagne gold"}</span>
         <p>{study ? study.note : "Select a door to study its shape."}</p>
       </div>
       <nav className="study-picker" aria-label="Choose a door study">

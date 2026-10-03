@@ -1,4 +1,4 @@
-"""Six original glass thresholds. Run with Blender MCP or Blender's Python.
+"""Six pearl-ceramic thresholds. Run with Blender MCP or Blender's Python.
 
 Creates an independent scene, preserves existing scenes, and exports each rig
 at the origin before arranging all six in an inspection studio.
@@ -12,6 +12,8 @@ from mathutils import Vector
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'public/models/doors')
+with open(os.path.join(ROOT, 'src/lib/doorPalette.json')) as f:
+    PALETTE = json.load(f)
 os.makedirs(OUT, exist_ok=True)
 scene = bpy.data.scenes.new('Sanctuary • Six thresholds')
 bpy.context.window.scene = scene
@@ -35,8 +37,14 @@ def material(name, color, transmission=0, metallic=0, rough=.16):
         p.inputs[key].default_value = value
     return m
 
-silver = material('Door_SatinSilver', (.64,.73,.77), metallic=.85, rough=.2)
-gold = material('Door_Champagne', (.63,.48,.29), metallic=.83, rough=.2)
+def linear_color(hex_color):
+    rgb = [int(hex_color[i:i+2],16)/255 for i in (1,3,5)]
+    return tuple(c/12.92 if c <= .04045 else ((c+.055)/1.055)**2.4 for c in rgb)
+
+gold = material('Door_Champagne', linear_color(PALETTE['gold']), metallic=1, rough=.27)
+inner_light = material('Door_WarmInnerLight', linear_color(PALETTE['light']), rough=.45)
+inner_light.node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = (*linear_color(PALETTE['light']),1)
+inner_light.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 2.5
 pearl = material('Door_StudioPearl', (.81,.86,.86), rough=.3)
 assets = {}
 collection = None
@@ -89,20 +97,30 @@ def outline(points, steps=10, angular=False):
 def inset(points, sx, sy, cy):
     return [(x*sx, cy+(z-cy)*sy) for x,z in points]
 
-def ring(points, inside, mat, broken=False):
-    n=len(points); depth=.13
+def ring(points, inside, mat, name='Fixed_GlassFrame', depth=.13, bevel=.045):
+    n=len(points)
     verts=[(x,y,z) for y in (-depth,depth) for loop in (points,inside) for x,z in loop]
     faces=[]
     for i in range(n):
-        if broken and int(n*.10) <= i < int(n*.18):
-            continue
         j=(i+1)%n
         faces.extend([(i,j,n+j,n+i),(2*n+i,3*n+i,3*n+j,2*n+j),
                       (i,2*n+i,2*n+j,j),(n+i,n+j,3*n+j,3*n+i)])
-        if broken and i in (int(n*.10)-1,int(n*.18)):
-            k=j if i==int(n*.10)-1 else i
-            faces.append((k,n+k,3*n+k,2*n+k))
-    return mesh('Fixed_GlassFrame',verts,faces,mat,root,.032)
+    obj=mesh(name,verts,faces,mat,root,bevel)
+    for polygon in obj.data.polygons:
+        polygon.use_smooth = n > 20
+    obj.modifiers['Soft cast edges'].segments=5
+    return obj
+
+def frame_details(points, inside):
+    # Both faces are finished: randomized doors can be approached from either side.
+    def between(t):
+        return [(x+(ix-x)*t,z+(iz-z)*t) for (x,z),(ix,iz) in zip(points,inside)]
+    # Pull the liner slightly into the aperture, avoiding coincident inner walls
+    # with the ceramic (which otherwise shimmer as the camera moves).
+    cy=(min(z for _,z in inside)+max(z for _,z in inside))/2
+    ring(between(.80), inset(inside,.989,.994,cy), gold, 'Fixed_ChampagneReveal', .134, .006)
+    for side,suffix in [(-1,'Front'),(1,'Back')]:
+        line('Fixed_InnerLight_'+suffix,[(x,side*.141,z) for x,z in between(.89)],.005,inner_light,root,True)
 
 def slab(points, mat, pivot):
     n=len(points);depth=.045
@@ -136,7 +154,7 @@ studies = [
     dict(id='fault', color=(.66,.76,.90), points=[(-.94,.12),(.60,.12),(1.01,1.09),(.59,1.39),(1.02,3.40),(-.20,3.10),(-1.01,2.43),(-.69,1.39),(-1.02,.92)], handle=(.41,1.95), angular=True),
     dict(id='hourglass', color=(.83,.69,.85), points=[(-.87,.12),(.60,.12),(1.01,.46),(.65,1.12),(.17,1.62),(.36,2.10),(.80,2.72),(.43,3.28),(-.22,3.39),(-.94,2.98),(-.54,2.23),(-.30,1.61),(-.78,.94)], handle=(.18,2.28)),
     dict(id='cloud', color=(.86,.78,.62), points=[(-.91,.15),(.33,.12),(.77,.48),(1.26,.91),(1.32,1.50),(.93,1.84),(1.02,2.42),(.54,2.85),(-.02,2.65),(-.58,2.94),(-1.14,2.62),(-1.12,2.13),(-1.47,1.70),(-1.30,1.04),(-.91,.78)], handle=(.87,1.31)),
-    dict(id='orbit', color=(.66,.81,.90), points=[(-.47,.14),(.39,.24),(1.08,.88),(1.23,1.84),(.82,2.65),(.08,3.14),(-.67,3.03),(-1.20,2.34),(-1.31,1.40),(-.99,.65)], handle=(.81,1.55), broken=True, center_pivot=True),
+    dict(id='orbit', color=(.66,.81,.90), points=[(-.47,.14),(.39,.24),(1.08,.88),(1.23,1.84),(.82,2.65),(.08,3.14),(-.67,3.03),(-1.20,2.34),(-1.31,1.40),(-.99,.65)], handle=(.81,1.55), center_pivot=True),
 ]
 report={}
 for spec in studies:
@@ -150,17 +168,18 @@ for spec in studies:
     height=max(z for _,z in points);cy=height/2
     inner=inset(points,.85,.91,cy)
     leaf=inset(inner,.957,.973,cy)
-    frame=material('Door_'+name+'_CastGlass',spec['color'],.88,rough=.12)
-    pane=material('Door_'+name+'_LeafGlass',spec['color'],.82,rough=.18)
-    ring(points,inner,frame,spec.get('broken',False))
-    if not spec.get('broken',False):
-        line('Fixed_SilverSeam',[(x,-.134,z) for x,z in inset(points,.97,.98,cy)],.007,silver,root,True)
+    frame=material('Door_'+name+'_PearlCeramic',linear_color(PALETTE['doors'][name]['color']),rough=.25)
+    frame.node_tree.nodes['Principled BSDF'].inputs['Coat Weight'].default_value=.85
+    frame.node_tree.nodes['Principled BSDF'].inputs['Coat Roughness'].default_value=.14
+    pane=material('Door_'+name+'_LeafGlass',(1,1,1),1,rough=.055)
+    ring(points,inner,frame)
+    frame_details(points,inner)
     pivot=bpy.data.objects.new('DoorPivot',None);collection.objects.link(pivot)
     pivot.location=(0 if spec.get('center_pivot') else min(x for x,_ in inner)-.035,0,cy)
     bpy.context.view_layer.update()
     add(pivot,'DoorPivot',parent=root);pivot['door_role']='pivot'
     slab(leaf,pane,pivot)
-    line('Moving_PolishedEdge',[(x,-.048,z) for x,z in leaf],.009,frame,pivot,True)
+    line('Moving_PolishedEdge',[(x,-.048,z) for x,z in leaf],.009,pane,pivot,True)
     # The leaf retains an invisible animation pivot; no exposed hinge hardware.
     hx,hz=spec['handle']
     line('Moving_Pull',[(hx,-.06,hz-.14),(hx+.045,-.17,hz-.09),(hx+.05,-.18,hz+.13),(hx+.02,-.06,hz+.19)],.024,gold,pivot)

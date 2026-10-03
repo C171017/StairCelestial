@@ -1,0 +1,551 @@
+{
+  "status": "encoded-numerical-flags-need-review",
+  "source": "/private/tmp/sky-video-pilot/source.mp4",
+  "source_metadata": {
+    "width": 2720,
+    "height": 1344,
+    "duration_seconds": 10.13,
+    "source_fps": 24.0,
+    "stream_description": "Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 2720x1344, 2783 kb/s, 24 fps, 24 tbr, 12288 tbn (default)"
+  },
+  "ffmpeg": "/private/tmp/sky-video-tools/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1",
+  "fps": 24,
+  "aspect_error_fraction": 0.011904761904761862,
+  "requested_source_duration_seconds": 10.0,
+  "explicit_aspect_remap": false,
+  "visual_review_required": true,
+  "limitations": [
+    "Numerical screens cannot establish perceptual quality or exclude camera drift.",
+    "Source thumbnails use complete-frame 2:1 remapping for metric comparability; no crop is applied.",
+    "Pole treatment remains the OrbitSky shader's responsibility.",
+    "Temporal overlap can ghost clouds; inspect several complete loops at multiple azimuths."
+  ],
+  "raw": {
+    "frame_count": 240,
+    "duration_seconds": 10.0,
+    "qa_size": [
+      512,
+      256
+    ],
+    "units": "mean absolute RGB channel differences, 0\u2013255; decoded and resized for screening",
+    "regions": {
+      "whole": {
+        "ordinary_frame_rgb_mae": {
+          "mean": 0.6451744604232297,
+          "median": 0.44368234276771545,
+          "p95": 1.5857195854187012,
+          "max": 1.921661376953125
+        },
+        "wrap_frame_rgb_mae": 1.3616739511489868,
+        "ordinary_velocity_change_rgb_mae": {
+          "mean": 0.8902450261809746,
+          "median": 0.6873690187931061,
+          "p95": 1.8580225229263303,
+          "max": 2.1697158813476562
+        },
+        "wrap_velocity_change_before_rgb_mae": 1.3943685293197632,
+        "wrap_velocity_change_after_rgb_mae": 1.7907663583755493,
+        "position_screening_limit": 3.1714391708374023,
+        "velocity_screening_limit": 3.7160450458526606,
+        "position_screen_pass": true,
+        "velocity_screen_pass": true
+      },
+      "top_left": {
+        "ordinary_frame_rgb_mae": {
+          "mean": 1.0249919818566184,
+          "median": 0.4108988344669342,
+          "p95": 3.2678374528884886,
+          "max": 4.140279293060303
+        },
+        "wrap_frame_rgb_mae": 1.4677734375,
+        "ordinary_velocity_change_rgb_mae": {
+          "mean": 1.33313915743923,
+          "median": 0.6703643798828125,
+          "p95": 3.747947704792022,
+          "max": 4.588724613189697
+        },
+        "wrap_velocity_change_before_rgb_mae": 1.5117086172103882,
+        "wrap_velocity_change_after_rgb_mae": 1.9139404296875,
+        "position_screening_limit": 6.535674905776977,
+        "velocity_screening_limit": 7.495895409584044,
+        "position_screen_pass": true,
+        "velocity_screen_pass": true
+      },
+      "top_right": {
+        "ordinary_frame_rgb_mae": {
+          "mean": 1.1900753490315072,
+          "median": 0.602325439453125,
+          "p95": 3.0862050294876098,
+          "max": 4.250254154205322
+        },
+        "wrap_frame_rgb_mae": 1.4097391366958618,
+        "ordinary_velocity_change_rgb_mae": {
+          "mean": 1.514996822860812,
+          "median": 0.8827158808708191,
+          "p95": 3.7745594620704646,
+          "max": 4.662221431732178
+        },
+        "wrap_velocity_change_before_rgb_mae": 1.4476724863052368,
+        "wrap_velocity_change_after_rgb_mae": 1.8569844961166382,
+        "position_screening_limit": 6.1724100589752195,
+        "velocity_screening_limit": 7.549118924140929,
+        "position_screen_pass": true,
+        "velocity_screen_pass": true
+      },
+      "bottom_left": {
+        "ordinary_frame_rgb_mae": {
+          "mean": 0.19330621439043946,
+          "median": 0.1598714143037796,
+          "p95": 0.45789389014244075,
+          "max": 0.647552490234375
+        },
+        "wrap_frame_rgb_mae": 1.3357034921646118,
+        "ordinary_velocity_change_rgb_mae": {
+          "mean": 0.37637974417322323,
+          "median": 0.3574422150850296,
+          "p95": 0.7170059174299239,
+          "max": 1.0095621347427368
+        },
+        "wrap_velocity_change_before_rgb_mae": 1.361785888671875,
+        "wrap_velocity_change_after_rgb_mae": 1.7511190176010132,
+        "position_screening_limit": 1.0,
+        "velocity_screening_limit": 1.4340118348598478,
+        "position_screen_pass": false,
+        "velocity_screen_pass": false
+      },
+      "bottom_right": {
+        "ordinary_frame_rgb_mae": {
+          "mean": 0.17232429420100095,
+          "median": 0.144287109375,
+          "p95": 0.39016622006893154,
+          "max": 0.574493408203125
+        },
+        "wrap_frame_rgb_mae": 1.2334798574447632,
+        "ordinary_velocity_change_rgb_mae": {
+          "mean": 0.33646437679143515,
+          "median": 0.3296407014131546,
+          "p95": 0.6373418033123016,
+          "max": 0.833587646484375
+        },
+        "wrap_velocity_change_before_rgb_mae": 1.2563070058822632,
+        "wrap_velocity_change_after_rgb_mae": 1.641021728515625,
+        "position_screening_limit": 1.0,
+        "velocity_screening_limit": 1.2746836066246032,
+        "position_screen_pass": false,
+        "velocity_screen_pass": false
+      },
+      "horizon": {
+        "ordinary_frame_rgb_mae": {
+          "mean": 0.20861837733926633,
+          "median": 0.18389892578125,
+          "p95": 0.4798797696828842,
+          "max": 0.6126607060432434
+        },
+        "wrap_frame_rgb_mae": 1.3066304922103882,
+        "ordinary_velocity_change_rgb_mae": {
+          "mean": 0.39313415318977935,
+          "median": 0.3887685090303421,
+          "p95": 0.7267741054296493,
+          "max": 0.9309895634651184
+        },
+        "wrap_velocity_change_before_rgb_mae": 1.3319193124771118,
+        "wrap_velocity_change_after_rgb_mae": 1.7169595956802368,
+        "position_screening_limit": 1.0,
+        "velocity_screening_limit": 1.4535482108592985,
+        "position_screen_pass": false,
+        "velocity_screen_pass": false
+      }
+    },
+    "spatial_wrap": {
+      "boundary_rgb_mae": {
+        "mean": 3.2267144064108533,
+        "median": 2.77734375,
+        "p95": 4.9740235805511475,
+        "max": 5.149739742279053
+      },
+      "nearby_column_rgb_mae": {
+        "mean": 4.134249899784724,
+        "median": 4.149820804595947,
+        "p95": 4.182710909843445,
+        "max": 4.1893720626831055
+      },
+      "mean_boundary_to_neighbor_ratio": 0.780483639022129,
+      "screen_pass": true
+    },
+    "possible_camera_cuts": [],
+    "camera_cut_screening_limit": 12.0,
+    "all_loop_brightness": {
+      "mean_rgb": {
+        "mean": 183.222856203715,
+        "median": 182.00238800048828,
+        "p95": 187.34024887084962,
+        "max": 187.68621826171875
+      },
+      "min_mean_rgb": 181.22190856933594,
+      "max_adjacent_mean_rgb_change": 0.494873046875,
+      "wrap_mean_rgb_change": 0.0396270751953125
+    }
+  },
+  "processing": {
+    "desktop_size": [
+      2720,
+      1360
+    ],
+    "compact_size": [
+      1536,
+      768
+    ],
+    "overlap_frames": 48,
+    "overlap_seconds": 2.0,
+    "period_frames": 192,
+    "period_seconds": 8.0,
+    "temporal_blend": "smoothstep, linear-light sRGB, tail to head; output starts after overlap",
+    "spatial_blend": "symmetric linear-light edge blend with smoothstep taper",
+    "longitude_band_fraction_each_side": 0.025,
+    "preencode_edge_columns_identical": true,
+    "poles_modified": false,
+    "audio_removed": true,
+    "desktop_crf": 18,
+    "compact_crf": 14,
+    "compact_encoded_directly_from_rgb": true
+  },
+  "processed": {
+    "desktop": {
+      "path": "/private/tmp/sky-video-pilot/processed/cloudscape-360-loop-desktop.mp4",
+      "bytes": 8609827,
+      "frame_count": 192,
+      "duration_seconds": 8.0,
+      "qa_size": [
+        512,
+        256
+      ],
+      "units": "mean absolute RGB channel differences, 0\u2013255; decoded and resized for screening",
+      "regions": {
+        "whole": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 0.7824664147502465,
+            "median": 0.7101542353630066,
+            "p95": 1.632043182849884,
+            "max": 1.943695068359375
+          },
+          "wrap_frame_rgb_mae": 1.6186269521713257,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 1.0808642482287005,
+            "median": 1.0165163278579712,
+            "p95": 1.9657510519027703,
+            "max": 2.2424113750457764
+          },
+          "wrap_velocity_change_before_rgb_mae": 1.703508973121643,
+          "wrap_velocity_change_after_rgb_mae": 2.2744877338409424,
+          "position_screening_limit": 3.264086365699768,
+          "velocity_screening_limit": 3.9315021038055407,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        },
+        "top_left": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 1.2164634154885228,
+            "median": 0.692230224609375,
+            "p95": 3.3803964853286743,
+            "max": 4.156931400299072
+          },
+          "wrap_frame_rgb_mae": 2.6120097637176514,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 1.5817768362007643,
+            "median": 0.9893849492073059,
+            "p95": 3.861667335033416,
+            "max": 4.642974853515625
+          },
+          "wrap_velocity_change_before_rgb_mae": 2.6690471172332764,
+          "wrap_velocity_change_after_rgb_mae": 3.7356159687042236,
+          "position_screening_limit": 6.760792970657349,
+          "velocity_screening_limit": 7.723334670066832,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        },
+        "top_right": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 1.4525503322716158,
+            "median": 1.3553060293197632,
+            "p95": 3.1672821044921875,
+            "max": 4.25518798828125
+          },
+          "wrap_frame_rgb_mae": 2.1368205547332764,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 1.8426000180997346,
+            "median": 1.808466613292694,
+            "p95": 3.940274608135221,
+            "max": 4.673227787017822
+          },
+          "wrap_velocity_change_before_rgb_mae": 2.2685546875,
+          "wrap_velocity_change_after_rgb_mae": 3.1419169902801514,
+          "position_screening_limit": 6.334564208984375,
+          "velocity_screening_limit": 7.880549216270442,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        },
+        "bottom_left": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 0.2432782494936002,
+            "median": 0.2115376740694046,
+            "p95": 0.5082550048828125,
+            "max": 0.7462056279182434
+          },
+          "wrap_frame_rgb_mae": 0.8803303837776184,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 0.47385949935568006,
+            "median": 0.4528656005859375,
+            "p95": 0.8258366703987117,
+            "max": 1.071990966796875
+          },
+          "wrap_velocity_change_before_rgb_mae": 0.9622090458869934,
+          "wrap_velocity_change_after_rgb_mae": 1.144073486328125,
+          "position_screening_limit": 1.016510009765625,
+          "velocity_screening_limit": 1.6516733407974233,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        },
+        "bottom_right": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 0.21757366142542886,
+            "median": 0.1912638396024704,
+            "p95": 0.4468129426240921,
+            "max": 0.7157490849494934
+          },
+          "wrap_frame_rgb_mae": 0.8453471064567566,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 0.42522063710187613,
+            "median": 0.4141998291015625,
+            "p95": 0.7549774169921872,
+            "max": 0.9287109375
+          },
+          "wrap_velocity_change_before_rgb_mae": 0.9142252802848816,
+          "wrap_velocity_change_after_rgb_mae": 1.0763448476791382,
+          "position_screening_limit": 1.0,
+          "velocity_screening_limit": 1.5099548339843745,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        },
+        "horizon": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 0.25072752248924907,
+            "median": 0.2221272736787796,
+            "p95": 0.5214385986328125,
+            "max": 0.7726847529411316
+          },
+          "wrap_frame_rgb_mae": 0.8825886845588684,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 0.47304548429031124,
+            "median": 0.4477386474609375,
+            "p95": 0.8310114651918404,
+            "max": 0.99658203125
+          },
+          "wrap_velocity_change_before_rgb_mae": 0.9755656123161316,
+          "wrap_velocity_change_after_rgb_mae": 1.1668905019760132,
+          "position_screening_limit": 1.042877197265625,
+          "velocity_screening_limit": 1.6620229303836809,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        }
+      },
+      "spatial_wrap": {
+        "boundary_rgb_mae": {
+          "mean": 0.7037014424179991,
+          "median": 0.7044270634651184,
+          "p95": 0.7995442509651183,
+          "max": 0.84765625
+        },
+        "nearby_column_rgb_mae": {
+          "mean": 3.8055089339613914,
+          "median": 3.817708373069763,
+          "p95": 3.8681396484375,
+          "max": 3.8783364295959473
+        },
+        "mean_boundary_to_neighbor_ratio": 0.18491651304191592,
+        "screen_pass": true
+      },
+      "possible_camera_cuts": [],
+      "camera_cut_screening_limit": 12.0,
+      "all_loop_brightness": {
+        "mean_rgb": {
+          "mean": 181.60459605852762,
+          "median": 181.06035614013672,
+          "p95": 185.4091667175293,
+          "max": 185.7036590576172
+        },
+        "min_mean_rgb": 179.212646484375,
+        "max_adjacent_mean_rgb_change": 0.447174072265625,
+        "wrap_mean_rgb_change": 0.091094970703125
+      }
+    },
+    "compact": {
+      "path": "/private/tmp/sky-video-pilot/processed/cloudscape-360-loop-compact.mp4",
+      "bytes": 5736283,
+      "frame_count": 192,
+      "duration_seconds": 8.0,
+      "qa_size": [
+        512,
+        256
+      ],
+      "units": "mean absolute RGB channel differences, 0\u2013255; decoded and resized for screening",
+      "regions": {
+        "whole": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 0.7630782485378819,
+            "median": 0.6931915283203125,
+            "p95": 1.638086974620819,
+            "max": 1.9164785146713257
+          },
+          "wrap_frame_rgb_mae": 1.7557424306869507,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 1.0431360210243024,
+            "median": 1.003326416015625,
+            "p95": 1.9727243185043333,
+            "max": 2.256502866744995
+          },
+          "wrap_velocity_change_before_rgb_mae": 1.8756307363510132,
+          "wrap_velocity_change_after_rgb_mae": 2.3724544048309326,
+          "position_screening_limit": 3.276173949241638,
+          "velocity_screening_limit": 3.9454486370086665,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        },
+        "top_left": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 1.2029416271880347,
+            "median": 0.6858622431755066,
+            "p95": 3.374053955078125,
+            "max": 4.1766357421875
+          },
+          "wrap_frame_rgb_mae": 2.736968994140625,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 1.5550353452563286,
+            "median": 0.9664815366268158,
+            "p95": 3.8615722656249996,
+            "max": 4.656778812408447
+          },
+          "wrap_velocity_change_before_rgb_mae": 2.8217265605926514,
+          "wrap_velocity_change_after_rgb_mae": 3.8622233867645264,
+          "position_screening_limit": 6.74810791015625,
+          "velocity_screening_limit": 7.723144531249999,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        },
+        "top_right": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 1.4408642375812482,
+            "median": 1.348602294921875,
+            "p95": 3.198389768600464,
+            "max": 4.243764400482178
+          },
+          "wrap_frame_rgb_mae": 2.2578022480010986,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 1.8184226620354151,
+            "median": 1.7841745615005493,
+            "p95": 3.950199890136716,
+            "max": 4.657338619232178
+          },
+          "wrap_velocity_change_before_rgb_mae": 2.38922119140625,
+          "wrap_velocity_change_after_rgb_mae": 3.2333781719207764,
+          "position_screening_limit": 6.396779537200928,
+          "velocity_screening_limit": 7.900399780273432,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        },
+        "bottom_left": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 0.2184592573050195,
+            "median": 0.1834920197725296,
+            "p95": 0.5114949345588684,
+            "max": 0.8253682255744934
+          },
+          "wrap_frame_rgb_mae": 1.032989501953125,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 0.42651709816173505,
+            "median": 0.4038136750459671,
+            "p95": 0.8180496126413341,
+            "max": 1.0626119375228882
+          },
+          "wrap_velocity_change_before_rgb_mae": 1.1825357675552368,
+          "wrap_velocity_change_after_rgb_mae": 1.22955322265625,
+          "position_screening_limit": 1.0229898691177368,
+          "velocity_screening_limit": 1.6360992252826683,
+          "position_screen_pass": false,
+          "velocity_screen_pass": true
+        },
+        "bottom_right": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 0.19004787146284474,
+            "median": 0.160186767578125,
+            "p95": 0.4338887631893158,
+            "max": 0.795562744140625
+          },
+          "wrap_frame_rgb_mae": 0.995208740234375,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 0.37256898042794906,
+            "median": 0.3505299836397171,
+            "p95": 0.719330322742462,
+            "max": 0.95404052734375
+          },
+          "wrap_velocity_change_before_rgb_mae": 1.109039306640625,
+          "wrap_velocity_change_after_rgb_mae": 1.1646627187728882,
+          "position_screening_limit": 1.0,
+          "velocity_screening_limit": 1.438660645484924,
+          "position_screen_pass": true,
+          "velocity_screen_pass": true
+        },
+        "horizon": {
+          "ordinary_frame_rgb_mae": {
+            "mean": 0.22399252564865726,
+            "median": 0.184783935546875,
+            "p95": 0.4913635104894638,
+            "max": 0.8514201045036316
+          },
+          "wrap_frame_rgb_mae": 1.0308634042739868,
+          "ordinary_velocity_change_rgb_mae": {
+            "mean": 0.42201323905273486,
+            "median": 0.3945973664522171,
+            "p95": 0.8097061067819594,
+            "max": 1.0136820077896118
+          },
+          "wrap_velocity_change_before_rgb_mae": 1.1580404043197632,
+          "wrap_velocity_change_after_rgb_mae": 1.2312215566635132,
+          "position_screening_limit": 1.0,
+          "velocity_screening_limit": 1.6194122135639188,
+          "position_screen_pass": false,
+          "velocity_screen_pass": true
+        }
+      },
+      "spatial_wrap": {
+        "boundary_rgb_mae": {
+          "mean": 0.7722642685597142,
+          "median": 0.771484375,
+          "p95": 0.9201823115348815,
+          "max": 0.984375
+        },
+        "nearby_column_rgb_mae": {
+          "mean": 3.811709515750408,
+          "median": 3.8247885704040527,
+          "p95": 3.878304123878479,
+          "max": 3.892578125
+        },
+        "mean_boundary_to_neighbor_ratio": 0.20260312738120054,
+        "screen_pass": true
+      },
+      "possible_camera_cuts": [],
+      "camera_cut_screening_limit": 12.0,
+      "all_loop_brightness": {
+        "mean_rgb": {
+          "mean": 181.58836007118225,
+          "median": 181.0432357788086,
+          "p95": 185.38996047973632,
+          "max": 185.68272399902344
+        },
+        "min_mean_rgb": 179.201171875,
+        "max_adjacent_mean_rgb_change": 0.4810333251953125,
+        "wrap_mean_rgb_change": 0.134521484375
+      }
+    }
+  },
+  "automated_screens_pass": false
+}

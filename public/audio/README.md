@@ -1,44 +1,28 @@
-# Site audio assets
+# Site music
 
-| File | Purpose |
-|------|---------|
-| `consent-sting.m4a` | Short **opt-in** sound (~0.5s) on unmute during the eye overlay — **not** the background track |
-| `ambient-loop.webm` | Background music (WebM/Opus); preferred when supported |
-| `ambient-loop.m4a` | Same background music (AAC); Safari / iOS fallback |
+The background track is [Cocteau Twins — Iceblink Luck (Instrumental) [Stem Filtered]](https://youtu.be/z2QKPDDApTE), uploaded by Acoolrocket DaJams. The complete track is approximately 199 seconds. `source.json` records its origin, stream IDs, output sizes, and SHA-256 hashes.
 
-`consent-sting.m4a` is the ElevenLabs “soft sci-fi UI activate” sting (trimmed ~0.75s with fade). Replace this file to change the opt-in sound.
+The audio-only streams were downloaded with yt-dlp:
 
----
+- `ambient-loop.m4a`: native AAC-LC, approximately 130 kbps, 44.1 kHz stereo (format 140). Remuxed as a regular MP4 with `faststart` for Apple compatibility and progressive playback.
+- `ambient-loop.webm`: native Opus, approximately 128 kbps, 48 kHz stereo (format 251).
+- `ambient-loop.opus`: the same Opus stream remuxed into Ogg without re-encoding.
+- `ambient-loop.mp3`: an MP3 VBR quality-2 fallback made from the native Opus stream. This is the only transcoded variant; converting to MP3 does not improve the source quality.
+- `ambient-loop-low.m4a`: native HE-AAC, approximately 49 kbps (format 139), for browsers that explicitly support it and request data saving.
+- `consent-sting.m4a`: the existing short opt-in sound, separate from the music.
 
-## Good sources for a “space opt-in” sting
+`siteAudioPaths.ts` probes each MIME/codec combination with `canPlayType()`. Confident support takes priority over tentative support. Apple devices prefer AAC; other devices prefer Opus/WebM, then Opus/Ogg, AAC, and MP3. A data-saving request puts supported compact AAC first. Loading or decoding failures advance to the next supported source. Autoplay permission failures return the sculpture to its triangle so the visitor can retry. Only the selected source is requested; music uses `preload="none"` until a click. Music URLs include the source video ID to refresh the previous track in browser caches.
 
-**Libraries (search terms: `space ui`, `sci-fi confirm`, `cosmic whoosh`, `ethereal chime`)**
+Clicking the triangle changes it into a cube and starts the music immediately with a 1.2-second smooth fade to 35% gain. Clicking the cube changes it back and fades to silence over 1.4 seconds before pausing. Resuming retains the playback position. Reversing a fade begins at the current gain; cancelled playback requests cannot restart the music. The track ends naturally without looping and the sculpture returns to its triangle. Clicking the triangle after the track ends replays it from the beginning.
 
-| Source | Notes |
-|--------|--------|
-| [Freesound.org](https://freesound.org) | Huge CC library; filter by license (CC0 easiest). Check attribution. |
-| [Mixkit Sound Effects](https://mixkit.co/free-sound-effects/) | Free for projects; sci-fi / cinematic categories |
-| [Pixabay Sound Effects](https://pixabay.com/sound-effects/) | Royalty-free; search “space” / “ambient” |
-| [Sonniss GDC bundles](https://sonniss.com/gameaudiogdc) | Large free professional packs each year |
-| [BBC Sound Effects](https://sound-effects.bbcrewind.co.uk/) | Strong atmosphere; read [licensing](https://sound-effects.bbcrewind.co.uk/licensing) for web use |
+Fades use a Web Audio GainNode on desktop and mobile. Context creation/resume and media playback happen synchronously in the click handler to satisfy mobile gesture requirements. The audio thread schedules the gain envelope independently of rendering. Browsers without Web Audio fall back to media-element volume. Automatic scene entry remains silent.
 
-**AI-generated SFX (good for custom “outer space unlock” tones)**
+Reproduce the assets with:
 
-| Tool | Notes |
-|------|--------|
-| [ElevenLabs Sound Effects](https://elevenlabs.io/sound-effects) | Text-to-SFX; e.g. “soft cosmic chime, deep space, 0.5 seconds, no melody” |
-| [Stable Audio](https://stableaudio.com) | Short clips from prompts; watch license on free tier |
-| [Meta AudioGen](https://github.com/facebookresearch/audiocraft) | Open model; run locally for full control |
-| **DAW + synth** | Ableton/Logic + reverb + low-pass noise sweep — often beats generic AI for UI stings |
+```sh
+python3 scripts/prepare-site-audio.py --ffmpeg /path/to/ffmpeg
+```
 
-**Prompt ideas for AI**
+The script downloads the three native streams, packages all variants, and decodes each complete result before replacing its public asset. Add `--source-dir /path/to/downloads` to reuse `source-140.m4a`, `source-251.webm`, and `source-139.m4a` without downloading them again.
 
-- “Short UI confirmation, deep space ambience, soft synthetic chime, no drums, under one second, subtle reverb”
-- “Ethereal sci-fi interface activate, quiet, non-musical, cinematic”
-
-**Export tips**
-
-- Mono or stereo, **0.3–0.8 s**, normalized but not loud (site plays at ~60% volume in code)
-- **M4A (AAC)** is enough for the sting; keep background music as WebM + M4A
-
-Hard-refresh after replacing audio files.
+Browser behavior references: [media codec support](https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Audio_codecs), [media-element audio routing](https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createMediaElementSource), and [Web Audio autoplay practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).

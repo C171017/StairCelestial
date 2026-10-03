@@ -1,8 +1,8 @@
 {
   "melt": {
-    "bytes": 320044,
+    "bytes": 331096,
     "height": 3.437,
-    "objects": 7,
+    "objects": 9,
     "pivot": [
       -0.7404999732971191,
       0.0,
@@ -10,9 +10,9 @@
     ]
   },
   "seed": {
-    "bytes": 288880,
+    "bytes": 298972,
     "height": 3.491,
-    "objects": 7,
+    "objects": 9,
     "pivot": [
       -0.8424999713897705,
       0.0,
@@ -20,9 +20,9 @@
     ]
   },
   "fault": {
-    "bytes": 78760,
+    "bytes": 231456,
     "height": 3.335,
-    "objects": 7,
+    "objects": 9,
     "pivot": [
       -0.9020000100135803,
       0.0,
@@ -30,9 +30,9 @@
     ]
   },
   "hourglass": {
-    "bytes": 413716,
+    "bytes": 427652,
     "height": 3.42,
-    "objects": 7,
+    "objects": 9,
     "pivot": [
       -0.8594533205032349,
       0.0,
@@ -40,9 +40,9 @@
     ]
   },
   "cloud": {
-    "bytes": 476060,
+    "bytes": 491916,
     "height": 2.922,
-    "objects": 7,
+    "objects": 9,
     "pivot": [
       -1.2887924909591675,
       0.0,
@@ -50,9 +50,9 @@
     ]
   },
   "orbit": {
-    "bytes": 285540,
+    "bytes": 331076,
     "height": 3.116,
-    "objects": 6,
+    "objects": 9,
     "pivot": [
       0.0,
       0.0,

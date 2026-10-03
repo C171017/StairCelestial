@@ -1,0 +1,54 @@
+{
+  "source_url": "https://youtu.be/z2QKPDDApTE",
+  "video_id": "z2QKPDDApTE",
+  "title": "Cocteau Twins - Iceblink Luck (Instrumental) [Stem Filtered]",
+  "uploader": "Acoolrocket DaJams",
+  "duration_seconds": 199,
+  "variants": [
+    {
+      "file": "ambient-loop.m4a",
+      "codec": "aac",
+      "profile": "AAC-LC",
+      "youtube_format_id": 140,
+      "transcoded": false,
+      "bytes": 3220547,
+      "sha256": "4ce8988bbb5c70f1d85a1acd0b42ddc6e88bf716f6bb0789e91f3c7235aa9aee"
+    },
+    {
+      "file": "ambient-loop.webm",
+      "codec": "opus",
+      "profile": "Opus",
+      "youtube_format_id": 251,
+      "transcoded": false,
+      "bytes": 3174774,
+      "sha256": "c7b4aba776dd227f02fa965aa884efe844af65b480bb3272c5ef4e58d63dea81"
+    },
+    {
+      "file": "ambient-loop.opus",
+      "codec": "opus",
+      "profile": "Opus",
+      "youtube_format_id": 251,
+      "transcoded": false,
+      "bytes": 3128845,
+      "sha256": "7c17685a5c183270500c753bc4eec2b07fab229a46af2cf8b44c2a0ed27614a3"
+    },
+    {
+      "file": "ambient-loop.mp3",
+      "codec": "mp3",
+      "profile": "MP3",
+      "youtube_format_id": 251,
+      "transcoded": true,
+      "bytes": 4790390,
+      "sha256": "8ffac4f19ab2386530b829a4227bce15714c016a313a037e5119a5e6a95fa458"
+    },
+    {
+      "file": "ambient-loop-low.m4a",
+      "codec": "aac",
+      "profile": "HE-AAC",
+      "youtube_format_id": 139,
+      "transcoded": false,
+      "bytes": 1213074,
+      "sha256": "a51a65faeafcfba49e6f0a9076c707ea40e5ba00b7653eff7d8743a60132795b"
+    }
+  ]
+}

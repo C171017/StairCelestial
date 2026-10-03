@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { advanceSkyEffectsTime, sampleSkyEffect, SKY_EFFECTS, SKY_EFFECTS_PERIOD } from "./skyEffects";
 
-test("sky effects are dark on both sides of every video-aligned loop boundary", () => {
-  assert.equal(SKY_EFFECTS_PERIOD % 8, 0);
+test("sky effects are dark on both sides of their independent cycle boundary", () => {
   for (const effect of SKY_EFFECTS) {
     for (const boundary of [-64, -32, 0, 32, 64, 32000]) {
       for (const offset of [-0.2, -1 / 60, 0, 1 / 60, 0.2]) {

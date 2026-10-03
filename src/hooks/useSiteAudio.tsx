@@ -1,24 +1,12 @@
 "use client";
 
 import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
   type ReactNode,
 } from "react";
-import { mediaVolumeControlWorks } from "@/lib/mediaVolumeControl";
-import {
-  AUDIO_PATHS,
-  pickAmbientLoopSrc,
-} from "@/lib/siteAudioPaths";
-
-const STING_VOLUME = 0.6;
-const AMBIENT_VOLUME = 0.35;
-const AMBIENT_FADE_MS = 900;
+import { AmbientPlayback } from "@/lib/ambientPlayback";
+import { createAmbientOutput } from "@/lib/ambientOutput";
+import { AUDIO_PATHS, getAmbientSources } from "@/lib/siteAudioPaths";
 
 type SiteAudioContextValue = {
   soundEnabled: boolean;
@@ -33,303 +21,80 @@ type SiteAudioContextValue = {
 
 const SiteAudioContext = createContext<SiteAudioContextValue | null>(null);
 
-function createAudio(src: string, loop: boolean, volume: number): HTMLAudioElement {
-  const audio = new Audio(src);
-  audio.loop = loop;
-  audio.volume = volume;
-  audio.preload = "auto";
-  audio.setAttribute("playsinline", "");
-  return audio;
-}
-
-function getAudioContextCtor(): typeof AudioContext | undefined {
-  if (typeof window === "undefined") return undefined;
-  return (
-    window.AudioContext ??
-    (window as Window & { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext
-  );
-}
-
 export function SiteAudioProvider({ children }: { children: ReactNode }) {
   const [soundEnabled, setSoundEnabledState] = useState(false);
-  const unlockedRef = useRef(false);
-  const stingRef = useRef<HTMLAudioElement | null>(null);
-  const ambientRef = useRef<HTMLAudioElement | null>(null);
-  const warnedRef = useRef({ sting: false, ambient: false });
-  const fadeRef = useRef<{ raf: number | null; gen: number }>({
-    raf: null,
-    gen: 0,
-  });
   const soundEnabledRef = useRef(false);
-  const usesGainRef = useRef(false);
-  const gainRef = useRef<GainNode | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const stingRef = useRef<HTMLAudioElement | null>(null);
+  const playbackRef = useRef<AmbientPlayback | null>(null);
+
+  useEffect(() => {
+    const sting = new Audio(AUDIO_PATHS.consentStingM4a);
+    sting.volume = 0.6;
+    sting.preload = "metadata";
+    const ambient = new Audio();
+    ambient.loop = false;
+    ambient.preload = "none";
+    ambient.setAttribute("playsinline", "");
+    const resetSoundState = () => {
+      soundEnabledRef.current = false;
+      setSoundEnabledState(false);
+    };
+    const playback = new AmbientPlayback(ambient, createAmbientOutput(ambient), getAmbientSources(), (error) => {
+      resetSoundState();
+      console.warn("[SiteAudio] Background playback failed; click the triangle to retry.", error);
+    }, resetSoundState);
+    stingRef.current = sting;
+    playbackRef.current = playback;
+    return () => {
+      sting.pause();
+      sting.src = "";
+      playback.dispose();
+      stingRef.current = null;
+      playbackRef.current = null;
+    };
+  }, []);
 
   const setSoundEnabled = useCallback((enabled: boolean) => {
     soundEnabledRef.current = enabled;
     setSoundEnabledState(enabled);
+    if (enabled) playbackRef.current?.play();
+    else playbackRef.current?.pause();
   }, []);
 
-  const ensureAmbientGain = useCallback((ambient: HTMLAudioElement): boolean => {
-    if (usesGainRef.current && gainRef.current) return true;
-    if (mediaVolumeControlWorks()) return false;
+  const toggleSound = useCallback(() => {
+    const next = !soundEnabledRef.current;
+    setSoundEnabled(next);
+    return next;
+  }, [setSoundEnabled]);
 
-    const Ctx = getAudioContextCtor();
-    if (!Ctx) return false;
-
-    const ctx = new Ctx();
-    const source = ctx.createMediaElementSource(ambient);
-    const gain = ctx.createGain();
-    source.connect(gain);
-    gain.connect(ctx.destination);
-    ambient.volume = 1;
-    gain.gain.value = AMBIENT_VOLUME;
-
-    audioCtxRef.current = ctx;
-    gainRef.current = gain;
-    usesGainRef.current = true;
-    return true;
-  }, []);
-
-  const getAmbientLevel = useCallback((ambient: HTMLAudioElement): number => {
-    if (usesGainRef.current && gainRef.current) {
-      return gainRef.current.gain.value;
-    }
-    return ambient.volume;
-  }, []);
-
-  const setAmbientLevel = useCallback(
-    (ambient: HTMLAudioElement, level: number) => {
-      if (ensureAmbientGain(ambient) && gainRef.current) {
-        gainRef.current.gain.value = level;
-        return;
-      }
-      ambient.volume = level;
-    },
-    [ensureAmbientGain],
-  );
-
-  const resumeAmbientAudio = useCallback(async () => {
-    const ctx = audioCtxRef.current;
-    if (ctx?.state === "suspended") {
-      await ctx.resume();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const stingSrc = AUDIO_PATHS.consentStingM4a;
-    const ambientSrc = pickAmbientLoopSrc();
-
-    const sting = createAudio(stingSrc, false, STING_VOLUME);
-    const ambient = createAudio(ambientSrc, true, AMBIENT_VOLUME);
-
-    const warnOnce = (key: "sting" | "ambient", src: string) => {
-      if (warnedRef.current[key]) return;
-      warnedRef.current[key] = true;
-      console.warn(
-        `[SiteAudio] Could not load ${src}. Add the file under public/audio/ or replace it.`,
-      );
-    };
-
-    sting.addEventListener("error", () => warnOnce("sting", stingSrc));
-    ambient.addEventListener("error", () => warnOnce("ambient", ambientSrc));
-
-    stingRef.current = sting;
-    ambientRef.current = ambient;
-
-    return () => {
-      if (fadeRef.current.raf !== null) {
-        cancelAnimationFrame(fadeRef.current.raf);
-        fadeRef.current.raf = null;
-      }
-      sting.pause();
-      ambient.pause();
-      sting.src = "";
-      ambient.src = "";
-      stingRef.current = null;
-      ambientRef.current = null;
-      void audioCtxRef.current?.close();
-      audioCtxRef.current = null;
-      gainRef.current = null;
-      usesGainRef.current = false;
-    };
-  }, []);
-
-  const cancelAmbientFade = useCallback(() => {
-    if (fadeRef.current.raf !== null) {
-      cancelAnimationFrame(fadeRef.current.raf);
-      fadeRef.current.raf = null;
-    }
-    fadeRef.current.gen += 1;
-  }, []);
-
-  const fadeAmbientVolume = useCallback(
-    (targetVolume: number, durationMs: number): Promise<void> =>
-      new Promise((resolve) => {
-        const ambient = ambientRef.current;
-        if (!ambient) {
-          resolve();
-          return;
-        }
-
-        cancelAmbientFade();
-        const gen = fadeRef.current.gen;
-        const startVolume = getAmbientLevel(ambient);
-        const startTime = performance.now();
-
-        const tick = () => {
-          if (fadeRef.current.gen !== gen) {
-            resolve();
-            return;
-          }
-
-          const t = Math.min(1, (performance.now() - startTime) / durationMs);
-          const eased = t * t * (3 - 2 * t);
-          setAmbientLevel(
-            ambient,
-            startVolume + (targetVolume - startVolume) * eased,
-          );
-
-          if (t < 1) {
-            fadeRef.current.raf = requestAnimationFrame(tick);
-            return;
-          }
-
-          fadeRef.current.raf = null;
-          resolve();
-        };
-
-        fadeRef.current.raf = requestAnimationFrame(tick);
-      }),
-    [cancelAmbientFade, getAmbientLevel, setAmbientLevel],
-  );
-
-  const primeAmbientFromGesture = useCallback(async () => {
-    const ambient = ambientRef.current;
-    if (!ambient) return;
-    ensureAmbientGain(ambient);
-    setAmbientLevel(ambient, 0);
-    await resumeAmbientAudio();
-    try {
-      await ambient.play();
-    } catch {
-      /* unlock may fail until a user gesture; unmute click will retry */
-    }
-  }, [ensureAmbientGain, resumeAmbientAudio, setAmbientLevel]);
-
-  const unlockFromGesture = useCallback(() => {
-    if (unlockedRef.current) return;
-    unlockedRef.current = true;
-    void primeAmbientFromGesture();
-  }, [primeAmbientFromGesture]);
-
+  const unlockFromGesture = useCallback(() => playbackRef.current?.unlock(), []);
   const playConsentSting = useCallback(() => {
     const sting = stingRef.current;
     if (!sting) return;
     sting.currentTime = 0;
-    void sting.play().catch(() => {
-      /* missing file or autoplay blocked */
-    });
+    void sting.play().catch(() => {});
   }, []);
-
-  const stopAmbient = useCallback(() => {
-    cancelAmbientFade();
-    const ambient = ambientRef.current;
-    if (!ambient) return;
-    ambient.pause();
-    ambient.currentTime = 0;
-    setAmbientLevel(ambient, AMBIENT_VOLUME);
-  }, [cancelAmbientFade, setAmbientLevel]);
-
   const fadeAmbientIn = useCallback(() => {
-    if (!soundEnabledRef.current) return;
-    const ambient = ambientRef.current;
-    if (!ambient) return;
-
-    cancelAmbientFade();
-    ensureAmbientGain(ambient);
-    setAmbientLevel(ambient, 0);
-
-    const startFade = () => {
-      void fadeAmbientVolume(AMBIENT_VOLUME, AMBIENT_FADE_MS);
-    };
-
-    void resumeAmbientAudio().then(async () => {
-      if (ambient.paused) {
-        try {
-          await ambient.play();
-        } catch {
-          /* missing file or autoplay blocked */
-          return;
-        }
-      }
-      startFade();
-    });
-  }, [
-    cancelAmbientFade,
-    ensureAmbientGain,
-    fadeAmbientVolume,
-    resumeAmbientAudio,
-    setAmbientLevel,
-  ]);
-
-  const fadeAmbientOut = useCallback(() => {
-    const ambient = ambientRef.current;
-    if (!ambient) return;
-
-    void fadeAmbientVolume(0, AMBIENT_FADE_MS).then(() => {
-      if (soundEnabledRef.current) return;
-      ambient.pause();
-    });
-  }, [fadeAmbientVolume]);
-
-  const toggleSound = useCallback(() => {
-    let next = false;
-    setSoundEnabledState((prev) => {
-      next = !prev;
-      soundEnabledRef.current = next;
-      return next;
-    });
-    return next;
+    if (soundEnabledRef.current) playbackRef.current?.play();
+  }, []);
+  const fadeAmbientOut = useCallback(() => playbackRef.current?.pause(), []);
+  const stopAmbient = useCallback(() => {
+    playbackRef.current?.stop();
+    soundEnabledRef.current = false;
+    setSoundEnabledState(false);
   }, []);
 
-  const value = useMemo<SiteAudioContextValue>(
-    () => ({
-      soundEnabled,
-      setSoundEnabled,
-      toggleSound,
-      unlockFromGesture,
-      playConsentSting,
-      fadeAmbientIn,
-      fadeAmbientOut,
-      stopAmbient,
-    }),
-    [
-      soundEnabled,
-      setSoundEnabled,
-      toggleSound,
-      unlockFromGesture,
-      playConsentSting,
-      fadeAmbientIn,
-      fadeAmbientOut,
-      stopAmbient,
-    ],
-  );
+  const value = useMemo<SiteAudioContextValue>(() => ({
+    soundEnabled, setSoundEnabled, toggleSound, unlockFromGesture, playConsentSting,
+    fadeAmbientIn, fadeAmbientOut, stopAmbient,
+  }), [soundEnabled, setSoundEnabled, toggleSound, unlockFromGesture, playConsentSting,
+    fadeAmbientIn, fadeAmbientOut, stopAmbient]);
 
-  return (
-    <SiteAudioContext.Provider value={value}>
-      {children}
-    </SiteAudioContext.Provider>
-  );
+  return <SiteAudioContext.Provider value={value}>{children}</SiteAudioContext.Provider>;
 }
 
 export function useSiteAudio(): SiteAudioContextValue {
-  const ctx = useContext(SiteAudioContext);
-  if (!ctx) {
-    throw new Error("useSiteAudio must be used within SiteAudioProvider");
-  }
-  return ctx;
+  const context = useContext(SiteAudioContext);
+  if (!context) throw new Error("useSiteAudio must be used within SiteAudioProvider");
+  return context;
 }

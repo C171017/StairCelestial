@@ -1,32 +1,43 @@
-import { isAppleMobile } from "@/lib/mediaVolumeControl";
+import { isAppleMobile } from "./mediaVolumeControl";
 
-/** Public paths for site audio (served from /public/audio). */
+const MUSIC_VERSION = "z2QKPDDApTE";
+const musicPath = (extension: string) => `/audio/ambient-loop.${extension}?v=${MUSIC_VERSION}`;
 
 export const AUDIO_PATHS = {
   consentStingM4a: "/audio/consent-sting.m4a",
-  ambientLoopM4a: "/audio/ambient-loop.m4a",
-  ambientLoopWebm: "/audio/ambient-loop.webm",
+  ambientLoopM4a: musicPath("m4a"),
+  ambientLoopWebm: musicPath("webm"),
+  ambientLoopOpus: musicPath("opus"),
+  ambientLoopMp3: musicPath("mp3"),
+  ambientLoopLowM4a: `/audio/ambient-loop-low.m4a?v=${MUSIC_VERSION}`,
 } as const;
 
-/**
- * Prefer WebM/Opus where supported (better efficiency at similar quality),
- * then M4A/AAC for Safari/iOS and other browsers without WebM audio.
- */
-export function pickAmbientLoopSrc(): string {
-  if (typeof document === "undefined") {
-    return AUDIO_PATHS.ambientLoopWebm;
-  }
-  if (isAppleMobile()) {
-    return AUDIO_PATHS.ambientLoopM4a;
-  }
-  const probe = document.createElement("audio");
-  const webm = probe.canPlayType('audio/webm; codecs="opus"');
-  if (webm === "probably" || webm === "maybe") {
-    return AUDIO_PATHS.ambientLoopWebm;
-  }
-  const m4a = probe.canPlayType('audio/mp4; codecs="mp4a.40.2"');
-  if (m4a === "probably" || m4a === "maybe") {
-    return AUDIO_PATHS.ambientLoopM4a;
-  }
-  return AUDIO_PATHS.ambientLoopM4a;
+export type AmbientSource = { src: string; type: string };
+
+const AAC = { src: AUDIO_PATHS.ambientLoopM4a, type: 'audio/mp4; codecs="mp4a.40.2"' };
+const WEBM = { src: AUDIO_PATHS.ambientLoopWebm, type: 'audio/webm; codecs="opus"' };
+const OPUS = { src: AUDIO_PATHS.ambientLoopOpus, type: 'audio/ogg; codecs="opus"' };
+const MP3 = { src: AUDIO_PATHS.ambientLoopMp3, type: "audio/mpeg" };
+const LOW_AAC = { src: AUDIO_PATHS.ambientLoopLowM4a, type: 'audio/mp4; codecs="mp4a.40.5"' };
+
+/** Test support first; save bandwidth only when the visitor requests it. */
+export function getAmbientSources(options?: {
+  canPlayType: (type: string) => CanPlayTypeResult;
+  apple: boolean;
+  saveData: boolean;
+}): AmbientSource[] {
+  if (!options && typeof document === "undefined") return [AAC, MP3];
+  const probe = options ? null : document.createElement("audio");
+  const canPlayType = options?.canPlayType ?? ((type: string) => probe!.canPlayType(type));
+  const apple = options?.apple ?? (isAppleMobile() || /Macintosh|MacIntel/.test(navigator.userAgent));
+  const saveData = options?.saveData ?? Boolean(
+    (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData,
+  );
+  const order = apple ? [AAC, WEBM, OPUS, MP3] : [WEBM, OPUS, AAC, MP3];
+  if (saveData) order.unshift(LOW_AAC);
+  const support = order.map((source) => ({ source, support: canPlayType(source.type) }));
+  const supported = ["probably", "maybe"].flatMap((confidence) =>
+    support.filter((item) => item.support === confidence).map((item) => item.source),
+  );
+  return supported.length ? supported : [AAC, MP3];
 }

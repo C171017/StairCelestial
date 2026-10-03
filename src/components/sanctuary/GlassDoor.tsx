@@ -6,8 +6,9 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { doorModelUrl, type DoorOpening, type DoorStudy } from "@/lib/doorStudies";
 import { setLocalMaterialOpacity } from "@/lib/materialReveal";
+import { createDoorMaterials } from "./doorMaterials";
 
-/** A fixed cast-glass surround and an independently dissolving glass leaf. */
+/** A pearl-ceramic surround, lit gold reveal, and independently opening glass leaf. */
 export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false, onSelect, enabled = true, openingProgress }: {
   study: DoorStudy; amount?: number; opening?: DoorOpening; dimmed?: boolean;
   onSelect?: () => void; enabled?: boolean;
@@ -18,48 +19,26 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
     const model = scene.clone(true);
     let pivot: THREE.Object3D | undefined;
     const materials: { material: THREE.Material; moving: boolean; opacity: number }[] = [];
-    const clones = new Map<string, THREE.Material>();
+    const finishes = createDoorMaterials(study);
+    // Moving hardware needs its own material so dissolving the handle never
+    // fades the stationary gold trim. Geometry remains shared with the GLB.
+    const movingGold = finishes.gold.clone();
+    const ownedMaterials = [...Object.values(finishes), movingGold];
+    materials.push(...ownedMaterials.map(material => ({
+      material, moving: material === finishes.glass || material === movingGold, opacity: material.opacity,
+    })));
     model.traverse(object => {
       if (object.userData.door_role === "pivot") pivot = object;
       const mesh = object as THREE.Mesh;
       if (!mesh.isMesh) return;
-      const moving = object.name.startsWith("Moving_");
-      const clone = (original: THREE.Material) => {
-        const key = `${original.uuid}:${moving}`;
-        const existing = clones.get(key);
-        if (existing) return existing;
-        const material = original.clone();
-        let opacity = 1;
-        // Consistent transmission and a subtle interference sheen in the cloud light.
-        const glass = material as THREE.MeshPhysicalMaterial;
-        if (glass.isMeshPhysicalMaterial && material.name.includes("Glass")) {
-          glass.color.lerp(new THREE.Color("#f2fbff"), moving ? 0.62 : 0.38);
-          glass.transmission = 1;
-          glass.roughness = moving ? 0.045 : 0.035;
-          glass.thickness = moving ? 0.16 : 0.38;
-          glass.ior = 1.46;
-          glass.iridescence = moving ? 0.13 : 0.24;
-          glass.iridescenceIOR = 1.3;
-          glass.iridescenceThicknessRange = [100, 280];
-          glass.envMapIntensity = moving ? 0.8 : 1.25;
-          glass.attenuationColor.set(study.tint);
-          glass.attenuationDistance = 3;
-          // Closed volumes already include both surfaces. Drawing backfaces again
-          // stacks the alpha and makes a clear leaf read as a frosted solid.
-          glass.side = THREE.FrontSide;
-          opacity = moving ? 0.38 : 0.72;
-        }
-        material.transparent = material.transparent || opacity < 1;
-        material.opacity = opacity;
-        material.depthWrite = opacity > 0.98;
-        clones.set(key, material);
-        materials.push({ material, moving, opacity });
-        return material;
-      };
-      mesh.material = Array.isArray(mesh.material) ? mesh.material.map(clone) : clone(mesh.material);
+      if (object.name.startsWith("Fixed_GlassFrame")) mesh.material = finishes.ceramic;
+      else if (object.name.startsWith("Fixed_InnerLight")) mesh.material = finishes.light;
+      else if (object.name.startsWith("Moving_Pull")) mesh.material = movingGold;
+      else if (object.name.startsWith("Moving_")) mesh.material = finishes.glass;
+      else mesh.material = finishes.gold;
     });
     return { model, pivot, restQuaternion: pivot?.quaternion.clone(), materials };
-  }, [scene, study.tint]);
+  }, [scene, study]);
   const visibility = useRef(1);
   const travel = useRef(0);
   const rotation = useMemo(() => new THREE.Quaternion(), []);
@@ -80,6 +59,8 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
     if (Math.abs(travel.current - amount) < 0.001) travel.current = amount;
     if (openingProgress) openingProgress.current = travel.current;
     visibility.current = THREE.MathUtils.damp(visibility.current, dimmed ? 0 : 1, 6, delta);
+    // Let fully revealed ceramic regain opaque rendering and depth writes.
+    if (Math.abs(visibility.current - (dimmed ? 0 : 1)) < 0.001) visibility.current = dimmed ? 0 : 1;
     model.visible = visibility.current > 0.015;
     if (pivot && restQuaternion) {
       rotation.setFromAxisAngle(axis, opening === "hinge" ? -travel.current * Math.PI * 0.48 : 0);

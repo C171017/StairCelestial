@@ -31,7 +31,7 @@ Project URLs remain in `src/lib/projects.ts`; display copy, model assignments, a
 
 The four sculptures are exported from [`blender/sanctuary-assets.blend`](blender/sanctuary-assets.blend). The reproducible builder is [`blender/build_sanctuary_assets.py`](blender/build_sanctuary_assets.py). Runtime GLBs are in `public/models/sanctuary/`; cloud textures are in `public/textures/sanctuary/`: the orbit uses an 8K panorama (1.3 MB) on larger screens and a 4K version (559 KB) on smaller screens, with the original as a loading fallback. The door-study room uses a 4K flat backdrop (173 KB).
 
-The active doors are exported from [`blender/door-studies.blend`](blender/door-studies.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py). Six independently rigged GLBs live in `public/models/doors/` (about 2.07 MB total). The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
+The active pearl-ceramic and champagne-gold doors are exported from [`blender/door-studies.blend`](blender/door-studies.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py). Six independently rigged GLBs live in `public/models/doors/` (about 2.11 MB total). Their coordinated colors are shared through `src/lib/doorPalette.json`. The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
 
 ## Development notes
 

@@ -32,9 +32,7 @@ import {
   setPointerCursor,
 } from "@/lib/interactiveHoverZoom";
 import { CloudPlayShape } from "./CloudPlayShape";
-import { IntroGlassRings } from "./IntroGlassRings";
-import { IntroDissolveParticles } from "./IntroDissolveParticles";
-import { CONTROL_ENTRANCE_SECONDS, sampleControlEntrance } from "@/lib/controlEntrance";
+import { CONTROL_ENTRANCE_SECONDS, CONTROL_SHAPE_FORMED_SECONDS, sampleControlEntrance } from "@/lib/controlEntrance";
 import { getCloudControlFinalScale, spiralControlAnchor } from "@/lib/spiralControlAnchor";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
 
@@ -119,7 +117,6 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
   const hoverTweenRef = useRef<gsap.core.Tween | null>(null);
   const hitRef = useRef<THREE.Mesh>(null);
   const chromeGroupRef = useRef<THREE.Group>(null);
-  const glassGroupRef = useRef<THREE.Group>(null);
   const entranceRef = useRef(sampleControlEntrance(0));
   const playMeshRef = useRef<THREE.Mesh>(null);
   const playEdgeRef = useRef<THREE.LineSegments>(null);
@@ -158,6 +155,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
   const {
     soundEnabled,
     setSoundEnabled,
+    toggleSound,
     unlockFromGesture,
     playConsentSting,
     fadeAmbientIn,
@@ -281,11 +279,15 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
           shooting: usePortfolioStore.getState().introShootingStarIntensity,
           stars: usePortfolioStore.getState().introStarsOpacity,
         };
+        const elapsed = Math.max(0, (performance.now() - awaitStartMsRef.current) / 1000);
+        const delay = cloud && !reducedMotionRef.current
+          ? Math.max(0, CONTROL_SHAPE_FORMED_SECONDS - elapsed) : 0;
         gsap.to(revealState, {
           main: 1,
           shooting: 1,
           stars: 1,
-          duration,
+          delay,
+          duration: Math.max(0.2, duration - delay),
           ease: "sine.inOut",
           onUpdate: () => {
             usePortfolioStore.getState().setIntroReveal({
@@ -309,7 +311,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
       }
       run();
     },
-    [],
+    [cloud],
   );
 
   const syncScaleFromViewport = useCallback(() => {
@@ -485,8 +487,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
       }
       if (phase !== "active" && !(cloud && phase === "entering")) return;
 
-      const next = !soundEnabled;
-      setSoundEnabled(next);
+      const next = toggleSound();
       syncShapeVisibility(next);
       if (next) {
         unlockFromGesture();
@@ -500,8 +501,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
       cloud,
       fadeAmbientIn,
       fadeAmbientOut,
-      setSoundEnabled,
-      soundEnabled,
+      toggleSound,
       syncShapeVisibility,
       unlockFromGesture,
     ],
@@ -530,11 +530,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
       entranceRef.current = entrance;
       pose.scale = THREE.MathUtils.lerp(introScaleRef.current, dockScaleRef.current, entrance.travel);
       pose.billboard = 1 - entrance.travel;
-      // Keep the dissolving eye/rims at their original footprint as the sculpture grows.
-      if (glassGroupRef.current) {
-        glassGroupRef.current.scale.setScalar(introScaleRef.current / pose.scale);
-        glassGroupRef.current.visible = !reducedMotionRef.current && elapsed < 7;
-      }
+
     }
     getViewportAnchorPosition(
       camera,
@@ -619,15 +615,11 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
           <mesh geometry={innerRingGeometry} material={innerRingMaterial} />
         </group>
 
-        {cloud && <>
-          <group ref={glassGroupRef}>
-            <IntroGlassRings entrance={entranceRef} />
-            <IntroDissolveParticles entrance={entranceRef} reduced={reducedMotionRef} />
-          </group>
+        {cloud &&
           <CloudPlayShape playing={soundEnabled} active={introPlayPhase === "active"}
             entrance={entranceRef} ribbonMotion={ribbonMotion}
             scale={getPlayControlMobileSizeScale(size.width, size.height)} />
-        </>}
+        }
         <group visible={!cloud}>
         <mesh
           ref={playMeshRef}

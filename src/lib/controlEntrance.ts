@@ -1,7 +1,8 @@
-/** One clock carries the eye handoff, glass dissolution and sculpture entrance.
+/** One clock carries the eye handoff, sphere formation and sculpture entrance.
  * Changing the interaction phase must never restart any of these motions. */
-export const CONTROL_ENTRANCE_SECONDS = 7.8;
-export const CONTROL_EYE_DISSOLVE_SECONDS = 1.8;
+export const CONTROL_ENTRANCE_SECONDS = 9.05;
+export const CONTROL_EYE_DISSOLVE_SECONDS = 0.85;
+export const CONTROL_SHAPE_FORMED_SECONDS = 3.25;
 export const CONTROL_ENTRANCE_TURNS = 2;
 
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
@@ -21,21 +22,17 @@ export function entranceTurnProgress(value: number) {
 
 export function sampleControlEntrance(elapsed: number, reducedMotion = false) {
   if (reducedMotion) return {
-    elapsed, reveal: 1, travel: 1, turn: 0, outerOpacity: 0,
-    innerOpacity: 0, outerDissolve: 1, innerDissolve: 1,
+    elapsed, reveal: 1, travel: 1, turn: 0, sphereMorph: 1,
   };
-  const t = clamp(elapsed / CONTROL_ENTRANCE_SECONDS);
-  const outerDissolve = smooth((elapsed - 1.05) / 3.45);
-  const innerDissolve = smooth((elapsed - 1.4) / 3.65);
+  // Form the object at the eye's center before moving it into the scene.
+  const t = clamp((elapsed - CONTROL_SHAPE_FORMED_SECONDS) / (CONTROL_ENTRANCE_SECONDS - CONTROL_SHAPE_FORMED_SECONDS));
   return {
     elapsed,
-    reveal: smooth(elapsed / 1.45),
+    reveal: smooth(elapsed / 0.65),
+    sphereMorph: smooth((elapsed - 1.25) / (CONTROL_SHAPE_FORMED_SECONDS - 1.25)),
     travel: entranceTurnProgress(t),
     turn: entranceTurnProgress(t) * Math.PI * 2 * CONTROL_ENTRANCE_TURNS,
-    outerOpacity: smooth(elapsed / 0.85) * (1 - outerDissolve),
-    innerOpacity: smooth((elapsed - 0.12) / 1.05) * (1 - innerDissolve),
-    outerDissolve,
-    innerDissolve,
+
   };
 }
 

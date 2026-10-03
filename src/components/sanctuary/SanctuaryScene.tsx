@@ -129,6 +129,7 @@ function Content(props: Props) {
     <StudioLight />
     <PlayControl3D theme="cloud" ribbonMotion={motion} ribbonFrame={ribbonFrame} />
     <Suspense fallback={null}>
+      {/* Ambient sky follows page visibility, independently of entrance input gating. */}
       <OrbitSky />
       <IntroSceneReveal>
         <RibbonWorld {...props} motion={motion} orbit={orbit} ribbonFrame={ribbonFrame} />

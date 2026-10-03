@@ -1,0 +1,12 @@
+{
+  "gold": "#d6b87c",
+  "light": "#fff0cf",
+  "doors": {
+    "melt": { "name": "Pearl ivory", "color": "#eee6d9" },
+    "seed": { "name": "Soft sage", "color": "#cdddc4" },
+    "fault": { "name": "Ice blue", "color": "#cbdfea" },
+    "hourglass": { "name": "Shell blush", "color": "#e8cdce" },
+    "cloud": { "name": "Vanilla cream", "color": "#eee0bd" },
+    "orbit": { "name": "Mist lavender", "color": "#d8cee9" }
+  }
+}

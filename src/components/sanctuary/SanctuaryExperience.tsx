@@ -6,6 +6,7 @@ import { sanctuaryProjects } from "@/lib/sanctuaryContent";
 import { AudioConsentGate } from "@/components/ui/AudioConsentGate";
 import { SiteAudioProvider } from "@/hooks/useSiteAudio";
 import { usePortfolioStore } from "@/lib/store";
+import { retainIntroSession } from "@/lib/introSession";
 import type { Selection } from "./SanctuaryScene";
 
 const Scene = dynamic(() => import("./SanctuaryScene").then((module) => module.SanctuaryScene), { ssr: false });
@@ -37,14 +38,8 @@ function SanctuaryContent() {
     timer.current = setTimeout(() => setNotice(null), 4000);
   }, []);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-  useEffect(() => {
-    return () => {
-      const store = usePortfolioStore.getState();
-      store.setSceneBootstrapped(false);
-      store.setIntroPlayPhase("hidden");
-      usePortfolioStore.setState({ introEpochMs: null });
-    };
-  }, []);
+  // Strict Mode and live updates replay effects; only a real exit ends the visit.
+  useEffect(retainIntroSession, []);
   useEffect(() => {
     const timeout = setTimeout(() => { if (!ready) setFailed(true); }, 15000);
     return () => clearTimeout(timeout);
@@ -56,7 +51,7 @@ function SanctuaryContent() {
   }, []);
   const project = selection ? sanctuaryProjects[selection.index] : null;
   return <main id="portfolio-scroll-surface" data-intro-phase={phase} className={`sanctuary${entered ? " has-entered" : ""}${project ? " has-selection" : ""}`}>
-    <div className="world-layer original-intro-world" style={{ opacity: 1, transition: "none" }} aria-label="An infinite glass ribbon carrying six sculptural glass door studies">
+    <div className="world-layer original-intro-world" style={{ opacity: 1, transition: "none" }} aria-label="An infinite glass ribbon carrying six pearl ceramic and champagne gold doors">
       <SceneBoundary onError={errorHandler}>
         <Scene active={entered} selection={selection} onSelect={setSelection} onReady={readyHandler} onPlaceholder={placeholder} />
       </SceneBoundary>
