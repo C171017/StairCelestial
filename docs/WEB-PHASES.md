@@ -156,3 +156,12 @@ Ambient sky playback no longer depends on the entrance's input gate. It follows 
 Added `scripts/check-sky-composite.py` to reproduce composite QA from the actual shipping assets and current shader weights. The refreshed `sky-video-displayed.json` passes all desktop and compact temporal/spatial screens at the stronger blend. Horizon endpoint differences are 0.590/255 desktop and 0.688/255 compact; whole-image mean brightness changes are 0.064/255 and 0.094/255. Raw video assets and their original measurements are unchanged.
 
 Browser verification confirmed fresh entrance completion, playback during entry, and `active`/`playing` after separate live updates to the entrance owner and eye overlay. The desktop preview completed ten video loops while orbiting beyond -1.3 turns, and the 393 × 852 compact preview completed two loops. A shooting star was visibly present during normal scrolling. Chrome reduced-motion emulation produced `disabled`, zero video mix, and the intact still panorama; removing emulation restored `playing`, full mix, and repeated loops. All 61 tests and the production build passed with no lint warnings. Physical-phone performance and denied-autoplay/network-error paths were not simulated.
+
+
+## Gentler orbit and clearer door focus — October 3, 2026
+
+Idle orbit now shares the ribbon motion clock at a 0.25 turn ratio, with a nominal 160-second rotation. The normal scroll-to-orbit distance is half its earlier amount (7,200 wheel pixels per orbit); peak angular velocity also falls from 0.18 to 0.125 turns/second. Pause, return, reversals, visibility, and reduced-motion behavior follow the shared integrator.
+
+Door focus compares sightlines through the actual exported opening from both finished faces. It tests bounded sections of the same spiral geometry and chooses fewer blocked samples, retaining the front on a tie. The sculpture faces the chosen side and keeps that orientation through its fade-out. Geometry checks cover clear versus blocked sides, unequal obstruction on both sides, and all six actual door shapes at three placements on both ribbon sizes.
+
+Validation: 87 tests, lint, and production export passed. Desktop Chrome confirmed selection, a settled stationary orbit, Escape return, and idle rotation; a 393 × 852 preview confirmed the Orbit/JazzTree doorway with a clear opening and scroll-to-return. No portfolio browser errors were logged (an initial wrong-port visit produced an unrelated PoliMap database error). No physical-device comfort or performance measurement and no deployment were performed.

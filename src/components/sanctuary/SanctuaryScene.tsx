@@ -8,7 +8,9 @@ import { useRibbonMotion } from "@/hooks/useRibbonMotion";
 import { MOBILE_SCROLL_QUERY } from "@/lib/nativeRibbonScroll";
 import { type RibbonMotionSnapshot } from "@/lib/ribbonMotion";
 import { advanceRibbonFocus, createRibbonFocus } from "@/lib/ribbonFocus";
-import { RIBBON_PITCH } from "@/lib/ribbonGeometry";
+import { getDoorAperture } from "@/lib/doorAperture";
+import { chooseRibbonFocusSide } from "@/lib/ribbonFocusVisibility";
+import { createRibbonSections, RIBBON_PITCH } from "@/lib/ribbonGeometry";
 import { sanctuaryProjects, projectIndexForDoor } from "@/lib/sanctuaryContent";
 import { doorStudies, doorModelUrl } from "@/lib/doorStudies";
 import { doorPlacement, doorShapeIndex } from "@/lib/doorPlacement";
@@ -22,6 +24,9 @@ import { OrbitSky } from "./OrbitSky";
 import { OrbitCamera } from "./OrbitCamera";
 import { RIBBON_SHADOW_COUNT } from "./ribbonShadows";
 import { fitDoorSupport, getDoorBase, doorBaseWorldPoint } from "@/lib/doorSupport";
+
+const FOCUS_POSITION = { x: 0, y: 2.3, z: 4.2 };
+const FOCUS_CAMERA = new THREE.Vector3(0, ORBIT_HEIGHT, ORBIT_RADIUS);
 
 const doorModelUrls = doorStudies.map(doorModelUrl);
 
@@ -55,10 +60,22 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
   // cannot suspend the visible world.
   const doorModels = useGLTF(doorModelUrls);
   const bases = useMemo(() => doorModels.map(model => getDoorBase(model.scene)), [doorModels]);
+  const apertures = useMemo(() => doorModels.map(model => getDoorAperture(model.scene)), [doorModels]);
   const { size } = useThree();
   const compact = size.width < 650;
   const radius = compact ? 2.6 : 5.7;
   const width = compact ? 1.45 : 2.25;
+  const focusScale = compact ? 1.55 : 1.7;
+  const focusObstacle = useMemo(() => {
+    const sections = createRibbonSections(radius, width);
+    const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+    // Section bounds prune sightline tests without scanning the whole helix.
+    const group = new THREE.Group().add(...sections.map(section => new THREE.Mesh(section, material)));
+    return { group, sections, material };
+  }, [radius, width]);
+  useEffect(() => () => {
+    focusObstacle.sections.forEach(section => section.dispose()); focusObstacle.material.dispose();
+  }, [focusObstacle]);
   const transform = ribbonFrame;
   const scrollGroup = useRef<THREE.Group>(null);
   const [cycle, setCycle] = useState(0);
@@ -87,6 +104,10 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
   }), [slots, cycle, arrangementSeed, bases, radius, width, compact]);
   const selectedOccurrence = selection?.occurrence;
   const selectedDoor = doors.find(door => door.occurrence === selectedOccurrence);
+  const focusSide = useMemo(() => selectedDoor ? chooseRibbonFocusSide(
+    focusObstacle.group, selectedDoor.support, apertures[selectedDoor.studyIndex],
+    { focusScale, focusPosition: FOCUS_POSITION, cameraPosition: FOCUS_CAMERA },
+  ).side : 1, [selectedDoor, focusObstacle, apertures, focusScale]);
   const doorShadows = useMemo(() => doors.map(({ occurrence, support }) => {
     const position = doorBaseWorldPoint(support, new THREE.Vector2((support.base.minX + support.base.maxX) / 2, 0));
     position.y = support.position.y;
@@ -109,11 +130,11 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
       anchor.y += 1.45 * selectedDoor.support.scale;
     }
     advanceRibbonFocus(focus.current, selectedDoor ? anchor : null, delta, {
-      focusScale: compact ? 1.55 : 1.7, reducedMotion: reduced.current,
+      focusScale, reducedMotion: reduced.current,
       // Frame the selected door; the audio control follows the transformed spiral axis.
-      focusPosition: { x: 0, y: 2.3, z: 4.2 },
-      doorYaw: selectedDoor?.support.yaw ?? 0,
-      cameraPosition: { x: 0, y: ORBIT_HEIGHT, z: ORBIT_RADIUS },
+      focusPosition: FOCUS_POSITION,
+      doorYaw: (selectedDoor?.support.yaw ?? 0) + (focusSide === -1 ? Math.PI : 0),
+      cameraPosition: FOCUS_CAMERA,
       viewYaw: ribbonOrbitAngle(orbit.current.position),
     });
     transform.current.position.set(focus.current.x, focus.current.y, focus.current.z);
@@ -130,7 +151,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
       // new pool slot. Modulo IDs stay unique across the contiguous pool.
       const maskId = ((occurrence % slots.length) + slots.length) % slots.length + 1;
       return <group key={occurrence} position={support.position} rotation={[0, support.yaw, 0]} scale={support.scale}>
-        <ProjectArtifact maskId={maskId} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
+        <ProjectArtifact focusSide={focusSide} maskId={maskId} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
           compact={compact} onSelect={() => {
             if (selected) window.open(sanctuaryProjects[index].url, "_blank", "noopener,noreferrer");
             else onSelect({ index, turn: placement.turn, occurrence });

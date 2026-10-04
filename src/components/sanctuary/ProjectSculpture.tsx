@@ -11,7 +11,8 @@ import { sanctuaryProjects, type SanctuaryProject } from "@/lib/sanctuaryContent
 import { advanceSculptureReveal, createSculptureReveal, sculptureRevealPose } from "@/lib/sculptureReveal";
 
 /** The preserved project model lives wholly behind the door's local Z=0 leaf. */
-export function ProjectSculpture({ study, project, selected, maskId }: {
+export function ProjectSculpture({ study, project, selected, maskId, focusSide = 1 }: {
+  focusSide?: 1 | -1;
   study: DoorStudy;
   project: SanctuaryProject;
   selected: boolean;
@@ -36,6 +37,7 @@ export function ProjectSculpture({ study, project, selected, maskId }: {
   }, [doorScene]);
   const group = useRef<THREE.Group>(null);
   const content = useRef<THREE.Group>(null);
+  const facing = useRef<1 | -1>(1);
   const reveal = useRef(createSculptureReveal());
   const reduced = useRef(false);
   useEffect(() => {
@@ -82,13 +84,17 @@ export function ProjectSculpture({ study, project, selected, maskId }: {
   useEffect(() => () => materials.forEach(({ material }) => material.dispose()), [materials]);
   useEffect(() => () => maskGeometry?.dispose(), [maskGeometry]);
   useFrame((_, dt) => {
+    if (selected) facing.current = focusSide;
     advanceSculptureReveal(reveal.current, selected, dt, reduced.current);
     const opacityFactor = reveal.current.value;
     if (group.current) group.current.visible = opacityFactor > 0;
     if (content.current) {
       const pose = sculptureRevealPose(opacityFactor, reduced.current);
       content.current.scale.setScalar(pose.scale);
-      content.current.position.z = -0.55 + pose.depth;
+      // Present the sculpture through either face, retaining the last side
+      // throughout its exit so closing never flips the visible artwork.
+      content.current.position.z = (-0.55 + pose.depth) * facing.current;
+      content.current.rotation.y = facing.current === -1 ? Math.PI : 0;
     }
     for (const { material, opacity } of materials) {
       setLocalMaterialOpacity(material, opacity * opacityFactor);

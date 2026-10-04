@@ -30,6 +30,7 @@ export default function SkyReview() {
       <button onClick={()=>{setMoment(null);setPaused(v=>!v);}}>{paused?"Resume clouds":"Pause clouds"}</button>
       <button onClick={()=>setFlow(v=>!v)}>{flow?"Flow on":"Translation only"}</button>
       <button onClick={()=>setAzimuth(0)}>Entrance view</button>
+      <label>View ° <input aria-label="View azimuth in degrees" type="number" step="0.01" value={azimuth*180/Math.PI} style={{width:90}} onChange={e=>setAzimuth(Number(e.target.value)*Math.PI/180)}/></label>
       <label>Time <input aria-label="Cloud time in seconds" type="number" min="0" max="36000" value={moment??''} style={{width:66}} onChange={e=>{const value=Number(e.target.value);setMoment(Number.isFinite(value)?Math.min(36000,Math.max(0,value)):0);setPaused(true);}}/></label>
       <button disabled={busy} onClick={async()=>{setPaused(true);setBusy(true);try{if(!exporter.current)throw new Error('Sky is still loading');await exporter.current(setStatus);setStatus('Master saved');}catch{setStatus('Export failed — try again after the sky loads.');}finally{setBusy(false);}}}>Save master</button>
       <button disabled={busy} onClick={()=>{

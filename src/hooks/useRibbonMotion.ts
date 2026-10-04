@@ -2,6 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
+import { syncRibbonOrbit } from "@/lib/ribbonOrbit";
 import { bindNativeRibbonScroll, MOBILE_SCROLL_QUERY } from "@/lib/nativeRibbonScroll";
 import {
   addRibbonInput,
@@ -21,7 +22,7 @@ function isInteractive(target: EventTarget | null): boolean {
   return target instanceof Element && Boolean(target.closest(INTERACTIVE_SELECTOR));
 }
 
-/** Independent travel and orbit: the ribbon cruises, the camera only follows input. */
+/** Travel and orbit share one eased clock, including cruise and pause. */
 export function useRibbonMotion(options: RibbonMotionOptions) {
   const motion = useRef(createRibbonMotion());
   const orbit = useRef(createRibbonMotion());
@@ -33,7 +34,6 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
   useEffect(() => {
     if (options.paused || !options.enabled) {
       motion.current.pendingInput = 0;
-      orbit.current.pendingInput = 0;
     }
   }, [options.paused, options.enabled]);
 
@@ -71,8 +71,6 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
         lastNavigation = now;
       }
       addRibbonInput(motion.current, pixels, reducedMotion.current);
-      // One orbit takes 3,600 wheel pixels; total turns are never clamped.
-      addRibbonInput(orbit.current, pixels * 0.5, reducedMotion.current);
     };
 
     const nativeScroll = bindNativeRibbonScroll((pixels) => {
@@ -161,12 +159,7 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
       paused: latest.current.paused,
       reducedMotion: reducedMotion.current,
     });
-    advanceRibbonMotion(orbit.current, delta, {
-      paused: latest.current.paused,
-      reducedMotion: reducedMotion.current,
-      cruiseSpeed: 0,
-      maxSpeed: reducedMotion.current ? 0.09 : 0.18,
-    });
+    syncRibbonOrbit(motion.current, orbit.current);
   }, -2);
 
   return { motion, orbit };
