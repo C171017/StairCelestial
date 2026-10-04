@@ -2,20 +2,27 @@
 import { useEffect, useState } from "react";
 import * as THREE from "three";
 
-export function CleanSkyPlate(){
+export function CleanSkyPlate({ onReady }: { onReady?: () => void } = {}){
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const [settled, setSettled] = useState(false);
   useEffect(() => {
     let disposed = false;
     const image = new THREE.TextureLoader().load(
       "/textures/sanctuary/layers/sky-clean.webp",
-      loaded => { if (!disposed) setTexture(loaded); },
+      loaded => { if (!disposed) { setTexture(loaded); setSettled(true); } },
       undefined,
-      () => { /* Keep the matching color fallback if the image is unavailable. */ },
+      () => {
+        // The matching procedural color plate is also a complete final state.
+        if (!disposed) setSettled(true);
+      },
     );
     image.colorSpace = THREE.SRGBColorSpace;
     image.wrapS = THREE.RepeatWrapping;
     return () => { disposed = true; image.dispose(); };
   }, []);
+  useEffect(() => {
+    if (settled) onReady?.();
+  }, [settled, onReady]);
   return <mesh renderOrder={-3000} raycast={()=>null}>
     <sphereGeometry args={[450,64,32]}/>
     {texture ? <meshBasicMaterial map={texture} side={THREE.BackSide} depthWrite={false} toneMapped={false}/> :

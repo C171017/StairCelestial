@@ -1,4 +1,17 @@
-# Layered sky implementation — October 3, 2026
+# Fixed cloud sky — October 3, 2026
+
+The homepage now keeps the sky composition unchanged. Scrolling and idle camera orbit change only the view. This supersedes the moving-cloud and idle-only sorting implementation described in the historical notes below.
+
+`CloudField.tsx` retains the original 64 bank and 16 wisp image layers at their time-zero positions, scales, orientations, opacity, and haze. `cloudField.ts` assigns unique radial painter priorities once, independent of the viewing camera. Cloud drift, recycling, deformation, and the opaque-core/transparent-edge split are removed from the active renderer. Every cloud uses one transparent pass with depth testing/writing disabled inside the separate sky target. This is a fixed artistic layer composition, not volumetric cloud intersection rendering. The homepage also pauses meteors and glints. Chosen artwork is published once after loading, without a later WebP-to-KTX replacement. The intro waits for both the final cloud artwork and sky plate (or settled loading fallbacks) before revealing the scene.
+
+The previous center-depth sort changed the order of entire overlapping cloud cards as the camera turned. At 19.53° versus 19.57°, desktop captures showed 59,552 pixels changing by more than 15/255 mean RGB, including a 44.64/255 worst 32-pixel block. The full-orbit GPU probe confirmed four abrupt switches near 19.55°, 72.55°, 195.475°, and 340.65°.
+
+The same 0.01° probe windows after the correction produced no sampled pixels with a channel change above 15/255. The worst cloud-block mean change fell from 73.20/255 to 1.20/255 on desktop (2560 × 1266 canvas, 8192 atlas), and was 0.796/255 at phone width (393 × 852 canvas, 4096 atlas). All 360 forward views matched their reverse counterparts exactly at the sampled resolution, and returning after a full orbit, the dense sweep, and 60 stationary frames changed zero pixels. These are browser rendering checks with bounded downsampled captures, not physical-phone performance measurements.
+
+`/sky-review` includes precise azimuth control, a repeatable forward/reverse orbit probe with dense problem-angle checks, JSON report export, and a ten-second orbit recording. Local full-size screenshots and probe summaries are in `.screenshots/cloud-orbit/`. Regression tests retain actual failing cloud-pair fixtures and verify stable ordering, deterministic layout, and clipping bounds. A same-view screenshot comparison at clock times 0 and 36,000 seconds changed zero pixels. All 91 tests, lint, and the production build passed. [Recorded comparison metrics](validation/cloud-orbit-continuity.json) retain the baseline and corrected results.
+
+## Historical layered sky implementation
+
 
 Implements the approved option A from [the design plan](SKY-DESIGN-PLAN.md). The homepage uses a fixed, cloud-free color plate, moving image-based cumulus and cirrus, restrained edge deformation, and world-anchored shooting stars. The video path is no longer mounted. Historical assets remain available for comparison.
 

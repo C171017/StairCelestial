@@ -21,15 +21,15 @@ export function useCloudArtwork() {
       return texture;
     };
     const loader=new THREE.TextureLoader();
-    // Begin with a complete low-cost scene; refine after the compressed asset arrives.
+    // Resolve the final artwork before publishing it. A late WebP -> KTX swap
+    // must not change an already visible, fixed cloud composition.
     Promise.all([
       loader.loadAsync(`/textures/sanctuary/layers/cumulus-${compact||gl.capabilities.maxTextureSize<4096?2048:4096}.webp`).then(prepare),
       loader.loadAsync('/textures/sanctuary/layers/cirrus.webp').then(prepare),
     ]).then(async textures=>{
       if(disposed)return;
-      setMaps(textures);
       const compressed=gl.extensions.has('WEBGL_compressed_texture_astc')||gl.extensions.has('EXT_texture_compression_bptc')||gl.extensions.has('WEBGL_compressed_texture_s3tc')||gl.extensions.has('WEBGL_compressed_texture_etc');
-      if(!compressed||gl.capabilities.maxTextureSize<4096)return;
+      if(!compressed||gl.capabilities.maxTextureSize<4096){setMaps(textures);return;}
       const width=compact||gl.capabilities.maxTextureSize<8192?4096:8192;
       decoder=new KTX2Loader().setTranscoderPath('/basis/').setWorkerLimit(1).detectSupport(gl);
       try{
@@ -38,10 +38,13 @@ export function useCloudArtwork() {
         // KTX pixel rows are exported flipped to match TextureLoader's convention.
         setMaps([enhanced,textures[1]]);
       }catch{
-        // Keep the already decoded WebP when compression/transcoding is unavailable.
+        // Use the already decoded WebP when compression/transcoding is unavailable.
+        if(!disposed)setMaps(textures);
       }
     }).catch(()=>{
       // The procedural clean plate stays visible if even the fallback cannot load.
+      // An empty settled result lets the intro proceed with that complete fallback.
+      if(!disposed)setMaps([]);
     });
     return()=>{disposed=true;decoder?.dispose();owned.forEach(t=>t.dispose());};
   },[compact,gl]);

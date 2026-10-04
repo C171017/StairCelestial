@@ -2,7 +2,7 @@
 
 import { LayeredSky } from "./LayeredSky";
 
-/** A fixed sky with independent cloud advection, shared by every orbit angle. */
-export function OrbitSky({active=true}:{active?:boolean}) {
-  return <LayeredSky paused={!active}/>;
+/** A fixed environment: only the viewer moves, including across complete orbits. */
+export function OrbitSky({ onReady }: { onReady?: () => void } = {}) {
+  return <LayeredSky paused onReady={onReady}/>;
 }

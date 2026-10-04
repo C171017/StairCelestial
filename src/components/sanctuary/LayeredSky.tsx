@@ -2,16 +2,25 @@
 
 import { useFBO } from "@react-three/drei";
 import { createPortal, useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { FlowingClouds } from "./FlowingClouds";
+import { CloudField } from "./CloudField";
 import { SkyEffects } from "./SkyEffects";
 import type { RefObject } from "react";
 import { exportSkyMaster } from "./exportSky";
 import { CleanSkyPlate } from "./CleanSkyPlate";
 
-export function LayeredSky({ paused=false, deformation=true, timeOverride=null, exporter }: { paused?:boolean;deformation?:boolean;timeOverride?:number|null;exporter?:RefObject<((progress:(value:string)=>void)=>Promise<void>)|null> }) {
+export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady }: { paused?:boolean;timeOverride?:number|null;exporter?:RefObject<((progress:(value:string)=>void)=>Promise<void>)|null>;onReady?:()=>void }) {
   const {gl,size,camera} = useThree();
+  const [cloudsReady, setCloudsReady] = useState(false);
+  const [plateReady, setPlateReady] = useState(false);
+  const handleCloudsReady = useCallback(() => setCloudsReady(true), []);
+  const handlePlateReady = useCallback(() => setPlateReady(true), []);
+  useEffect(() => {
+    const ready = cloudsReady && plateReady;
+    if (process.env.NODE_ENV === "development") gl.domElement.dataset.skyReady = String(ready);
+    if (ready) onReady?.();
+  }, [cloudsReady, plateReady, gl, onReady]);
   // Keep the portal container stable through Fast Refresh and effect replay.
   const [skyScene] = useState(()=>new THREE.Scene());
   const [skyCamera] = useState(()=>new THREE.PerspectiveCamera());
@@ -51,7 +60,7 @@ export function LayeredSky({ paused=false, deformation=true, timeOverride=null, 
     return()=>{preference.removeEventListener("change",sync);document.removeEventListener("visibilitychange",sync);};
   },[]);
   useFrame((_,delta)=>{
-    // Update before cloud sorting, so both passes use this frame's orbit view.
+    // The fixed cloud field and color plate share this frame's orbit view.
     skyCamera.copy(camera as THREE.PerspectiveCamera);
     skyCamera.far=3000;skyCamera.updateProjectionMatrix();skyCamera.updateMatrixWorld();
     if(timeOverride!==null)time.current=timeOverride;
@@ -82,9 +91,9 @@ export function LayeredSky({ paused=false, deformation=true, timeOverride=null, 
   },-0.5);
   return <>
     {createPortal(<group ref={group}>
-      <CleanSkyPlate />
+      <CleanSkyPlate onReady={handlePlateReady}/>
       <SkyEffects active={!paused} time={time}/>
-      <Suspense fallback={null}><FlowingClouds time={time} deformation={deformation}/></Suspense>
+      <Suspense fallback={null}><CloudField onReady={handleCloudsReady}/></Suspense>
     </group>,skyScene,{camera:skyCamera})}
     <mesh renderOrder={-3000} frustumCulled={false} raycast={()=>null}>
       <planeGeometry args={[2,2]}/>

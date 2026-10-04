@@ -37,18 +37,21 @@ type Props = {
   onReady: () => void; onPlaceholder: (name: string) => void;
 };
 
-function Ready({ onReady }: { onReady: () => void }) {
+function Ready({ ready, onReady }: { ready: boolean; onReady: () => void }) {
   const { gl, scene, camera } = useThree();
   const compiled = useRef(false);
   const frames = useRef(0);
   const sent = useRef(false);
   useEffect(() => {
+    if (!ready) return;
     let cancelled = false;
+    compiled.current = false;
+    frames.current = 0;
     gl.compileAsync(scene, camera).then(() => { if (!cancelled) compiled.current = true; });
     return () => { cancelled = true; };
-  }, [gl, scene, camera]);
+  }, [ready, gl, scene, camera]);
   useFrame(() => {
-    if (compiled.current && !sent.current && ++frames.current > 3) {
+    if (ready && compiled.current && !sent.current && ++frames.current > 3) {
       sent.current = true; onReady();
     }
   });
@@ -163,6 +166,8 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
 
 function Content(props: Props) {
   const { size, setDpr } = useThree();
+  const [skyReady, setSkyReady] = useState(false);
+  const handleSkyReady = useCallback(() => setSkyReady(true), []);
   useEffect(() => {
     // A large desktop already supplies enough screen pixels for this artwork.
     // Avoid rendering the glass at 4K+ merely because the display is high-DPI.
@@ -177,12 +182,12 @@ function Content(props: Props) {
     <StudioLight />
     <PlayControl3D theme="cloud" ribbonMotion={motion} ribbonFrame={ribbonFrame} />
     <Suspense fallback={null}>
-      {/* Ambient sky follows page visibility, independently of entrance input gating. */}
-      <OrbitSky />
+      {/* Finish the immutable sky before allowing the entrance to reveal it. */}
+      <OrbitSky onReady={handleSkyReady} />
       <IntroSceneReveal>
         <RibbonWorld {...props} motion={motion} orbit={orbit} ribbonFrame={ribbonFrame} />
       </IntroSceneReveal>
-      <Ready onReady={props.onReady} />
+      <Ready ready={skyReady} onReady={props.onReady} />
     </Suspense>
   </>;
 }

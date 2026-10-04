@@ -1,0 +1,253 @@
+{
+  "date": "2026-10-03",
+  "renderer": "Chrome / ANGLE Metal / Apple M4 Max",
+  "scope": "Local browser, not deployed; responsive emulation, not a physical phone benchmark.",
+  "capture": "Actual rendered canvas downsampled to at most 384x192 for orbit metrics. Dense windows use 0.01 degree steps.",
+  "elapsedTimeComparison": {
+    "fromSeconds": 0,
+    "toSeconds": 36000,
+    "screenshotRegion": [
+      2560,
+      1100
+    ],
+    "changedPixels": 0
+  },
+  "checks": {
+    "testsPassed": 91,
+    "lint": "pass",
+    "productionBuild": "pass"
+  },
+  "runs": {
+    "baseline": {
+      "viewport": [
+        2560,
+        1266
+      ],
+      "atlasWidth": 8192,
+      "sample": {
+        "width": 384,
+        "height": 190,
+        "blockSize": 5
+      },
+      "fullLoop": {
+        "meanAbsoluteRgbDelta": 0,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 0,
+        "worst32CssPixelBlockMeanDelta": 0
+      },
+      "reverseMismatches": [],
+      "sameViewAfterDenseSweep": {
+        "meanAbsoluteRgbDelta": 0,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 0,
+        "worst32CssPixelBlockMeanDelta": 0
+      },
+      "sameViewAfter60Frames": {
+        "meanAbsoluteRgbDelta": 0,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 0,
+        "worst32CssPixelBlockMeanDelta": 0
+      },
+      "dense": [
+        {
+          "centerDegrees": 19.55,
+          "worst": {
+            "fromDegrees": 19.54,
+            "toDegrees": 19.55,
+            "meanAbsoluteRgbDelta": 1.2461531432748367,
+            "changedOver15Percent": 3.2072368421052633,
+            "changedAnyPercent": 28.392269736842106,
+            "worst32CssPixelBlockMeanDelta": 64.01333333333332
+          }
+        },
+        {
+          "centerDegrees": 72.55,
+          "worst": {
+            "fromDegrees": 72.54,
+            "toDegrees": 72.55,
+            "meanAbsoluteRgbDelta": 1.4284082602338786,
+            "changedOver15Percent": 3.9830043859649122,
+            "changedAnyPercent": 30.627741228070175,
+            "worst32CssPixelBlockMeanDelta": 71.24000000000001
+          }
+        },
+        {
+          "centerDegrees": 195.475,
+          "worst": {
+            "fromDegrees": 195.445,
+            "toDegrees": 195.455,
+            "meanAbsoluteRgbDelta": 0.7746984649122903,
+            "changedOver15Percent": 2.271107456140351,
+            "changedAnyPercent": 26.776315789473685,
+            "worst32CssPixelBlockMeanDelta": 53.70666666666665
+          }
+        },
+        {
+          "centerDegrees": 340.65,
+          "worst": {
+            "fromDegrees": 340.63999999999993,
+            "toDegrees": 340.65,
+            "meanAbsoluteRgbDelta": 0.9907346491227275,
+            "changedOver15Percent": 2.236842105263158,
+            "changedAnyPercent": 28.267543859649123,
+            "worst32CssPixelBlockMeanDelta": 73.2
+          }
+        }
+      ]
+    },
+    "fixedDesktop": {
+      "viewport": [
+        2560,
+        1266
+      ],
+      "atlasWidth": 8192,
+      "sample": {
+        "width": 384,
+        "height": 190,
+        "blockSize": 5
+      },
+      "fullLoop": {
+        "meanAbsoluteRgbDelta": 0,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 0,
+        "worst32CssPixelBlockMeanDelta": 0
+      },
+      "reverseMismatches": [],
+      "sameViewAfterDenseSweep": {
+        "meanAbsoluteRgbDelta": 0,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 0,
+        "worst32CssPixelBlockMeanDelta": 0
+      },
+      "sameViewAfter60Frames": {
+        "meanAbsoluteRgbDelta": 0,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 0,
+        "worst32CssPixelBlockMeanDelta": 0
+      },
+      "dense": [
+        {
+          "centerDegrees": 19.55,
+          "worst": {
+            "fromDegrees": 19.599999999999998,
+            "toDegrees": 19.61,
+            "meanAbsoluteRgbDelta": 0.15326663011696634,
+            "changedOver15Percent": 0,
+            "changedAnyPercent": 26.21436403508772,
+            "worst32CssPixelBlockMeanDelta": 1.2
+          }
+        },
+        {
+          "centerDegrees": 72.55,
+          "worst": {
+            "fromDegrees": 72.61,
+            "toDegrees": 72.62,
+            "meanAbsoluteRgbDelta": 0.15700383771930518,
+            "changedOver15Percent": 0,
+            "changedAnyPercent": 27.46436403508772,
+            "worst32CssPixelBlockMeanDelta": 1.1066666666666665
+          }
+        },
+        {
+          "centerDegrees": 195.475,
+          "worst": {
+            "fromDegrees": 195.415,
+            "toDegrees": 195.425,
+            "meanAbsoluteRgbDelta": 0.14756030701754955,
+            "changedOver15Percent": 0,
+            "changedAnyPercent": 24.65734649122807,
+            "worst32CssPixelBlockMeanDelta": 1.1733333333333336
+          }
+        },
+        {
+          "centerDegrees": 340.65,
+          "worst": {
+            "fromDegrees": 340.65,
+            "toDegrees": 340.65999999999997,
+            "meanAbsoluteRgbDelta": 0.14893548976609014,
+            "changedOver15Percent": 0,
+            "changedAnyPercent": 25.85252192982456,
+            "worst32CssPixelBlockMeanDelta": 1.0666666666666667
+          }
+        }
+      ]
+    },
+    "fixedCompact": {
+      "viewport": [
+        393,
+        852
+      ],
+      "atlasWidth": 4096,
+      "sample": {
+        "width": 89,
+        "height": 192,
+        "blockSize": 7
+      },
+      "fullLoop": {
+        "meanAbsoluteRgbDelta": 0,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 0,
+        "worst32CssPixelBlockMeanDelta": 0
+      },
+      "reverseMismatches": [],
+      "sameViewAfterDenseSweep": {
+        "meanAbsoluteRgbDelta": 0,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 0,
+        "worst32CssPixelBlockMeanDelta": 0
+      },
+      "sameViewAfter60Frames": {
+        "meanAbsoluteRgbDelta": 0,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 0,
+        "worst32CssPixelBlockMeanDelta": 0
+      },
+      "dense": [
+        {
+          "centerDegrees": 19.55,
+          "worst": {
+            "fromDegrees": 19.58,
+            "toDegrees": 19.59,
+            "meanAbsoluteRgbDelta": 0.13820614856429503,
+            "changedOver15Percent": 0,
+            "changedAnyPercent": 25.41549625468165,
+            "worst32CssPixelBlockMeanDelta": 0.6870748299319729
+          }
+        },
+        {
+          "centerDegrees": 72.55,
+          "worst": {
+            "fromDegrees": 72.46000000000001,
+            "toDegrees": 72.47,
+            "meanAbsoluteRgbDelta": 0.14989076154806658,
+            "changedOver15Percent": 0,
+            "changedAnyPercent": 28.230337078651687,
+            "worst32CssPixelBlockMeanDelta": 0.6870748299319729
+          }
+        },
+        {
+          "centerDegrees": 195.475,
+          "worst": {
+            "fromDegrees": 195.505,
+            "toDegrees": 195.515,
+            "meanAbsoluteRgbDelta": 0.12359550561797517,
+            "changedOver15Percent": 0,
+            "changedAnyPercent": 23.349719101123597,
+            "worst32CssPixelBlockMeanDelta": 0.6825396825396826
+          }
+        },
+        {
+          "centerDegrees": 340.65,
+          "worst": {
+            "fromDegrees": 340.72999999999996,
+            "toDegrees": 340.73999999999995,
+            "meanAbsoluteRgbDelta": 0.1256437265917586,
+            "changedOver15Percent": 0,
+            "changedAnyPercent": 23.601357677902623,
+            "worst32CssPixelBlockMeanDelta": 0.7959183673469389
+          }
+        }
+      ]
+    }
+  }
+}
