@@ -21,28 +21,22 @@ export function doorPlacement(occurrence: number, arrangementSeed = 0) {
   };
 }
 
-/** Stable random choices without adjacent repeats, including across pool boundaries. */
+/** A visit-specific cycle maximizes the distance between identical shapes.
+ * Every sliding window of shapeCount doors contains each shape exactly once,
+ * including across cycle boundaries and when scrolling backward.
+ */
 export function doorShapeIndex(occurrence: number, shapeCount: number, arrangementSeed = 0) {
   if (!Number.isInteger(shapeCount) || shapeCount < 1) {
     throw new RangeError("At least one door shape is required");
   }
-  if (shapeCount === 1) return 0;
-  const parity = ((occurrence % 2) + 2) % 2;
-  if (shapeCount === 2) return (parity + Math.floor(random(0, 4, arrangementSeed) * 2)) % 2;
-
-  const draw = (index: number) => Math.floor(random(index, 4, arrangementSeed) * shapeCount);
-  if (parity === 0) return draw(occurrence);
-
-  // Odd occurrences exclude both neighboring even draws. This avoids a
-  // stateful history or recursive walk, so negative indices and jumps agree.
-  const left = draw(occurrence - 1);
-  const right = draw(occurrence + 1);
-  const firstExcluded = Math.min(left, right);
-  const secondExcluded = Math.max(left, right);
-  let choice = Math.floor(random(occurrence, 4, arrangementSeed) * (shapeCount - (left === right ? 1 : 2)));
-  if (choice >= firstExcluded) choice++;
-  if (left !== right && choice >= secondExcluded) choice++;
-  return choice;
+  const order = Array.from({ length: shapeCount }, (_, index) => index);
+  // Shuffle the cycle once logically, never independently per batch: reshuffling
+  // batches would let a shape at the end repeat immediately in the next batch.
+  for (let index = shapeCount - 1; index > 0; index--) {
+    const other = Math.floor(random(index, 4, arrangementSeed) * (index + 1));
+    [order[index], order[other]] = [order[other], order[index]];
+  }
+  return order[((occurrence % shapeCount) + shapeCount) % shapeCount];
 }
 
 /** An asymmetric scatter in screen space; narrow screens get their own packing. */

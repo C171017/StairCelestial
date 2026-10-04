@@ -51,8 +51,8 @@ function Ready({ onReady }: { onReady: () => void }) {
 }
 
 function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }: Pick<Props, "active" | "selection" | "onSelect"> & { motion: RefObject<RibbonMotionSnapshot>; orbit: RefObject<RibbonMotionSnapshot>; ribbonFrame: RefObject<THREE.Group | null> }) {
-  // Random draws may omit a shape initially; prepare every shape before entry
-  // so its first later appearance cannot suspend the visible world.
+  // Prepare every shape before entry so scrolling into another occurrence
+  // cannot suspend the visible world.
   const doorModels = useGLTF(doorModelUrls);
   const bases = useMemo(() => doorModels.map(model => getDoorBase(model.scene)), [doorModels]);
   const { size } = useThree();

@@ -1,0 +1,6 @@
+{
+  "name": "howie-cv",
+  "compatibility_date": "2026-10-02",
+  "assets": { "directory": "./public" },
+  "routes": [{ "pattern": "cv.c171017.com", "custom_domain": true }]
+}

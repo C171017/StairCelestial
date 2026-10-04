@@ -1,0 +1,8 @@
+/howie-cv.pdf
+  Content-Type: application/pdf
+  Content-Disposition: inline; filename="Howie-CV.pdf"
+  Cache-Control: public, max-age=300
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

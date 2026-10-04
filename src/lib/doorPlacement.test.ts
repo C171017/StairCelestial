@@ -5,13 +5,32 @@ import { doorStudies } from "./doorStudies";
 import { projectIndexForDoor, sanctuaryProjects } from "./sanctuaryContent";
 import { ribbonPoint, RIBBON_PITCH } from "./ribbonGeometry";
 
-test("random sequences never repeat neighboring shapes, include every shape, and do not repeat a six-door pattern", () => {
-  for (const seed of [0, 12345, 0xffffffff]) {
-    const sequence = Array.from({ length: 300 }, (_, i) => doorShapeIndex(i - 150, doorStudies.length, seed));
-    assert.equal(new Set(sequence).size, doorStudies.length);
-    assert.ok(sequence.every((shape, i) => i === 0 || shape !== sequence[i - 1]));
-    assert.ok(sequence.some((shape, i) => i >= 6 && shape !== sequence[i - 6]));
-    assert.ok(sequence.every(shape => shape >= 0 && shape < doorStudies.length));
+test("every sliding window contains all shapes before any repeat, across visits and cycle boundaries", () => {
+  for (const count of [1, 2, 3, doorStudies.length]) {
+    for (const seed of [0, 19, 81, 12345, 0xffffffff]) {
+      for (const start of [-30000, -150, 0, 30000]) {
+        const sequence = Array.from({ length: 150 }, (_, i) => doorShapeIndex(start + i, count, seed));
+        assert.ok(sequence.every(shape => shape >= 0 && shape < count));
+        for (let i = 0; i <= sequence.length - count; i++) {
+          assert.equal(new Set(sequence.slice(i, i + count)).size, count);
+          if (i >= count) assert.equal(sequence[i], sequence[i - count]);
+        }
+      }
+    }
+  }
+});
+
+test("fixed shape order retains irregular gaps, including between repetitions of a shape", () => {
+  for (const seed of [0, 19, 81, 0xffffffff]) {
+    const placements = Array.from({ length: 120 }, (_, i) => doorPlacement(i - 60, seed));
+    const gaps = placements.slice(1).map((p, i) => p.turn - placements[i].turn);
+    assert.ok(Math.max(...gaps) - Math.min(...gaps) > 0.06);
+    // Six shapes at three doors per turn keeps matching silhouettes nearly
+    // two full turns apart, while the spatial arrangement does not loop.
+    for (let i = doorStudies.length; i < placements.length; i++) {
+      assert.ok(placements[i].turn - placements[i - doorStudies.length].turn > 1.94);
+      assert.notEqual(placements[i].lateral, placements[i - doorStudies.length].lateral);
+    }
   }
 });
 
