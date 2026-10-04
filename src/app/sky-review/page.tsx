@@ -5,6 +5,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import * as THREE from "three";
 import { LayeredSky } from "@/components/sanctuary/LayeredSky";
+import { SceneMoodPreview } from "@/components/sanctuary/SceneMood";
 
 type CapturedFrame = {
   pixels: Uint8ClampedArray;
@@ -113,6 +114,7 @@ function saveReport(report:unknown) {
 
 export default function SkyReview() {
   const [azimuth,setAzimuth]=useState(0);
+  const [mood,setMood]=useState(0.52);
   const [paused,setPaused]=useState(true);
   const [status,setStatus]=useState('');
   const [busy,setBusy]=useState(false);
@@ -231,12 +233,13 @@ export default function SkyReview() {
     onPointerUp={()=>{pointer.current=null;}} onPointerCancel={()=>{pointer.current=null;}} onPointerLeave={()=>{pointer.current=null;}}>
     <Canvas dpr={[1,1.5]} camera={{position:[0,2.8,24],fov:42,far:3000}} gl={{antialias:false}}
       onCreated={({gl})=>{gl.toneMapping=THREE.NoToneMapping;}}>
-      <View azimuth={azimuth} probeAzimuth={probeAzimuth}/><Suspense fallback={null}><LayeredSky paused={paused} timeOverride={moment} exporter={exporter}/></Suspense>
+      <View azimuth={azimuth} probeAzimuth={probeAzimuth}/><SceneMoodPreview value={mood}><Suspense fallback={null}><LayeredSky paused={paused} timeOverride={moment} exporter={exporter}/></Suspense></SceneMoodPreview>
       <FrameCapture capture={capture} probeAzimuth={probeAzimuth}/>
     </Canvas>
     <div style={{position:"absolute",bottom:20,left:20,right:20,width:"fit-content",maxWidth:"calc(100% - 40px)",display:"flex",flexWrap:"wrap",gap:12,color:"#17394b",background:"#ffffffdd",padding:12,borderRadius:12}} onPointerDown={e=>e.stopPropagation()} onWheel={e=>e.stopPropagation()}>
       <button disabled={busy} onClick={()=>{setMoment(null);setPaused(v=>!v);}}>{paused?"Resume effects":"Pause effects"}</button>
       <button disabled={busy} onClick={()=>setAzimuth(0)}>Entrance view</button>
+      <label>Light <input disabled={busy} aria-label="Time of day" type="range" min="0" max="1" step="0.01" value={mood} onChange={e=>setMood(Number(e.target.value))}/></label>
       <label>View ° <input disabled={busy} aria-label="View azimuth in degrees" type="number" step="0.01" value={azimuth*180/Math.PI} style={{width:90}} onChange={e=>setAzimuth(Number(e.target.value)*Math.PI/180)}/></label>
       <label>Effect time <input disabled={busy} aria-label="Effect time in seconds" type="number" min="0" max="36000" value={moment??''} style={{width:66}} onChange={e=>{const value=Number(e.target.value);setMoment(Number.isFinite(value)?Math.min(36000,Math.max(0,value)):0);setPaused(true);}}/></label>
       <button disabled={busy} onClick={runProbe}>Run continuity probe</button>

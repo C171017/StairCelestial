@@ -29,7 +29,21 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
   const latest = useRef(options);
   const reducedMotion = useRef(false);
   const visible = useRef(true);
+  const reviewFreeze = useRef(false);
   latest.current = options;
+
+  useEffect(() => {
+    // Explicit, development-only matched views for optical/orbit review.
+    // Ordinary navigation always starts at the sunset, with a fresh visit.
+    if (process.env.NODE_ENV !== "development") return;
+    const query = new URLSearchParams(window.location.search);
+    if (!query.has("crystal-review")) return;
+    const ascent = Number(query.get("ascent") ?? 0);
+    const turns = Number(query.get("turns") ?? 0);
+    if (Number.isFinite(ascent)) motion.current.userTravel = ascent;
+    if (Number.isFinite(turns)) motion.current.position = turns;
+    reviewFreeze.current = true;
+  }, []);
 
   useEffect(() => {
     if (options.paused || !options.enabled) {
@@ -145,6 +159,7 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
     advanceRibbonMotion(motion.current, delta, {
       paused: latest.current.paused,
       reducedMotion: reducedMotion.current,
+      ...(reviewFreeze.current ? { cruiseSpeed: 0 } : {}),
     });
     syncRibbonOrbit(motion.current, orbit.current);
   }, -2);

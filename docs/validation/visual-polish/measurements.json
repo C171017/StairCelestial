@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-04",
+  "baselineCommit": "2c04420",
+  "browser": "Codex in-app browser",
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+  "build": "Next.js development server",
+  "runtime": "Three.js r175",
+  "method": {
+    "source": "VisualAuditProbe.tsx.txt",
+    "frameIntervals": "R3F useFrame delta, non-overlapping windows of 300 frames after a 16-second probe warmup; hidden-document windows discarded.",
+    "drawCounts": "renderer.info.autoReset=false; reset at priority -2, before the sky and main render. Counts include all rendered passes, not unique scene geometry. Width/height are drawing-buffer dimensions.",
+    "gpu": "Nonblocking EXT_disjoint_timer_query_webgl2 queries surrounding public renderer.render calls; summed by R3F frame. Samples resolve asynchronously and do not measure CPU, browser composition, or presentation latency.",
+    "scope": "One moving camera, random door arrangement, short windows, no production or physical M2 benchmark. Different resolutions were not locked to the same scene view.",
+    "cleanup": "Probe removed from runtime after inspection. Source retained here only as evidence."
+  },
+  "samples": [
+    {
+      "state": "focused door",
+      "capturedAt": "2026-10-04T18:20:56.844Z",
+      "samples": 300,
+      "meanFrameMs": 14.361333333333024,
+      "p50FrameMs": 14.200000000186265,
+      "p95FrameMs": 19.600000000093132,
+      "framesOver33ms": 0,
+      "meanDrawCalls": 77,
+      "meanTriangles": 92032,
+      "textures": 12,
+      "geometries": 106,
+      "dpr": 1,
+      "width": 1440,
+      "height": 1000,
+      "note": "Initial version of probe; no GPU timing recorded for this sample."
+    },
+    {
+      "state": "homepage cruising",
+      "capturedAt": "2026-10-04T18:22:12.199Z",
+      "samples": 300,
+      "meanFrameMs": 15.026333333333023,
+      "p50FrameMs": 14.399999999906868,
+      "p95FrameMs": 21.899999999906868,
+      "framesOver33ms": 0,
+      "meanDrawCalls": 143.51,
+      "meanTriangles": 263221.49333333335,
+      "gpuSamples": 303,
+      "meanRenderGpuMs": 15.80977966336633,
+      "p95RenderGpuMs": 25.924624,
+      "textures": 12,
+      "geometries": 118,
+      "dpr": 1,
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "state": "homepage cruising, larger desktop",
+      "capturedAt": "2026-10-04T18:22:58.159Z",
+      "samples": 300,
+      "meanFrameMs": 20.327666666666047,
+      "p50FrameMs": 20,
+      "p95FrameMs": 26.299999999813735,
+      "framesOver33ms": 0,
+      "meanDrawCalls": 136.60333333333332,
+      "meanTriangles": 247154.69333333333,
+      "gpuSamples": 300,
+      "meanRenderGpuMs": 22.141231196666663,
+      "p95RenderGpuMs": 29.732374,
+      "textures": 12,
+      "geometries": 121,
+      "dpr": 1,
+      "width": 2560,
+      "height": 1440
+    }
+  ],
+  "limitations": [
+    "M4 host results cannot establish M2 iPad Safari or M2 MacBook thermal headroom.",
+    "Development tools, probe overhead, OS/browser scheduling, and other host workload can affect results.",
+    "No synchronized CPU/GPU trace or long thermal soak was collected.",
+    "GPU query windows and frame-interval windows resolve on different schedules; their mean values are not directly subtractable.",
+    "Do not interpret 300 frames without a >33.34ms interval as a long-term worst-case guarantee."
+  ]
+}

@@ -20,6 +20,8 @@ import { PlayControl3D } from "@/components/scene/PlayControl3D";
 import { GlassRibbon } from "./GlassRibbon";
 import { ProjectArtifact } from "./ProjectArtifact";
 import { StudioLight } from "./SceneEnvironment";
+import { SceneMood } from "./SceneMood";
+import { CrystalDiagnostics } from "./CrystalDiagnostics";
 import { OrbitSky } from "./OrbitSky";
 import { OrbitCamera } from "./OrbitCamera";
 import { RIBBON_SHADOW_COUNT } from "./ribbonShadows";
@@ -89,7 +91,10 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
   const up = useMemo(() => new THREE.Vector3(0, 1, 0), []);
   // A fresh visit gets a new arrangement; rerenders and reverse scrolling keep
   // every existing occurrence intact, including its focus target.
-  const [arrangementSeed] = useState(() => crypto.getRandomValues(new Uint32Array(1))[0]);
+  const [arrangementSeed] = useState(() => {
+    if (process.env.NODE_ENV === "development" && new URLSearchParams(window.location.search).has("crystal-review")) return 171017;
+    return crypto.getRandomValues(new Uint32Array(1))[0];
+  });
   const reduced = useRef(false);
   useEffect(() => {
     const query = matchMedia("(prefers-reduced-motion: reduce)");
@@ -154,7 +159,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
       // new pool slot. Modulo IDs stay unique across the contiguous pool.
       const maskId = ((occurrence % slots.length) + slots.length) % slots.length + 1;
       return <group key={occurrence} position={support.position} rotation={[0, support.yaw, 0]} scale={support.scale}>
-        <ProjectArtifact focusSide={focusSide} maskId={maskId} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
+        <ProjectArtifact support={support} focusSide={focusSide} maskId={maskId} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
           compact={compact} onSelect={() => {
             if (selected) window.open(sanctuaryProjects[index].url, "_blank", "noopener,noreferrer");
             else onSelect({ index, turn: placement.turn, occurrence });
@@ -169,16 +174,16 @@ function Content(props: Props) {
   const [skyReady, setSkyReady] = useState(false);
   const handleSkyReady = useCallback(() => setSkyReady(true), []);
   useEffect(() => {
-    // A large desktop already supplies enough screen pixels for this artwork.
-    // Avoid rendering the glass at 4K+ merely because the display is high-DPI.
-    setDpr(Math.min(window.devicePixelRatio, size.width >= 1500 ? 1 : 1.5));
+    // C prioritizes the glass bevels and fine cloud structure at Retina sizes.
+    setDpr(Math.min(window.devicePixelRatio, 1.5));
   }, [setDpr, size.width]);
   const ribbonFrame = useRef<THREE.Group>(null);
   const { active, selection, onSelect } = props;
   const onNavigate = useCallback(() => onSelect(null), [onSelect]);
   const { motion, orbit } = useRibbonMotion({ enabled: active, paused: selection !== null, onUserNavigate: onNavigate });
-  return <>
+  return <SceneMood motion={motion}>
     <OrbitCamera orbit={orbit} />
+    {process.env.NODE_ENV === "development" && <CrystalDiagnostics active={active} />}
     <StudioLight />
     <PlayControl3D theme="cloud" ribbonMotion={motion} ribbonFrame={ribbonFrame} />
     <Suspense fallback={null}>
@@ -189,7 +194,7 @@ function Content(props: Props) {
       </IntroSceneReveal>
       <Ready ready={skyReady} onReady={props.onReady} />
     </Suspense>
-  </>;
+  </SceneMood>;
 }
 
 export function SanctuaryScene(props: Props) {
@@ -212,7 +217,7 @@ export function SanctuaryScene(props: Props) {
       gl.toneMappingExposure = 1.05;
       // Refraction samples the completed sky at roughly CSS-pixel resolution;
       // glass silhouettes still use the full, antialiased canvas resolution.
-      gl.transmissionResolutionScale = 2 / 3;
-      gl.setClearColor("#dceaf0");
+      gl.transmissionResolutionScale = 1;
+      gl.setClearColor("#405478");
     }}><Content {...props} /></Canvas>;
 }

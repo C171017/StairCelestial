@@ -1,0 +1,167 @@
+{
+  "date": "2026-10-04",
+  "preview": "http://localhost:3001/",
+  "reference": "assets/design-directions/c-smoked-crystal.png",
+  "tests": {
+    "unitTests": 102,
+    "unitStatus": "passed",
+    "lint": "passed",
+    "productionBuild": "passed",
+    "diffWhitespace": "passed"
+  },
+  "browser": {
+    "engine": "Chrome / Three.js r175",
+    "gpu": "ANGLE Metal Renderer: Apple M4",
+    "desktopCss": [
+      1440,
+      1000
+    ],
+    "compactCss": [
+      393,
+      852
+    ],
+    "checks": [
+      "Entrance completed with muted automatic entry",
+      "User wheel ascent: userTravel 0 -> 0.65 and mood 0.52 -> 0.65",
+      "Equal wheel descent restored userTravel 0 and mood 0.52",
+      "Reduced motion: normal visit remained at 0 travel, 0 effect time and 0.52 mood across separated observations",
+      "Reduced motion explicit input advanced travel to 0.65 and mood to 0.65 while effect time remained 0",
+      "Removed reduced-motion emulation and confirmed effects resumed",
+      "Desktop and compact portal selection dissolved slab and revealed JazzTree saxophone",
+      "Escape and wheel input returned from selection",
+      "Second activation opened https://jazztree.c171017.com/ in a new tab",
+      "Compact central control changed tetrahedron -> cube -> tetrahedron on play/pause clicks",
+      "No console shader errors observed after final material/environment reload",
+      "Compact page used 4096 cloud atlas; desktop used 8192",
+      "Scene remount recovery of an already-entered audio control was fixed and visually verified",
+      "Night meteor rendered at fixed effect time 18.7 seconds on the separate sky review page"
+    ],
+    "limits": [
+      "Viewport emulation on M4, not A18/A19 hardware or mobile Safari",
+      "No physical touch, thermal soak or audio-fidelity measurement",
+      "Performance samples contain browser/OS scheduling variability; scenes and resolution differ",
+      "Full-page screenshots are used where DevTools viewport scaling would otherwise pad captures"
+    ]
+  },
+  "orbit": {
+    "file": "sky-orbit-continuity.json",
+    "forwardReverseMatchedViews": 360,
+    "reverseMismatches": 0,
+    "fullLoopChangedPixelsPercent": 0,
+    "sameViewAfter60FramesChangedPixelsPercent": 0,
+    "maximumDense32PixelBlockMeanDelta": 1.6,
+    "denseSinglePixelFlag": "One 0.01-degree step changed 0.002617% of sampled pixels by >15/255; no whole-layer order switch."
+  },
+  "timingObservations": {
+    "desktopSunset": {
+      "measurements": {
+        "frames": 300,
+        "meanMs": 14.927000000001863,
+        "p95Ms": 20.299999999813735,
+        "maxMs": 26.40000000037253,
+        "meanDrawCalls": 131,
+        "meanTriangles": 155332,
+        "textures": 10,
+        "geometries": 77,
+        "width": 1440,
+        "height": 1000,
+        "dpr": 1
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+      "sceneMood": "0.52000",
+      "note": "Development-mode browser frame intervals, not isolated GPU timing or physical-phone performance."
+    },
+    "desktopNight": {
+      "measurements": {
+        "frames": 300,
+        "meanMs": 13.33366666666853,
+        "p95Ms": 14.200000000186265,
+        "maxMs": 14.5,
+        "meanDrawCalls": 131,
+        "meanTriangles": 155332,
+        "textures": 10,
+        "geometries": 77,
+        "width": 1440,
+        "height": 1000,
+        "dpr": 1
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+      "sceneMood": "1.00000",
+      "note": "Development-mode browser frame intervals, not isolated GPU timing or physical-phone performance."
+    },
+    "compactFocus": {
+      "measurements": {
+        "frames": 300,
+        "meanMs": 33.44166666666667,
+        "p95Ms": 60.30000000074506,
+        "maxMs": 123.09999999962747,
+        "meanDrawCalls": 64,
+        "meanTriangles": 73208,
+        "textures": 10,
+        "geometries": 91,
+        "width": 393,
+        "height": 852,
+        "dpr": 1
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+      "sceneMood": "0.51878",
+      "note": "Development-mode browser frame intervals, not isolated GPU timing or physical-phone performance."
+    },
+    "nativeDprOverview": {
+      "measurements": {
+        "frames": 300,
+        "meanMs": 24.27900000000062,
+        "p95Ms": 37.19999999925494,
+        "maxMs": 64.20000000018626,
+        "meanDrawCalls": 148.20666666666668,
+        "meanTriangles": 218955.38666666666,
+        "textures": 10,
+        "geometries": 104,
+        "width": 1920,
+        "height": 1900,
+        "dpr": 1.5
+      },
+      "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+      "sceneMood": "0.00000",
+      "note": "Normal live overview at DPR 1.5 with accumulated navigation; browser/OS scheduling included. Not comparable to frozen-view samples."
+    }
+  },
+  "optics": {
+    "reflectionCapture": "Three finite 512-face HDR PMREM environments from actual layered clouds and directional sky, blended in linear HDR",
+    "reflectionVerification": "All six sampled base faces have nonzero radiance; scene.environment is bound to blend target",
+    "limitations": [
+      "Cloud lighting is an artistic remap of baked RGB into highlights and shadows, not volumetric relighting",
+      "Screen-space transmission does not fully model nested glass or exact portal reflections",
+      "Contact occlusion and warm glints approximate local reflection/caustics",
+      "The generated C image remains art direction, not a pixel-identical real-time reproduction"
+    ]
+  },
+  "timeOfDay": {
+    "driver": "Only eased user input displacement; idle cruise excluded",
+    "initialMood": 0.52,
+    "travelSpanTurns": 5,
+    "endpointBehavior": "Saturating target consumes deltas from unwrapped raw travel so reversals do not require undoing invisible endpoint overscroll"
+  },
+  "chatSpeed": "Actual chat Fast-mode setting was not verified or altered.",
+  "deployment": "Local only; original checkout not modified; no merge or deploy.",
+  "screenshots": [
+    "desktop-daylight.jpg",
+    "desktop-sunset.jpg",
+    "desktop-night.jpg",
+    "mobile-sunset.jpg",
+    "mobile-focus.jpg",
+    "night-meteor.jpg",
+    "live-overview.jpg"
+  ],
+  "source": {
+    "baseCommit": "2c044201512d6b96d37400f5f11e582be2e0415b",
+    "finalSha256": {
+      "src/lib/sceneMood.ts": "b71d8419c6e2f072137e7939de800580e6affc8af40d1219bc740b82663287cf",
+      "src/lib/ribbonMotion.ts": "b20ee9ca70c9f9497a8cf5957faa6ede79ba1eaacb9e405ad45920ef3f6a9a63",
+      "src/components/sanctuary/SceneEnvironment.tsx": "71e089e2a19b2119b479638f9f866748b64b06d64adc47743675df88e1b78d2c",
+      "src/components/sanctuary/GlassRibbon.tsx": "5b3147b97b0ef58a23f27a318e46c43bc893ea7de69a5ad90b145260cdac59dd",
+      "src/components/sanctuary/doorMaterials.ts": "1d774f1695dfff8c6c9fda2cd975cd1e535f8359cdda25b1200ee6b44cdb5bf6",
+      "src/components/scene/PlayControl3D.tsx": "14a506501c6237bfbcb2b893d53b35dcce3987bbfbafe314fc0ef21aa90a312d"
+    }
+  }
+}

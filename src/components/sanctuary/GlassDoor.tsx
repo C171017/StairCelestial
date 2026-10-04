@@ -6,16 +6,21 @@ import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { doorModelUrl, type DoorStudy } from "@/lib/doorStudies";
 import { setLocalMaterialOpacity } from "@/lib/materialReveal";
-import { createDoorMaterials } from "./doorMaterials";
+import { createDoorFootGeometry } from "@/lib/doorFoot";
+import type { DoorSupport } from "@/lib/doorSupport";
+import { createDoorMaterials, updateDoorMaterials } from "./doorMaterials";
+import { useSceneMood } from "./SceneMood";
 
 /** A stationary colored glass slab that dissolves inside its ceramic surround. */
-export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled = true, openingProgress }: {
+export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled = true, openingProgress, support }: {
   study: DoorStudy; amount?: number; dimmed?: boolean;
   onSelect?: () => void; enabled?: boolean;
   openingProgress?: RefObject<number>;
+  support?: DoorSupport;
 }) {
   const { scene } = useGLTF(doorModelUrl(study));
-  const { model, slab, materials } = useMemo(() => {
+  const mood = useSceneMood();
+  const { model, slab, materials, finishes, footGeometry } = useMemo(() => {
     const model = scene.clone(true);
     let slab: THREE.Object3D | undefined;
     const materials: { material: THREE.Material; dissolves: boolean; opacity: number }[] = [];
@@ -33,8 +38,14 @@ export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled
       else if (object.name.startsWith("Slab_Glass")) mesh.material = finishes.glass;
       else mesh.material = finishes.gold;
     });
-    return { model, slab, materials };
-  }, [scene, study]);
+    const footGeometry = support ? createDoorFootGeometry(model, support) : undefined;
+    if (footGeometry) {
+      const foot = new THREE.Mesh(footGeometry, finishes.ceramic);
+      foot.name = "Fixed_FittedFrameFillet";
+      model.add(foot);
+    }
+    return { model, slab, materials, finishes, footGeometry };
+  }, [scene, study, support]);
   const visibility = useRef(1);
   const travel = useRef(0);
   const reduced = useRef(false);
@@ -46,7 +57,9 @@ export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled
     return () => { query.removeEventListener("change", update); document.body.style.cursor = ""; };
   }, []);
   useEffect(() => () => materials.forEach(({ material }) => material.dispose()), [materials]);
+  useEffect(() => () => footGeometry?.dispose(), [footGeometry]);
   useFrame((_, dt) => {
+    updateDoorMaterials(finishes, mood.current);
     const delta = Math.min(dt, 0.05);
     travel.current = reduced.current ? amount : THREE.MathUtils.damp(travel.current, amount, 7, delta);
     if (Math.abs(travel.current - amount) < 0.001) travel.current = amount;

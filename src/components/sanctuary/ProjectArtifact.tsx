@@ -6,12 +6,14 @@ import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { SanctuaryProject } from "@/lib/sanctuaryContent";
 import type { DoorStudy } from "@/lib/doorStudies";
+import type { DoorSupport } from "@/lib/doorSupport";
 import { interactiveMeshRaycast } from "@/lib/interactiveMeshRaycast";
 import { GlassDoor } from "./GlassDoor";
 import { ProjectSculpture } from "./ProjectSculpture";
 
-export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed, maskId, focusSide = 1 }: {
+export function ProjectArtifact({ study, project, selected, enabled, onSelect, compact, dimmed, maskId, focusSide = 1, support }: {
   focusSide?: 1 | -1;
+  support?: DoorSupport;
   study: DoorStudy; project: SanctuaryProject; selected: boolean; enabled: boolean; compact: boolean; dimmed: boolean; onSelect: () => void; maskId: number;
 }) {
   const sculpture = useRef<THREE.Group>(null);
@@ -38,7 +40,7 @@ export function ProjectArtifact({ study, project, selected, enabled, onSelect, c
   return (
     <group>
       <group ref={sculpture}>
-        <GlassDoor study={study} amount={selected ? 1 : 0} dimmed={dimmed} />
+        <GlassDoor study={study} amount={selected ? 1 : 0} dimmed={dimmed} support={support} />
         <Suspense fallback={null}>
           <ProjectSculpture focusSide={focusSide} study={study} project={project} selected={selected} maskId={maskId} />
         </Suspense>

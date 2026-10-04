@@ -1,5 +1,7 @@
 # Fixed cloud sky — October 3, 2026
 
+> **Version C, October 4:** This isolated checkout implements the smoked-crystal travel/lighting version. [CRYSTAL-C-IMPLEMENTATION.md](CRYSTAL-C-IMPLEMENTATION.md) supersedes the daylight-only lighting, fixed time of day, disabled homepage effects and old DPR limits below. The existing motion, focus and fixed cloud-order architecture is retained.
+
 The homepage now keeps the sky composition unchanged. Scrolling and idle camera orbit change only the view. This supersedes the moving-cloud and idle-only sorting implementation described in the historical notes below.
 
 `CloudField.tsx` retains the original 64 bank and 16 wisp image layers at their time-zero positions, scales, orientations, opacity, and haze. `cloudField.ts` assigns unique radial painter priorities once, independent of the viewing camera. Cloud drift, recycling, deformation, and the opaque-core/transparent-edge split are removed from the active renderer. Every cloud uses one transparent pass with depth testing/writing disabled inside the separate sky target. This is a fixed artistic layer composition, not volumetric cloud intersection rendering. The homepage also pauses meteors and glints. Chosen artwork is published once after loading, without a later WebP-to-KTX replacement. The intro waits for both the final cloud artwork and sky plate (or settled loading fallbacks) before revealing the scene.

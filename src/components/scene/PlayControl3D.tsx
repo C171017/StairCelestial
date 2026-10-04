@@ -525,7 +525,10 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
     const pose = flyPoseRef.current;
     if (cloud) {
       const elapsed = awaitStartMsRef.current > 0
-        ? Math.max(0, (performance.now() - awaitStartMsRef.current) / 1000) : 0;
+        ? Math.max(0, (performance.now() - awaitStartMsRef.current) / 1000)
+        // A Canvas remount after viewport/asset recovery can retain the entered
+        // session. Restore the finished control instead of an invisible iris.
+        : phase === "active" ? CONTROL_ENTRANCE_SECONDS : 0;
       const entrance = sampleControlEntrance(elapsed, reducedMotionRef.current);
       entranceRef.current = entrance;
       pose.scale = THREE.MathUtils.lerp(introScaleRef.current, dockScaleRef.current, entrance.travel);

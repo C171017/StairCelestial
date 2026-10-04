@@ -49,6 +49,16 @@ The glass ribbon and social tokens are authored in code. The surrounding sky com
 
 ## Contributor guidance
 
+### Deferred visual direction — October 4, 2026
+
+The device target was subsequently raised to M4-class or newer computers and A18/A19-class mobile devices. Implementation is paused at the owner's request while they compare [four generated visual directions](../assets/design-directions/README.md). The first unfinished implementation patch is preserved separately; the active scene remains at its baseline. Do not select or implement a new direction before the owner responds to the previews.
+
+The initial brief requested a more tactile, polished finish within an M2-class device budget; the newer target above supersedes that budget. The [visual polish review](VISUAL-POLISH-REVIEW.md) prioritizes believable door-to-ribbon contact, distinct porcelain/metal/glass finishes, coherent lighting, and controlled cloud-resolution trials. These are proposed changes, not an updated claim about the current renderer.
+
+For a later phase, upward travel may gradually move daylight toward dusk/night and stars, while descending restores daylight; distant city lights are optional. Preserve separate control of sky, clouds, stars, lighting, and reflections so future transitions remain coherent. Do not implement this progression yet. The full design constraints and unresolved idle-travel choice are recorded in the review.
+
+### Implementation guidance
+
 Read [ARCHITECTURE.md](ARCHITECTURE.md) before editing the scene. Keep performance-sensitive motion outside React state updates per frame, preserve finite geometry, and dispose owned resources. Run the relevant motion checks and production build after substantive changes, then record the actual results in [WEB-PHASES.md](WEB-PHASES.md).
 
 Before sky or cloud asset work, read [SKY-IMPLEMENTATION.md](SKY-IMPLEMENTATION.md) for the current renderer and [SKY-ASSET-NOTES.md](SKY-ASSET-NOTES.md) for observed upscaling, alpha, compression, and lifecycle pitfalls. [SKY-DESIGN-PLAN.md](SKY-DESIGN-PLAN.md) retains the original scored options; option A was selected.

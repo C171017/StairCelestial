@@ -9,9 +9,11 @@ import { SkyEffects } from "./SkyEffects";
 import type { RefObject } from "react";
 import { exportSkyMaster } from "./exportSky";
 import { CleanSkyPlate } from "./CleanSkyPlate";
+import { SkyStars } from "./SkyStars";
+import { registerSkyReflectionSource } from "./skyReflectionSource";
 
 export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady }: { paused?:boolean;timeOverride?:number|null;exporter?:RefObject<((progress:(value:string)=>void)=>Promise<void>)|null>;onReady?:()=>void }) {
-  const {gl,size,camera} = useThree();
+  const {gl,size,camera,scene:foregroundScene} = useThree();
   const [cloudsReady, setCloudsReady] = useState(false);
   const [plateReady, setPlateReady] = useState(false);
   const handleCloudsReady = useCallback(() => setCloudsReady(true), []);
@@ -24,9 +26,12 @@ export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady 
   // Keep the portal container stable through Fast Refresh and effect replay.
   const [skyScene] = useState(()=>new THREE.Scene());
   const [skyCamera] = useState(()=>new THREE.PerspectiveCamera());
-  // Cloud artwork retains its source resolution. The composited sky needs one
-  // sample per CSS pixel on large displays, while narrow views retain 1.5x.
-  const ratio=Math.min(gl.getPixelRatio(),size.width<700?1.5:1);
+  useEffect(() => registerSkyReflectionSource(foregroundScene, {
+    scene: skyScene, ready: cloudsReady && plateReady,
+  }), [foregroundScene, skyScene, cloudsReady, plateReady]);
+  // Version C prioritizes the fine cloud edges and reflected sky detail on
+  // desktop as well as mobile. Resource size remains bounded by the DPR cap.
+  const ratio=Math.min(gl.getPixelRatio(),1.5);
   const target=useFBO(Math.round(size.width*ratio),Math.round(size.height*ratio),{
     type:THREE.UnsignedByteType,depthBuffer:true,stencilBuffer:false,
   });
@@ -92,7 +97,8 @@ export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady 
   return <>
     {createPortal(<group ref={group}>
       <CleanSkyPlate onReady={handlePlateReady}/>
-      <SkyEffects active={!paused} time={time}/>
+      <SkyStars/>
+      <SkyEffects active={!paused || timeOverride !== null} time={time}/>
       <Suspense fallback={null}><CloudField onReady={handleCloudsReady}/></Suspense>
     </group>,skyScene,{camera:skyCamera})}
     <mesh renderOrder={-3000} frustumCulled={false} raycast={()=>null}>

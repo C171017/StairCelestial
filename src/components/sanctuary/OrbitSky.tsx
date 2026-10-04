@@ -2,7 +2,7 @@
 
 import { LayeredSky } from "./LayeredSky";
 
-/** A fixed environment: only the viewer moves, including across complete orbits. */
+/** Fixed cloud geometry with reversible travel-driven light and rare meteors. */
 export function OrbitSky({ onReady }: { onReady?: () => void } = {}) {
-  return <LayeredSky paused onReady={onReady}/>;
+  return <LayeredSky onReady={onReady}/>;
 }

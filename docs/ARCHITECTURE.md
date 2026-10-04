@@ -1,5 +1,7 @@
 # Sanctuary architecture
 
+> **Version C, October 4:** This isolated checkout implements the smoked-crystal travel/lighting version. [CRYSTAL-C-IMPLEMENTATION.md](CRYSTAL-C-IMPLEMENTATION.md) supersedes the daylight-only lighting, fixed time of day, disabled homepage effects and old DPR limits below. The existing motion, focus and fixed cloud-order architecture is retained.
+
 This document describes the active glass-ribbon homepage. The old staircase, rectangular portals, planets, and former staircase camera rig are legacy. Six new irregular glass-door studies are mounted on the ribbon.
 
 ## Entry and component map

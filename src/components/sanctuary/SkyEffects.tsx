@@ -3,16 +3,20 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
-import { advanceSkyEffectsTime, sampleSkyEffect, SKY_EFFECTS, type SkyEffectSample } from "@/lib/skyEffects";
+import { useSceneMood } from "./SceneMood";
 
-const ignoreRaycast = () => null;
+const PERIOD = 192;
+const METEORS = [
+  { start: 18, duration: 1.9, azimuth: Math.PI - 0.34, height: 70, tilt: -0.38 },
+  { start: 78, duration: 1.7, azimuth: Math.PI * 0.43, height: 93, tilt: -0.31 },
+  { start: 141, duration: 2.0, azimuth: Math.PI * 1.59, height: 62, tilt: -0.43 },
+] as const;
 
 const vertexShader = `
   varying vec2 effectUv;
   void main() {
     effectUv = uv;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    gl_Position.z = gl_Position.w * 0.999999;
   }
 `;
 
@@ -24,44 +28,27 @@ const meteorShader = `
     float head = 0.29 + progress * 0.64;
     float behind = head - effectUv.x;
     float y = (effectUv.y - 0.5) * 2.0;
-    float tail = smoothstep(0.0, 0.015, behind)
-      * (1.0 - smoothstep(0.025, 0.29, behind));
-    // The sky is bright daylight. A roughly 2–3 px core and a warm, soft halo
-    // remain readable at normal page size without a flashing exposure change.
-    float core = exp(-y * y * 70.0) * tail;
-    float halo = exp(-y * y * 13.0) * tail * 0.34;
-    vec2 tip = vec2((effectUv.x - head) * 30.0, y);
-    float headGlow = exp(-dot(tip, tip) * 11.0);
+    float tail = smoothstep(0.0, 0.012, behind)
+      * (1.0 - smoothstep(0.02, 0.29, behind));
+    float core = exp(-y * y * 95.0) * tail;
+    float halo = exp(-y * y * 12.0) * tail * 0.13;
+    vec2 tip = vec2((effectUv.x - head) * 36.0, y);
+    float headGlow = exp(-dot(tip, tip) * 12.0);
     float alpha = clamp(core + halo + headGlow, 0.0, 1.0) * opacity;
-    vec3 color = mix(vec3(1.0, 0.73, 0.34), vec3(1.0, 0.99, 0.94),
+    vec3 color = mix(vec3(0.50, 0.67, 1.0), vec3(1.0, 0.94, 0.79),
       clamp(core + headGlow, 0.0, 1.0));
     gl_FragColor = vec4(color, alpha);
     #include <colorspace_fragment>
   }
 `;
 
-const glintShader = `
-  uniform float opacity;
-  varying vec2 effectUv;
-  void main() {
-    vec2 p = (effectUv - 0.5) * 2.0;
-    float halo = exp(-dot(p, p) * 14.0) * 0.4;
-    float horizontal = exp(-p.y * p.y * 260.0 - abs(p.x) * 6.5);
-    float vertical = exp(-p.x * p.x * 260.0 - abs(p.y) * 6.5);
-    float edge = 1.0 - smoothstep(0.65, 1.0, length(p));
-    float alpha = clamp(halo + horizontal + vertical, 0.0, 1.0) * opacity * edge;
-    gl_FragColor = vec4(vec3(1.0, 0.97, 0.85), alpha);
-    #include <colorspace_fragment>
-  }
-`;
-
-/** World-anchored meteors and slow glints, drawn behind the cloud layers. */
+/** Three short, quiet meteor passes per 192 seconds across the entire sky. */
 export function SkyEffects({ active = true, time }: { active?: boolean; time?: RefObject<number> }) {
+  const mood = useSceneMood();
   const group = useRef<THREE.Group>(null);
   const elapsed = useRef(0);
   const paused = useRef(true);
   const skipFrame = useRef(true);
-  const sample = useRef<SkyEffectSample>({ progress: 0, opacity: 0 });
   const resources = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(1, 1);
     const rotation = new THREE.Matrix4();
@@ -70,25 +57,24 @@ export function SkyEffects({ active = true, time }: { active?: boolean; time?: R
     const outward = new THREE.Vector3();
     const tilt = new THREE.Quaternion();
     const zAxis = new THREE.Vector3(0, 0, 1);
-    const items = SKY_EFFECTS.map((effect) => {
+    const items = METEORS.map(effect => {
       const material = new THREE.ShaderMaterial({
-        transparent: true, depthWrite: false, depthTest: true,
+        transparent: true, depthWrite: false, depthTest: false,
         side: THREE.DoubleSide, toneMapped: false,
         uniforms: { progress: { value: 0 }, opacity: { value: 0 } },
-        vertexShader,
-        fragmentShader: effect.kind === "meteor" ? meteorShader : glintShader,
+        vertexShader, fragmentShader: meteorShader,
       });
       const mesh = new THREE.Mesh(geometry, material);
-      const radius = 220;
+      const radius = 320;
       mesh.position.set(Math.sin(effect.azimuth) * radius, effect.height, Math.cos(effect.azimuth) * radius);
       right.set(Math.cos(effect.azimuth), 0, -Math.sin(effect.azimuth));
       outward.set(Math.sin(effect.azimuth), 0, Math.cos(effect.azimuth));
       rotation.makeBasis(right, up, outward);
       mesh.quaternion.setFromRotationMatrix(rotation).multiply(tilt.setFromAxisAngle(zAxis, effect.tilt));
-      mesh.scale.set(effect.kind === "meteor" ? 60 : 3, effect.kind === "meteor" ? 4 : 3, 1);
+      mesh.scale.set(70, 1.65, 1);
       mesh.visible = false;
       mesh.renderOrder = -90;
-      mesh.raycast = ignoreRaycast;
+      mesh.raycast = () => null;
       return { effect, material, mesh };
     });
     return { geometry, items };
@@ -117,21 +103,22 @@ export function SkyEffects({ active = true, time }: { active?: boolean; time?: R
 
   useFrame(({ gl }, delta) => {
     if (!group.current) return;
-    group.current.visible = active && !paused.current;
+    const visibility = Math.pow(mood.current.stars, 0.65);
+    group.current.visible = active && !paused.current && visibility > 0.01;
     if (!group.current.visible) return;
-    if (skipFrame.current) {
-      skipFrame.current = false;
-      return;
-    }
-    elapsed.current = time ? time.current : advanceSkyEffectsTime(elapsed.current, delta, false);
-    if (process.env.NODE_ENV === "development") gl.domElement.dataset.skyEffectsPhase = elapsed.current.toFixed(3);
+    if (skipFrame.current) { skipFrame.current = false; return; }
+    elapsed.current = time ? time.current : elapsed.current + Math.max(0, Math.min(delta, 0.1));
+    const phase = ((elapsed.current % PERIOD) + PERIOD) % PERIOD;
+    if (process.env.NODE_ENV === "development") gl.domElement.dataset.skyEffectsPhase = phase.toFixed(3);
     for (const { effect, material, mesh } of resources.items) {
-      sampleSkyEffect(effect, elapsed.current, sample.current);
-      mesh.visible = sample.current.opacity > 0;
-      material.uniforms.progress.value = sample.current.progress;
-      material.uniforms.opacity.value = sample.current.opacity;
+      const progress = (phase - effect.start) / effect.duration;
+      const envelope = progress <= 0 || progress >= 1 ? 0
+        : THREE.MathUtils.smoothstep(progress, 0, 0.18) * (1 - THREE.MathUtils.smoothstep(progress, 0.48, 1));
+      mesh.visible = envelope > 0;
+      material.uniforms.progress.value = THREE.MathUtils.clamp(progress, 0, 1);
+      material.uniforms.opacity.value = envelope * visibility * 0.75;
     }
-  });
+  }, -0.7);
 
   return <group ref={group} visible={false} name="sky-effects">
     {resources.items.map(({ mesh }, i) => <primitive key={i} object={mesh} dispose={null} />)}

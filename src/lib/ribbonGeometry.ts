@@ -14,7 +14,10 @@ export function createRibbonGeometry(radius: number, width: number) {
   const cross: [number, number][] = [];
   const halfWidth = width / 2;
   const halfHeight = 0.105;
-  const bevel = 0.085;
+  // A restrained rounded bevel leaves a real, readable 0.12-unit sidewall.
+  // The former nearly semicircular edge read as a metal tube in reflection.
+  // Keep the +0.105 top plane: door supports use this physical contact height.
+  const bevel = 0.045;
   for (let corner = 0; corner < 4; corner++) {
     const signX = corner === 0 || corner === 3 ? 1 : -1;
     const signY = corner < 2 ? 1 : -1;
