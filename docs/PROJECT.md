@@ -33,9 +33,9 @@ Both social destinations are intentionally placeholders for this pass. Keep `git
 
 ## Asset direction
 
-The active assets are six original pearl-ceramic thresholds with clear glass leaves: Melt, Seed, Fault, Hourglass, Cloud, and Orbit. Their ivory, sage, ice-blue, blush, cream, and lavender tints share the same glazed finish, champagne-gold lining, and warm inner light. The palette lives in `src/lib/doorPalette.json`. Source and builder are `blender/door-studies.blend` and `blender/build_door_studies.py`; portable GLBs live in `public/models/doors/`. The prior sculptures and original Blender scenes are preserved.
+The active assets are six original pearl-ceramic surrounds with semitransparent colored glass slabs: Melt, Seed, Fault, Hourglass, Cloud, and Orbit. Their ivory, sage, ice-blue, blush, cream, and lavender tints share the same glazed finish, champagne-gold lining, and warm inner light. The palette lives in `src/lib/doorPalette.json`. Source and builder are `blender/door-studies.blend` and `blender/build_door_studies.py`; portable GLBs live in `public/models/doors/`. The prior sculptures and original Blender scenes are preserved.
 
-`/door-studies` is a separate comparison room with numbered labels, all-six and individual views, a turn control, and reversible hinge/dissolve experiments. The text-free homepage and existing entrance remain intact. Shape selection is the purpose of this pass; movement is exploratory.
+`/door-studies` is a separate comparison room with numbered labels, all-six and individual views, a turn control, and reversible dissolve experiments. The text-free homepage and existing entrance remain intact. The slabs remain stationary within their frames and dissolve on selection.
 
 The glass ribbon and social tokens are authored in code. The surrounding sky now combines a cloud-free static plate with independently flowing cumulus and cirrus, plus world-anchored shooting stars. Four individually upscaled 4K banks form a compressed 8K desktop atlas and 4K compact atlas, with complete WebP fallbacks. The 24K rendered reference and original masters live outside public assets. The separate door-study room retains its flat 4K backdrop. Keep textures and geometry finite; imply infinity through recycling, composition, and offscreen geometry.
 

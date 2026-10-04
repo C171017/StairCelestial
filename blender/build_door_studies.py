@@ -1,6 +1,6 @@
 """Six pearl-ceramic thresholds. Run with Blender MCP or Blender's Python.
 
-Creates an independent scene, preserves existing scenes, and exports each rig
+Creates an independent scene, preserves existing scenes, and exports each slab
 at the origin before arranging all six in an inspection studio.
 """
 import bpy
@@ -122,13 +122,13 @@ def frame_details(points, inside):
     for side,suffix in [(-1,'Front'),(1,'Back')]:
         line('Fixed_InnerLight_'+suffix,[(x,side*.141,z) for x,z in between(.89)],.005,inner_light,root,True)
 
-def slab(points, mat, pivot):
+def slab(points, mat, parent):
     n=len(points);depth=.045
     verts=[(x,y,z) for y in (-depth,depth) for x,z in points]
     faces=[tuple(range(n-1,-1,-1)),tuple(range(n,2*n))]
     faces += [(i,(i+1)%n,(i+1)%n+n,i+n) for i in range(n)]
-    obj=mesh('Moving_GlassLeaf',verts,faces,mat,pivot,.022)
-    obj['door_role']='leaf'
+    obj=mesh('Slab_Glass',verts,faces,mat,parent,.022)
+    obj['door_role']='surface'
     return obj
 
 def line(name, points, radius, mat, parent, cyclic=False):
@@ -140,21 +140,13 @@ def line(name, points, radius, mat, parent, cyclic=False):
     obj=bpy.data.objects.new(name,data);collection.objects.link(obj)
     return add(obj,name,mat,parent)
 
-def left_at(points, z):
-    intersections=[]
-    for i,(x1,z1) in enumerate(points):
-        x2,z2=points[(i+1)%len(points)]
-        if min(z1,z2)<=z<max(z1,z2):
-            intersections.append(x1+(x2-x1)*(z-z1)/(z2-z1))
-    return min(intersections) if intersections else min(x for x,_ in points)
-
 studies = [
-    dict(id='melt', color=(.64,.84,.82), points=[(-.72,.12),(.53,.12),(.72,.48),(.58,1.30),(.96,2.54),(.64,3.22),(-.10,3.40),(-.63,2.95),(-.83,2.10),(-.60,1.12)], handle=(.48,1.40)),
-    dict(id='seed', color=(.76,.84,.60), points=[(-.25,.12),(.55,.48),(.95,1.25),(1.04,2.14),(.70,3.52),(-.06,3.08),(-.76,2.40),(-.95,1.58),(-.73,.70)], handle=(.50,1.46)),
-    dict(id='fault', color=(.66,.76,.90), points=[(-.94,.12),(.60,.12),(1.01,1.09),(.59,1.39),(1.02,3.40),(-.20,3.10),(-1.01,2.43),(-.69,1.39),(-1.02,.92)], handle=(.41,1.95), angular=True),
-    dict(id='hourglass', color=(.83,.69,.85), points=[(-.87,.12),(.60,.12),(1.01,.46),(.65,1.12),(.17,1.62),(.36,2.10),(.80,2.72),(.43,3.28),(-.22,3.39),(-.94,2.98),(-.54,2.23),(-.30,1.61),(-.78,.94)], handle=(.18,2.28)),
-    dict(id='cloud', color=(.86,.78,.62), points=[(-.91,.15),(.33,.12),(.77,.48),(1.26,.91),(1.32,1.50),(.93,1.84),(1.02,2.42),(.54,2.85),(-.02,2.65),(-.58,2.94),(-1.14,2.62),(-1.12,2.13),(-1.47,1.70),(-1.30,1.04),(-.91,.78)], handle=(.87,1.31)),
-    dict(id='orbit', color=(.66,.81,.90), points=[(-.47,.14),(.39,.24),(1.08,.88),(1.23,1.84),(.82,2.65),(.08,3.14),(-.67,3.03),(-1.20,2.34),(-1.31,1.40),(-.99,.65)], handle=(.81,1.55), center_pivot=True),
+    dict(id='melt', color=(.64,.84,.82), points=[(-.72,.12),(.53,.12),(.72,.48),(.58,1.30),(.96,2.54),(.64,3.22),(-.10,3.40),(-.63,2.95),(-.83,2.10),(-.60,1.12)]),
+    dict(id='seed', color=(.76,.84,.60), points=[(-.25,.12),(.55,.48),(.95,1.25),(1.04,2.14),(.70,3.52),(-.06,3.08),(-.76,2.40),(-.95,1.58),(-.73,.70)]),
+    dict(id='fault', color=(.66,.76,.90), points=[(-.94,.12),(.60,.12),(1.01,1.09),(.59,1.39),(1.02,3.40),(-.20,3.10),(-1.01,2.43),(-.69,1.39),(-1.02,.92)], angular=True),
+    dict(id='hourglass', color=(.83,.69,.85), points=[(-.87,.12),(.60,.12),(1.01,.46),(.65,1.12),(.17,1.62),(.36,2.10),(.80,2.72),(.43,3.28),(-.22,3.39),(-.94,2.98),(-.54,2.23),(-.30,1.61),(-.78,.94)]),
+    dict(id='cloud', color=(.86,.78,.62), points=[(-.91,.15),(.33,.12),(.77,.48),(1.26,.91),(1.32,1.50),(.93,1.84),(1.02,2.42),(.54,2.85),(-.02,2.65),(-.58,2.94),(-1.14,2.62),(-1.12,2.13),(-1.47,1.70),(-1.30,1.04),(-.91,.78)]),
+    dict(id='orbit', color=(.66,.81,.90), points=[(-.47,.14),(.39,.24),(1.08,.88),(1.23,1.84),(.82,2.65),(.08,3.14),(-.67,3.03),(-1.20,2.34),(-1.31,1.40),(-.99,.65)]),
 ]
 report={}
 for spec in studies:
@@ -174,15 +166,13 @@ for spec in studies:
     pane=material('Door_'+name+'_LeafGlass',(1,1,1),1,rough=.055)
     ring(points,inner,frame)
     frame_details(points,inner)
-    pivot=bpy.data.objects.new('DoorPivot',None);collection.objects.link(pivot)
-    pivot.location=(0 if spec.get('center_pivot') else min(x for x,_ in inner)-.035,0,cy)
+    # A centered stationary slab group supports visibility only, with no hinge rig.
+    slab_group=bpy.data.objects.new('GlassSlab',None);collection.objects.link(slab_group)
+    slab_group.location=(0,0,cy)
     bpy.context.view_layer.update()
-    add(pivot,'DoorPivot',parent=root);pivot['door_role']='pivot'
-    slab(leaf,pane,pivot)
-    line('Moving_PolishedEdge',[(x,-.048,z) for x,z in leaf],.009,pane,pivot,True)
-    # The leaf retains an invisible animation pivot; no exposed hinge hardware.
-    hx,hz=spec['handle']
-    line('Moving_Pull',[(hx,-.06,hz-.14),(hx+.045,-.17,hz-.09),(hx+.05,-.18,hz+.13),(hx+.02,-.06,hz+.19)],.024,gold,pivot)
+    add(slab_group,'GlassSlab',parent=root);slab_group['door_role']='slab'
+    slab(leaf,pane,slab_group)
+    line('Slab_PolishedEdge',[(x,-.048,z) for x,z in leaf],.009,pane,slab_group,True)
     bpy.context.view_layer.update()
     bpy.ops.object.select_all(action='DESELECT')
     for o in assets[root.name]:o.select_set(True)
@@ -190,7 +180,7 @@ for spec in studies:
     path=os.path.join(OUT,name+'.glb')
     bpy.ops.export_scene.gltf(filepath=path,export_format='GLB',use_selection=True,use_active_scene=True,
         export_yup=True,export_apply=True,export_extras=True,export_cameras=False,export_lights=False)
-    report[name]={'bytes':os.path.getsize(path),'height':round(height,3),'objects':len(assets[root.name]),'pivot':list(pivot.location)}
+    report[name]={'bytes':os.path.getsize(path),'height':round(height,3),'objects':len(assets[root.name]),'slab_center':list(slab_group.location)}
 
 # An irregular studio constellation, with different depths and facing directions.
 studio_poses = [

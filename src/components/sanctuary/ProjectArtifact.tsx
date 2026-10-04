@@ -37,7 +37,7 @@ export function ProjectArtifact({ study, project, selected, enabled, onSelect, c
   return (
     <group>
       <group ref={sculpture}>
-        <GlassDoor study={study} amount={selected ? 1 : 0} opening="dissolve" dimmed={dimmed} />
+        <GlassDoor study={study} amount={selected ? 1 : 0} dimmed={dimmed} />
         <Suspense fallback={null}>
           <ProjectSculpture study={study} project={project} selected={selected} maskId={maskId} />
         </Suspense>

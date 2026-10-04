@@ -11,7 +11,7 @@ export function getDoorAperture(scene: THREE.Object3D): DoorAperture {
   const bounds = new THREE.Box2();
   scene.traverse(object => {
     const mesh = object as THREE.Mesh;
-    if (!mesh.isMesh || !mesh.name.startsWith("Moving_GlassLeaf")) return;
+    if (!mesh.isMesh || !mesh.name.startsWith("Slab_Glass")) return;
     const transform = rootInverse.clone().multiply(mesh.matrixWorld);
     const positions = mesh.geometry.getAttribute("position");
     const index = mesh.geometry.index;

@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
-import { doorStudies, type DoorOpening } from "@/lib/doorStudies";
+import { doorStudies } from "@/lib/doorStudies";
 import palette from "@/lib/doorPalette.json";
 
 const Scene = dynamic(() => import("./DoorStudyScene").then(m => m.DoorStudyScene), { ssr: false });
@@ -19,7 +19,6 @@ class StudyBoundary extends Component<{ children: ReactNode; onError: () => void
 
 export function DoorStudyExperience() {
   const [selected, setSelected] = useState<number | null>(null);
-  const [opening, setOpening] = useState<DoorOpening>("hinge");
   const [amount, setAmount] = useState(0);
   const [angle, setAngle] = useState(0);
   const [ready, setReady] = useState(false);
@@ -37,10 +36,14 @@ export function DoorStudyExperience() {
     return () => window.removeEventListener("keydown", key);
   }, []);
   function choose(index: number | null) { setSelected(index); setAmount(0); setAngle(0); }
+  function selectSlab(index: number) {
+    if (selected === index) setAmount(value => value === 100 ? 0 : 100);
+    else choose(index);
+  }
   const study = selected === null ? null : doorStudies[selected];
   return <main className="door-study-room">
-    <div className="door-study-canvas" aria-label="Six pearl ceramic and champagne gold doors in a cloud gallery">
-      <StudyBoundary onError={onError}><Scene selected={selected} amount={amount} opening={opening} angle={angle} onSelect={choose} onReady={onReady} /></StudyBoundary>
+    <div className="door-study-canvas" aria-label="Six colored glass slabs in pearl ceramic and champagne gold surrounds">
+      <StudyBoundary onError={onError}><Scene selected={selected} amount={amount} angle={angle} onSelect={selectSlab} onReady={onReady} /></StudyBoundary>
     </div>
     <header className="study-heading">
       <div><span className="study-eyebrow">SANCTUARY / FORM STUDIES</span><h1>Possible passages.</h1><p>Six ways to open somewhere else.</p></div>
@@ -50,7 +53,7 @@ export function DoorStudyExperience() {
     <footer className="study-controls">
       <div className="study-selection" aria-live="polite">
         <span>{study ? `${study.number} / ${study.name} · ${palette.doors[study.id].name}` : "01—06 / Pearl ceramic & champagne gold"}</span>
-        <p>{study ? study.note : "Select a door to study its shape."}</p>
+        <p>{study ? study.note : "Select a slab to study its shape."}</p>
       </div>
       <nav className="study-picker" aria-label="Choose a door study">
         <button onClick={() => choose(null)} aria-pressed={selected === null}>All six</button>
@@ -59,11 +62,7 @@ export function DoorStudyExperience() {
         </button>)}
       </nav>
       <div className="study-experiments">
-        <div className="study-modes" aria-label="Opening behavior">
-          <button aria-pressed={opening === "hinge"} onClick={() => setOpening("hinge")}>Hinge</button>
-          <button aria-pressed={opening === "dissolve"} onClick={() => setOpening("dissolve")}>Dissolve</button>
-        </div>
-        <label><span>{opening === "hinge" ? "Closed" : "Present"}</span><input aria-label="Door opening" type="range" min="0" max="100" value={amount} onChange={e => setAmount(Number(e.target.value))} /><span>{opening === "hinge" ? "Open" : "Absent"}</span></label>
+        <label><span>Present</span><input aria-label="Slab dissolve" type="range" min="0" max="100" value={amount} onChange={e => setAmount(Number(e.target.value))} /><span>Absent</span></label>
         <label className="study-turn"><span>Turn</span><input aria-label="Viewing angle" type="range" min="-60" max="60" value={angle} onChange={e => setAngle(Number(e.target.value))} /></label>
       </div>
     </footer>

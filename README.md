@@ -2,7 +2,7 @@
 
 A personal portfolio carried by an endless glass ribbon above clouds. Project sculptures travel with the ribbon; vertical scrolling also orbits the camera continuously around its center, inside a surrounding cloud sky.
 
-The current design pass restores the door metaphor with six irregular glass thresholds: Melt, Seed, Fault, Hourglass, Cloud, and Orbit. All six travel on the homepage ribbon. Visit `/door-studies` for a numbered comparison room, individual inspection, viewing-angle adjustment, and hinge/dissolve experiments. These are provisional shape studies; the six forms reuse the four existing project destinations until a final selection is made.
+The current design pass uses six irregular framed glass slabs: Melt, Seed, Fault, Hourglass, Cloud, and Orbit. All six travel on the homepage ribbon. Visit `/door-studies` for a numbered comparison room, individual inspection, viewing-angle adjustment, and dissolve experiments. These are provisional shape studies; the six forms reuse the four existing project destinations until a final selection is made.
 
 This reconstruction lives on `codex/glass-ribbon`. The previous celestial staircase remains in Git and in unmounted legacy modules.
 
@@ -34,7 +34,7 @@ Project URLs remain in `src/lib/projects.ts`; display copy, model assignments, a
 
 The four sculptures are exported from [`blender/sanctuary-assets.blend`](blender/sanctuary-assets.blend). The reproducible builder is [`blender/build_sanctuary_assets.py`](blender/build_sanctuary_assets.py). Runtime GLBs are in `public/models/sanctuary/`. The orbit sky uses a fixed plate, flowing cloud image layers, and shooting stars. Textures are in `public/textures/sanctuary/layers/`: an 8K desktop cloud atlas and a 4K compact atlas, with WebP fallbacks. Original artwork and the 24K rendered reference are retained in `assets/sky/`. The door-study room keeps its flat 4K backdrop.
 
-The active pearl-ceramic and champagne-gold doors are exported from [`blender/door-studies.blend`](blender/door-studies.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py). Six independently rigged GLBs live in `public/models/doors/` (about 2.11 MB total). Their coordinated colors are shared through `src/lib/doorPalette.json`. The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
+The active pearl-ceramic and champagne-gold doors are exported from [`blender/door-studies.blend`](blender/door-studies.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py). Six stationary slab GLBs live in `public/models/doors/` (about 2.10 MB total). Their coordinated colors are shared through `src/lib/doorPalette.json`. The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
 
 ## Development notes
 

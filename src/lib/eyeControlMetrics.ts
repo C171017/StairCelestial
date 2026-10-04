@@ -52,6 +52,13 @@ export function getDynamicViewportSize(
   fallbackWidth: number,
   fallbackHeight: number,
 ): { width: number; height: number } {
+  // The mobile artwork has a stable, oversized viewport behind the browser
+  // bars. Size both the SVG and its 3D handoff against that same surface, not
+  // visualViewport, which changes with the bars (and while pinch-zooming).
+  if (typeof document !== "undefined" && document.documentElement.classList.contains("native-ribbon-scroll")) {
+    const surface = document.getElementById("portfolio-scroll-surface");
+    if (surface) return { width: surface.clientWidth, height: surface.clientHeight };
+  }
   if (typeof window === "undefined" || !window.visualViewport) {
     return { width: fallbackWidth, height: fallbackHeight };
   }

@@ -4,17 +4,17 @@ import { Html, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { doorStudies, doorModelUrl, type DoorOpening } from "@/lib/doorStudies";
+import { doorStudies, doorModelUrl } from "@/lib/doorStudies";
 import { doorScatter } from "@/lib/doorPlacement";
 import { GlassDoor } from "./GlassDoor";
 import { Sky, StudioLight } from "./SceneEnvironment";
 
 type Props = {
-  selected: number | null; amount: number; opening: DoorOpening; angle: number;
+  selected: number | null; amount: number; angle: number;
   onSelect: (index: number) => void; onReady: () => void;
 };
 
-function Collection({ selected, amount, opening, angle, onSelect, onReady }: Props) {
+function Collection({ selected, amount, angle, onSelect, onReady }: Props) {
   useGLTF(doorStudies.map(doorModelUrl));
   const { viewport, size } = useThree();
   const groups = useRef<(THREE.Group | null)[]>([]);
@@ -51,7 +51,7 @@ function Collection({ selected, amount, opening, angle, onSelect, onReady }: Pro
     });
   });
   return <>{doorStudies.map((study, index) => <group key={study.id} ref={value => { groups.current[index] = value; }} scale={0}>
-    <GlassDoor study={study} amount={amount / 100} opening={opening} onSelect={() => onSelect(index)} enabled={selected === null || selected === index} />
+    <GlassDoor study={study} amount={amount / 100} onSelect={() => onSelect(index)} enabled={selected === null || selected === index} />
     {selected === null && <Html center position={[0, -.37, .1]} zIndexRange={[5, 0]}>
       <button className="study-object-label" onClick={() => onSelect(index)} aria-label={`Inspect ${study.name}`}><span>{study.number}</span>{study.name}</button>
     </Html>}

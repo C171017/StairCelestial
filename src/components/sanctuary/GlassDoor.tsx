@@ -4,47 +4,39 @@ import { useGLTF } from "@react-three/drei";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
-import { doorModelUrl, type DoorOpening, type DoorStudy } from "@/lib/doorStudies";
+import { doorModelUrl, type DoorStudy } from "@/lib/doorStudies";
 import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 import { createDoorMaterials } from "./doorMaterials";
 
-/** A pearl-ceramic surround, lit gold reveal, and independently opening glass leaf. */
-export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false, onSelect, enabled = true, openingProgress }: {
-  study: DoorStudy; amount?: number; opening?: DoorOpening; dimmed?: boolean;
+/** A stationary colored glass slab that dissolves inside its ceramic surround. */
+export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled = true, openingProgress }: {
+  study: DoorStudy; amount?: number; dimmed?: boolean;
   onSelect?: () => void; enabled?: boolean;
   openingProgress?: RefObject<number>;
 }) {
   const { scene } = useGLTF(doorModelUrl(study));
-  const { model, pivot, restQuaternion, materials } = useMemo(() => {
+  const { model, slab, materials } = useMemo(() => {
     const model = scene.clone(true);
-    let pivot: THREE.Object3D | undefined;
-    const materials: { material: THREE.Material; moving: boolean; opacity: number }[] = [];
+    let slab: THREE.Object3D | undefined;
+    const materials: { material: THREE.Material; dissolves: boolean; opacity: number }[] = [];
     const finishes = createDoorMaterials(study);
-    // Moving hardware needs its own material so dissolving the handle never
-    // fades the stationary gold trim. Geometry remains shared with the GLB.
-    const movingGold = finishes.gold.clone();
-    const ownedMaterials = [...Object.values(finishes), movingGold];
-    materials.push(...ownedMaterials.map(material => ({
-      material, moving: material === finishes.glass || material === finishes.glassEdge || material === movingGold, opacity: material.opacity,
+    materials.push(...Object.values(finishes).map(material => ({
+      material, dissolves: material === finishes.glass || material === finishes.glassEdge, opacity: material.opacity,
     })));
     model.traverse(object => {
-      if (object.userData.door_role === "pivot") pivot = object;
+      if (object.userData.door_role === "slab") slab = object;
       const mesh = object as THREE.Mesh;
       if (!mesh.isMesh) return;
       if (object.name.startsWith("Fixed_GlassFrame")) mesh.material = finishes.ceramic;
       else if (object.name.startsWith("Fixed_InnerLight")) mesh.material = finishes.light;
-      else if (object.name.startsWith("Moving_Pull")) mesh.material = movingGold;
-      else if (object.name.startsWith("Moving_PolishedEdge")) mesh.material = finishes.glassEdge;
-      else if (object.name.startsWith("Moving_")) mesh.material = finishes.glass;
+      else if (object.name.startsWith("Slab_PolishedEdge")) mesh.material = finishes.glassEdge;
+      else if (object.name.startsWith("Slab_Glass")) mesh.material = finishes.glass;
       else mesh.material = finishes.gold;
     });
-    return { model, pivot, restQuaternion: pivot?.quaternion.clone(), materials };
+    return { model, slab, materials };
   }, [scene, study]);
   const visibility = useRef(1);
   const travel = useRef(0);
-  const rotation = useMemo(() => new THREE.Quaternion(), []);
-  // Compose with the exported rest pose so the hinge remains vertical.
-  const axis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
   const reduced = useRef(false);
   const start = useRef<[number, number] | null>(null);
   useEffect(() => {
@@ -63,13 +55,9 @@ export function GlassDoor({ study, amount = 0, opening = "hinge", dimmed = false
     // Settle the fade exactly; solid finishes retain depth throughout it.
     if (Math.abs(visibility.current - (dimmed ? 0 : 1)) < 0.001) visibility.current = dimmed ? 0 : 1;
     model.visible = visibility.current > 0.015;
-    if (pivot && restQuaternion) {
-      rotation.setFromAxisAngle(axis, opening === "hinge" ? -travel.current * Math.PI * 0.48 : 0);
-      pivot.quaternion.copy(rotation).multiply(restQuaternion);
-      pivot.visible = opening !== "dissolve" || travel.current < 1;
-    }
-    for (const { material, moving, opacity } of materials) {
-      const dissolve = opening === "dissolve" && moving ? 1 - THREE.MathUtils.smoothstep(travel.current, 0, 0.95) : 1;
+    if (slab) slab.visible = travel.current < 1;
+    for (const { material, dissolves, opacity } of materials) {
+      const dissolve = dissolves ? 1 - THREE.MathUtils.smoothstep(travel.current, 0, 0.95) : 1;
       setLocalMaterialOpacity(material, opacity * visibility.current * dissolve);
     }
   });

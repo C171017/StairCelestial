@@ -26,7 +26,7 @@ export function ProjectSculpture({ study, project, selected, maskId }: {
     const inverse = doorScene.matrixWorld.clone().invert();
     doorScene.traverse(object => {
       const mesh = object as THREE.Mesh;
-      if (!mesh.isMesh || !mesh.name.startsWith("Moving_GlassLeaf")) return;
+      if (!mesh.isMesh || !mesh.name.startsWith("Slab_Glass")) return;
       geometry = mesh.geometry.clone().applyMatrix4(inverse.clone().multiply(mesh.matrixWorld));
       const positions = geometry.getAttribute("position");
       for (let i = 0; i < positions.count; i++) positions.setZ(i, 0);
