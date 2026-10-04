@@ -1,0 +1,269 @@
+diff --git a/blender/build_door_studies.py b/blender/build_door_studies.py
+index 3ad9797..6bb8668 100644
+--- a/blender/build_door_studies.py
++++ b/blender/build_door_studies.py
+@@ -111,6 +111,41 @@ def ring(points, inside, mat, name='Fixed_GlassFrame', depth=.13, bevel=.045):
+     obj.modifiers['Soft cast edges'].segments=5
+     return obj
+ 
++def ceramic_ring(points, inside, mat):
++    """A gently crowned cast profile; the inner aperture remains unchanged.
++
++    The broad front rolls into a narrow recessed inner wall instead of reading
++    as one mechanically extruded strip. Slow variation changes the shoulder
++    depth around the perimeter, without adding noisy silhouette ripples.
++    """
++    n=len(points)
++    # Perimeter fraction and depth of the closed, softly rounded section.
++    profile=[(0,.052),(.045,.103),(.17,.146),(.40,.157),(.69,.148),
++             (.88,.122),(1,.068),(1,-.068),(.88,-.122),(.69,-.148),
++             (.40,-.157),(.17,-.146),(.045,-.103),(0,-.052)]
++    verts=[]
++    for fraction,depth in profile:
++        for i,((x,z),(ix,iz)) in enumerate(zip(points,inside)):
++            angle=math.tau*i/n
++            shoulder=1+.085*math.sin(angle+.7)+.045*math.cos(2*angle-1.1)
++            # Leave the contact contour stable; the runtime fits it to the ramp.
++            width=1+.07*math.sin(angle-1.2)+.035*math.sin(3*angle+.4)
++            outer_x=ix+(x-ix)*width
++            outer_z=iz+(z-iz)*width
++            verts.append((outer_x+(ix-outer_x)*fraction,depth*shoulder,
++                          outer_z+(iz-outer_z)*fraction))
++    faces=[]
++    for section in range(len(profile)):
++        next_section=(section+1)%len(profile)
++        for i in range(n):
++            j=(i+1)%n
++            faces.append((section*n+i,section*n+j,next_section*n+j,next_section*n+i))
++    # Angular Fault keeps its architectural cuts, with softened corners.
++    obj=mesh('Fixed_GlassFrame',verts,faces,mat,root,.012 if n<=20 else 0)
++    for polygon in obj.data.polygons:
++        polygon.use_smooth = True
++    return obj
++
+ def frame_details(points, inside):
+     # Both faces are finished: randomized doors can be approached from either side.
+     def between(t):
+@@ -118,9 +153,9 @@ def frame_details(points, inside):
+     # Pull the liner slightly into the aperture, avoiding coincident inner walls
+     # with the ceramic (which otherwise shimmer as the camera moves).
+     cy=(min(z for _,z in inside)+max(z for _,z in inside))/2
+-    ring(between(.80), inset(inside,.989,.994,cy), gold, 'Fixed_ChampagneReveal', .134, .006)
++    ring(between(.90), inset(inside,.995,.997,cy), gold, 'Fixed_ChampagneReveal', .084, .004)
+     for side,suffix in [(-1,'Front'),(1,'Back')]:
+-        line('Fixed_InnerLight_'+suffix,[(x,side*.141,z) for x,z in between(.89)],.005,inner_light,root,True)
++        line('Fixed_InnerLight_'+suffix,[(x,side*.090,z) for x,z in between(.965)],.0028,inner_light,root,True)
+ 
+ def slab(points, mat, parent):
+     n=len(points);depth=.045
+@@ -164,7 +199,7 @@ for spec in studies:
+     frame.node_tree.nodes['Principled BSDF'].inputs['Coat Weight'].default_value=.85
+     frame.node_tree.nodes['Principled BSDF'].inputs['Coat Roughness'].default_value=.14
+     pane=material('Door_'+name+'_LeafGlass',(1,1,1),1,rough=.055)
+-    ring(points,inner,frame)
++    ceramic_ring(points,inner,frame)
+     frame_details(points,inner)
+     # A centered stationary slab group supports visibility only, with no hinge rig.
+     slab_group=bpy.data.objects.new('GlassSlab',None);collection.objects.link(slab_group)
+diff --git a/src/components/sanctuary/CloudField.tsx b/src/components/sanctuary/CloudField.tsx
+index 5ffce83..d168048 100644
+--- a/src/components/sanctuary/CloudField.tsx
++++ b/src/components/sanctuary/CloudField.tsx
+@@ -1,9 +1,9 @@
+ "use client";
+ 
+-import { useFrame } from "@react-three/fiber";
+-import { useEffect, useMemo } from "react";
++import { useFrame, useThree } from "@react-three/fiber";
++import { useEffect, useMemo, type RefObject } from "react";
+ import * as THREE from "three";
+-import { createCloudField } from "@/lib/cloudField";
++import { cloudFlowPhase, createCloudField } from "@/lib/cloudField";
+ import { useCloudArtwork } from "@/hooks/useCloudArtwork";
+ 
+ const vertex = `
+@@ -19,6 +19,9 @@ const fragment = `
+   uniform float atlasScale;
+   uniform float opacity;
+   uniform float haze;
++  uniform float flowPhase;
++  uniform float flowStrength;
++  uniform float flowSeed;
+   varying vec2 cloudUv;
+   void main() {
+     vec2 edge = smoothstep(vec2(0.0), vec2(0.018), cloudUv)
+@@ -27,14 +30,31 @@ const fragment = `
+     vec4 c = texture2D(artwork, atlasOffset + clamp(cloudUv, 0.002, 0.998) * atlasScale)
+       * edge.x * edge.y;
+     if (c.a * opacity < 0.002) discard;
+-    vec3 color = mix(c.rgb / max(c.a, 0.0001), vec3(0.69, 0.76, 0.82), haze);
++    vec3 color = c.rgb / max(c.a, 0.0001);
++    #ifdef INTERIOR_FLOW
++      // Advect only the interior color, never alpha. Neither the silhouettes,
++      // world transforms nor transparent painter order can change with time.
++      vec2 pattern = vec2(cloudUv.y * 7.0, cloudUv.x * 8.0) + flowSeed;
++      vec2 drift = vec2(
++        sin(pattern.x + flowPhase * 2.0) - sin(pattern.x),
++        cos(pattern.y + flowPhase) - cos(pattern.y)
++      ) * flowStrength;
++      vec4 moved = texture2D(artwork,
++        atlasOffset + clamp(cloudUv + drift, 0.002, 0.998) * atlasScale);
++      float interior = smoothstep(0.08, 0.55, c.a) * smoothstep(0.08, 0.55, moved.a);
++      color = mix(color, moved.rgb / max(moved.a, 0.0001), interior * 0.7);
++    #endif
++    // Distant banks lose local contrast into a slightly cooler atmosphere;
++    // retain the source's warm sunlight in the near formations.
++    color = mix(color, vec3(0.66, 0.75, 0.84), haze);
+     gl_FragColor = vec4(color, c.a * opacity);
+     #include <colorspace_fragment>
+   }
+ `;
+ 
+-/** Fixed world artwork: scrolling changes the camera, never the cloud composition. */
+-export function CloudField({ onReady }: { onReady?: () => void } = {}) {
++/** Fixed silhouettes and ordering, with very slow interior vapor detail. */
++export function CloudField({ onReady, time }: { onReady?: () => void; time?: RefObject<number> } = {}) {
++  const maxAnisotropy = useThree(state => state.gl.capabilities.getMaxAnisotropy());
+   const sources = useCloudArtwork();
+   useEffect(() => {
+     if (sources !== null) onReady?.();
+@@ -43,7 +63,7 @@ export function CloudField({ onReady }: { onReady?: () => void } = {}) {
+     const textures = (sources ?? []).map(source => {
+       const texture = source.clone();
+       texture.colorSpace = THREE.SRGBColorSpace;
+-      texture.anisotropy = 1;
++      texture.anisotropy = Math.min(4, maxAnisotropy);
+       texture.needsUpdate = true;
+       return texture;
+     });
+@@ -59,10 +79,13 @@ export function CloudField({ onReady }: { onReady?: () => void } = {}) {
+         // painter stack avoids both view-sorted alpha swaps and core/edge seams.
+         depthWrite: false, depthTest: false, toneMapped: false,
+         side: THREE.DoubleSide, forceSinglePass: true,
++        defines: cloud.flowStrength ? { INTERIOR_FLOW: 1 } : {},
+         uniforms: {
+           artwork: { value: textures[wisp ? 1 : 0] }, atlasScale: { value: wisp ? 1 : 0.5 },
+           atlasOffset: { value: new THREE.Vector2(wisp ? 0 : (tile % 2) * 0.5, wisp ? 0 : Math.floor(tile / 2) * 0.5) },
+           opacity: { value: cloud.opacity }, haze: { value: cloud.haze },
++          flowPhase: { value: 0 }, flowStrength: { value: cloud.flowStrength },
++          flowSeed: { value: cloud.index * 1.618 },
+         },
+       });
+       const mesh = new THREE.Mesh(geometry, material);
+@@ -76,9 +99,11 @@ export function CloudField({ onReady }: { onReady?: () => void } = {}) {
+       return { mesh, material };
+     });
+     return { textures, geometry, clouds };
+-  }, [sources]);
++  }, [sources, maxAnisotropy]);
+   const projected = useMemo(() => new THREE.Vector3(), []);
+   useFrame(({ camera, gl, size }) => {
++    const phase = cloudFlowPhase(time?.current ?? 0);
++    for (const { material } of resources.clouds) material.uniforms.flowPhase.value = phase;
+     if (process.env.NODE_ENV !== "development") return;
+     const landmark = resources.clouds[19]?.mesh;
+     if (!landmark) return;
+@@ -88,6 +113,7 @@ export function CloudField({ onReady }: { onReady?: () => void } = {}) {
+     gl.domElement.dataset.cloudArtwork = String(resources.textures[0]?.image?.width ?? 0);
+     gl.domElement.dataset.cloudLayout = "fixed";
+     gl.domElement.dataset.cloudCount = String(resources.clouds.length);
++    gl.domElement.dataset.cloudFlow = "interior-only";
+   }, -0.7);
+   useEffect(() => () => {
+     resources.geometry.dispose();
+diff --git a/src/components/sanctuary/LayeredSky.tsx b/src/components/sanctuary/LayeredSky.tsx
+index 4030553..6f1a371 100644
+--- a/src/components/sanctuary/LayeredSky.tsx
++++ b/src/components/sanctuary/LayeredSky.tsx
+@@ -10,8 +10,9 @@ import type { RefObject } from "react";
+ import { exportSkyMaster } from "./exportSky";
+ import { CleanSkyPlate } from "./CleanSkyPlate";
+ 
+-export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady }: { paused?:boolean;timeOverride?:number|null;exporter?:RefObject<((progress:(value:string)=>void)=>Promise<void>)|null>;onReady?:()=>void }) {
++export function LayeredSky({ paused=false, timeOverride=null, skyRatio, exporter, onReady }: { paused?:boolean;timeOverride?:number|null;skyRatio?:number;exporter?:RefObject<((progress:(value:string)=>void)=>Promise<void>)|null>;onReady?:()=>void }) {
+   const {gl,size,camera} = useThree();
++  const rendererRatio = useThree(state => state.viewport.dpr);
+   const [cloudsReady, setCloudsReady] = useState(false);
+   const [plateReady, setPlateReady] = useState(false);
+   const handleCloudsReady = useCallback(() => setCloudsReady(true), []);
+@@ -24,9 +25,10 @@ export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady
+   // Keep the portal container stable through Fast Refresh and effect replay.
+   const [skyScene] = useState(()=>new THREE.Scene());
+   const [skyCamera] = useState(()=>new THREE.PerspectiveCamera());
+-  // Cloud artwork retains its source resolution. The composited sky needs one
+-  // sample per CSS pixel on large displays, while narrow views retain 1.5x.
+-  const ratio=Math.min(gl.getPixelRatio(),size.width<700?1.5:1);
++  // Preserve the extra source detail on Retina screens, with an independent
++  // ceiling so adaptive foreground quality never creates a larger sky pass.
++  const requestedRatio = skyRatio ?? (size.width < 700 ? 1.5 : 1.25);
++  const ratio=Math.min(rendererRatio, Math.max(0.75, Number.isFinite(requestedRatio) ? requestedRatio : 1));
+   const target=useFBO(Math.round(size.width*ratio),Math.round(size.height*ratio),{
+     type:THREE.UnsignedByteType,depthBuffer:true,stencilBuffer:false,
+   });
+@@ -70,6 +72,7 @@ export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady
+       gl.domElement.dataset.skyMode="layered";
+       gl.domElement.dataset.cloudTime=time.current.toFixed(3);
+       gl.domElement.dataset.cloudPaused=String(stopped.current||paused);
++      gl.domElement.dataset.skyRatio=ratio.toFixed(2);
+       gl.domElement.dataset.skySceneChildren=String(group.current?.children.length??0);
+       if(!stopped.current&&!paused&&delta>0&&delta<0.25){
+         frameStats.current.seconds+=delta;frameStats.current.frames++;
+@@ -92,8 +95,8 @@ export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady
+   return <>
+     {createPortal(<group ref={group}>
+       <CleanSkyPlate onReady={handlePlateReady}/>
+-      <SkyEffects active={!paused} time={time}/>
+-      <Suspense fallback={null}><CloudField onReady={handleCloudsReady}/></Suspense>
++      <SkyEffects active={!paused} timeOverride={timeOverride}/>
++      <Suspense fallback={null}><CloudField onReady={handleCloudsReady} time={time}/></Suspense>
+     </group>,skyScene,{camera:skyCamera})}
+     <mesh renderOrder={-3000} frustumCulled={false} raycast={()=>null}>
+       <planeGeometry args={[2,2]}/>
+diff --git a/src/components/sanctuary/OrbitSky.tsx b/src/components/sanctuary/OrbitSky.tsx
+index 3a87e39..66d702b 100644
+--- a/src/components/sanctuary/OrbitSky.tsx
++++ b/src/components/sanctuary/OrbitSky.tsx
+@@ -2,7 +2,7 @@
+ 
+ import { LayeredSky } from "./LayeredSky";
+ 
+-/** A fixed environment: only the viewer moves, including across complete orbits. */
+-export function OrbitSky({ onReady }: { onReady?: () => void } = {}) {
+-  return <LayeredSky paused onReady={onReady}/>;
++/** The cloud silhouettes remain world-fixed throughout complete orbits. */
++export function OrbitSky({ onReady, skyRatio }: { onReady?: () => void; skyRatio?: number } = {}) {
++  return <LayeredSky onReady={onReady} skyRatio={skyRatio}/>;
+ }
+diff --git a/src/lib/cloudField.ts b/src/lib/cloudField.ts
+index 5ca0540..0d617e2 100644
+--- a/src/lib/cloudField.ts
++++ b/src/lib/cloudField.ts
+@@ -11,8 +11,18 @@ export type CloudDefinition = CloudPosition & Readonly<{
+   opacity: number;
+   haze: number;
+   renderOrder: number;
++  /** Only color detail moves; the card and its opacity remain fixed. */
++  flowStrength: number;
+ }>;
+ 
++export const CLOUD_FLOW_PERIOD = 360;
++
++/** Bounded independently of orbit, scrolling, and the meteor schedule. */
++export function cloudFlowPhase(elapsed: number) {
++  return ((elapsed % CLOUD_FLOW_PERIOD + CLOUD_FLOW_PERIOD) % CLOUD_FLOW_PERIOD)
++    / CLOUD_FLOW_PERIOD * Math.PI * 2;
++}
++
+ /** A fixed painter order: distant layers first, with input index breaking ties. */
+ export function cloudLayerOrders(positions: readonly CloudPosition[]): number[] {
+   const layers = positions.map((position, index) => ({
+@@ -48,6 +58,9 @@ export function createCloudField(): readonly CloudDefinition[] {
+       tile: Math.floor(cloudHash(index + 99) * 4),
+       opacity: cloudVisibility(distance) * (wisp ? 0.38 : 1),
+       haze: Math.min(0.42, Math.max(0, (distance - 250) / 1400)),
++      // Most banks stay entirely static. Nearby vapor gets a few texels of
++      // internal drift; distant layers retain their softer atmospheric finish.
++      flowStrength: wisp ? 0.006 : distance < 440 ? 0.0028 : 0,
+     };
+   });
+   const orders = cloudLayerOrders(definitions);

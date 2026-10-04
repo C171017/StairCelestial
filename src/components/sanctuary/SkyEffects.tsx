@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { advanceSkyEffectsTime, sampleSkyEffect, SKY_EFFECTS, type SkyEffectSample } from "@/lib/skyEffects";
+import { createSanctuaryAtmosphere, type SanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
 
 const ignoreRaycast = () => null;
 
@@ -56,8 +57,9 @@ const glintShader = `
 `;
 
 /** World-anchored meteors and slow glints, drawn behind the cloud layers. */
-export function SkyEffects({ active = true, time }: { active?: boolean; time?: RefObject<number> }) {
+export function SkyEffects({ active = true, timeOverride = null, atmosphere }: { active?: boolean; timeOverride?: number|null; atmosphere?: RefObject<SanctuaryAtmosphere> }) {
   const group = useRef<THREE.Group>(null);
+  const fallback = useMemo(createSanctuaryAtmosphere, []);
   const elapsed = useRef(0);
   const paused = useRef(true);
   const skipFrame = useRef(true);
@@ -85,7 +87,7 @@ export function SkyEffects({ active = true, time }: { active?: boolean; time?: R
       outward.set(Math.sin(effect.azimuth), 0, Math.cos(effect.azimuth));
       rotation.makeBasis(right, up, outward);
       mesh.quaternion.setFromRotationMatrix(rotation).multiply(tilt.setFromAxisAngle(zAxis, effect.tilt));
-      mesh.scale.set(effect.kind === "meteor" ? 60 : 3, effect.kind === "meteor" ? 4 : 3, 1);
+      mesh.scale.set(effect.kind === "meteor" ? 44 : 1.8, effect.kind === "meteor" ? 2.6 : 1.8, 1);
       mesh.visible = false;
       mesh.renderOrder = -90;
       mesh.raycast = ignoreRaycast;
@@ -114,24 +116,27 @@ export function SkyEffects({ active = true, time }: { active?: boolean; time?: R
     resources.geometry.dispose();
     for (const item of resources.items) item.material.dispose();
   }, [resources]);
+  useEffect(() => { skipFrame.current = true; }, [active]);
 
   useFrame(({ gl }, delta) => {
     if (!group.current) return;
-    group.current.visible = active && !paused.current;
+    group.current.visible = (active || timeOverride !== null) && !paused.current;
     if (!group.current.visible) return;
-    if (skipFrame.current) {
+    if (skipFrame.current && timeOverride === null) {
       skipFrame.current = false;
       return;
     }
-    elapsed.current = time ? time.current : advanceSkyEffectsTime(elapsed.current, delta, false);
+    elapsed.current = timeOverride ?? advanceSkyEffectsTime(elapsed.current, delta, false);
+    const mood = atmosphere?.current ?? fallback;
+    const visibility = mood.starVisibility * 0.86 + mood.dusk * 0.11;
     if (process.env.NODE_ENV === "development") gl.domElement.dataset.skyEffectsPhase = elapsed.current.toFixed(3);
     for (const { effect, material, mesh } of resources.items) {
       sampleSkyEffect(effect, elapsed.current, sample.current);
-      mesh.visible = sample.current.opacity > 0;
+      mesh.visible = sample.current.opacity * visibility > 0.001;
       material.uniforms.progress.value = sample.current.progress;
-      material.uniforms.opacity.value = sample.current.opacity;
+      material.uniforms.opacity.value = sample.current.opacity * visibility;
     }
-  });
+  }, -0.6);
 
   return <group ref={group} visible={false} name="sky-effects">
     {resources.items.map(({ mesh }, i) => <primitive key={i} object={mesh} dispose={null} />)}

@@ -17,13 +17,14 @@ import { doorPlacement, doorShapeIndex } from "@/lib/doorPlacement";
 import { ORBIT_HEIGHT, ORBIT_RADIUS, ribbonOrbitAngle } from "@/lib/ribbonOrbit";
 import { IntroSceneReveal } from "@/components/scene/IntroSceneReveal";
 import { PlayControl3D } from "@/components/scene/PlayControl3D";
-import { GlassRibbon } from "./GlassRibbon";
+import { PorcelainRibbon } from "./PorcelainRibbon";
 import { ProjectArtifact } from "./ProjectArtifact";
 import { StudioLight } from "./SceneEnvironment";
 import { OrbitSky } from "./OrbitSky";
 import { OrbitCamera } from "./OrbitCamera";
-import { RIBBON_SHADOW_COUNT } from "./ribbonShadows";
-import { fitDoorSupport, getDoorBase, doorBaseWorldPoint } from "@/lib/doorSupport";
+import { floatDoorSupport, FLOATING_DOOR_COUNT, readReviewSeed } from "@/lib/floatingDoor";
+import { fitDoorSupport, getDoorBase } from "@/lib/doorSupport";
+import { doorPresentationSamples } from "@/lib/portalPresentation";
 
 const FOCUS_POSITION = { x: 0, y: 2.3, z: 4.2 };
 const FOCUS_CAMERA = new THREE.Vector3(0, ORBIT_HEIGHT, ORBIT_RADIUS);
@@ -89,7 +90,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
   const up = useMemo(() => new THREE.Vector3(0, 1, 0), []);
   // A fresh visit gets a new arrangement; rerenders and reverse scrolling keep
   // every existing occurrence intact, including its focus target.
-  const [arrangementSeed] = useState(() => crypto.getRandomValues(new Uint32Array(1))[0]);
+  const [arrangementSeed] = useState(readReviewSeed);
   const reduced = useRef(false);
   useEffect(() => {
     const query = matchMedia("(prefers-reduced-motion: reduce)");
@@ -97,30 +98,21 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
     update(); query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
-  const slots = useMemo(() => Array.from({ length: RIBBON_SHADOW_COUNT }, (_, i) => i - 6), []);
+  const slots = useMemo(() => Array.from({ length: FLOATING_DOOR_COUNT }, (_, i) => i - 6), []);
   const doors = useMemo(() => slots.map(slot => {
     const occurrence = slot + cycle * 3;
     const placement = doorPlacement(occurrence, arrangementSeed);
     const studyIndex = doorShapeIndex(occurrence, doorStudies.length, arrangementSeed);
-    const support = fitDoorSupport({ ...placement, turn: placement.turn - cycle }, bases[studyIndex], radius, width, compact);
-    return { slot, occurrence, placement, studyIndex, support };
-  }), [slots, cycle, arrangementSeed, bases, radius, width, compact]);
+    const support = floatDoorSupport(fitDoorSupport({ ...placement, turn: placement.turn - cycle }, bases[studyIndex], radius, width, compact));
+    const presentationSamples = doorPresentationSamples(support, apertures[studyIndex]);
+    return { slot, occurrence, placement, studyIndex, support, presentationSamples };
+  }), [slots, cycle, arrangementSeed, bases, apertures, radius, width, compact]);
   const selectedOccurrence = selection?.occurrence;
   const selectedDoor = doors.find(door => door.occurrence === selectedOccurrence);
   const focusSide = useMemo(() => selectedDoor ? chooseRibbonFocusSide(
     focusObstacle.group, selectedDoor.support, apertures[selectedDoor.studyIndex],
     { focusScale, focusPosition: FOCUS_POSITION, cameraPosition: FOCUS_CAMERA },
   ).side : 1, [selectedDoor, focusObstacle, apertures, focusScale]);
-  const doorShadows = useMemo(() => doors.map(({ occurrence, support }) => {
-    const position = doorBaseWorldPoint(support, new THREE.Vector2((support.base.minX + support.base.maxX) / 2, 0));
-    position.y = support.position.y;
-    return {
-      position,
-      scale: support.scale,
-      yaw: support.yaw,
-      visible: selectedOccurrence === undefined || selectedOccurrence === occurrence,
-    };
-  }), [doors, selectedOccurrence]);
   useFrame((_, delta) => {
     if (!transform.current || !scrollGroup.current) return;
     const position = motion.current.position;
@@ -146,8 +138,8 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
     transform.current.quaternion.premultiply(viewRotation.setFromAxisAngle(up, focus.current.viewYaw));
   }, -0.5);
   return <group ref={transform}><group ref={scrollGroup} position={[0, -(motion.current.position - cycle) * RIBBON_PITCH, 0]}>
-    <GlassRibbon radius={radius} width={width} focused={!!selection} doorShadows={doorShadows} />
-    {doors.map(({ occurrence, placement, studyIndex, support }) => {
+    <PorcelainRibbon radius={radius} width={width} />
+    {doors.map(({ occurrence, placement, studyIndex, support, presentationSamples }) => {
       const index = projectIndexForDoor(doorStudies[studyIndex].id);
       const selected = selection?.occurrence === occurrence;
       // Preserve animation and material state when an occurrence moves to a
@@ -155,6 +147,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
       const maskId = ((occurrence % slots.length) + slots.length) % slots.length + 1;
       return <group key={occurrence} position={support.position} rotation={[0, support.yaw, 0]} scale={support.scale}>
         <ProjectArtifact focusSide={focusSide} maskId={maskId} study={doorStudies[studyIndex]} project={sanctuaryProjects[index]} selected={selected} enabled={active && (!selection || selected)} dimmed={!!selection && !selected}
+          presentation={{ obstacle: focusObstacle.group, root: scrollGroup, samples: presentationSamples }}
           compact={compact} onSelect={() => {
             if (selected) window.open(sanctuaryProjects[index].url, "_blank", "noopener,noreferrer");
             else onSelect({ index, turn: placement.turn, occurrence });
@@ -165,25 +158,25 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
 }
 
 function Content(props: Props) {
-  const { size, setDpr } = useThree();
+  const { setDpr } = useThree();
   const [skyReady, setSkyReady] = useState(false);
   const handleSkyReady = useCallback(() => setSkyReady(true), []);
   useEffect(() => {
-    // A large desktop already supplies enough screen pixels for this artwork.
-    // Avoid rendering the glass at 4K+ merely because the display is high-DPI.
-    setDpr(Math.min(window.devicePixelRatio, size.width >= 1500 ? 1 : 1.5));
-  }, [setDpr, size.width]);
+    // The visual prototype keeps Retina detail instead of the former 1x cap.
+    setDpr(Math.min(Math.max(window.devicePixelRatio, 1.5), 2));
+  }, [setDpr]);
   const ribbonFrame = useRef<THREE.Group>(null);
+  const reflectionScene = useRef<THREE.Scene | null>(null);
   const { active, selection, onSelect } = props;
   const onNavigate = useCallback(() => onSelect(null), [onSelect]);
-  const { motion, orbit } = useRibbonMotion({ enabled: active, paused: selection !== null, onUserNavigate: onNavigate });
+  const { motion, orbit, atmosphere } = useRibbonMotion({ enabled: active, paused: selection !== null, onUserNavigate: onNavigate });
   return <>
     <OrbitCamera orbit={orbit} />
-    <StudioLight />
-    <PlayControl3D theme="cloud" ribbonMotion={motion} ribbonFrame={ribbonFrame} />
+    <StudioLight atmosphere={atmosphere} reflectionScene={reflectionScene} />
+    <PlayControl3D theme="cloud" anchorHeight={2.8} ribbonMotion={motion} ribbonFrame={ribbonFrame} />
     <Suspense fallback={null}>
       {/* Finish the immutable sky before allowing the entrance to reveal it. */}
-      <OrbitSky onReady={handleSkyReady} />
+      <OrbitSky onReady={handleSkyReady} atmosphere={atmosphere} reflectionScene={reflectionScene} />
       <IntroSceneReveal>
         <RibbonWorld {...props} motion={motion} orbit={orbit} ribbonFrame={ribbonFrame} />
       </IntroSceneReveal>
@@ -203,16 +196,15 @@ export function SanctuaryScene(props: Props) {
   }, []);
   // Mobile's canvas is pinned; scroll cannot change its dimensions.
   // ResizeObserver still handles orientation and actual size changes.
-  return <Canvas camera={{ position: [0, ORBIT_HEIGHT, ORBIT_RADIUS], fov: 42, near: 0.1, far: 2400 }} dpr={[1, 1.5]}
+  return <Canvas camera={{ position: [0, ORBIT_HEIGHT, ORBIT_RADIUS], fov: 42, near: 0.1, far: 2400 }} dpr={[1.5, 2]} shadows
     resize={{ scroll: !nativeViewport }}
     gl={{ antialias: true, alpha: false, stencil: true, powerPreference: "high-performance" }}
     onCreated={({ camera, gl }) => {
       camera.lookAt(0, 0, 0);
       gl.toneMapping = THREE.ACESFilmicToneMapping;
-      gl.toneMappingExposure = 1.05;
-      // Refraction samples the completed sky at roughly CSS-pixel resolution;
-      // glass silhouettes still use the full, antialiased canvas resolution.
-      gl.transmissionResolutionScale = 2 / 3;
+      gl.toneMappingExposure = 1.0;
+      // Preserve the full sky detail in the tinted cast-glass portals.
+      gl.transmissionResolutionScale = 1;
       gl.setClearColor("#dceaf0");
     }}><Content {...props} /></Canvas>;
 }

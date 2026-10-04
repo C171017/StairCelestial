@@ -1,3 +1,7 @@
+# Floating porcelain atmosphere — October 4, 2026
+
+The active B2 sky now follows a shared, scroll-controlled daylight/sunset/night palette while retaining fixed cloud silhouettes, positions and painter order. Restrained internal flow does not move the alpha outline. Static stars and rare meteors appear in darker conditions; reduced motion disables ambient flow/events. The same clock drives real cast-shadow direction and reflection illumination. See [PORCELAIN-IMPLEMENTATION.md](PORCELAIN-IMPLEMENTATION.md) for current rendering and validation. The fixed-silhouette continuity fix below remains relevant; its statements about unchanging colors and disabled effects are historical.
+
 # Fixed cloud sky — October 3, 2026
 
 The homepage now keeps the sky composition unchanged. Scrolling and idle camera orbit change only the view. This supersedes the moving-cloud and idle-only sorting implementation described in the historical notes below.

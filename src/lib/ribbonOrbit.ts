@@ -10,7 +10,7 @@ export function syncRibbonOrbit(motion: RibbonMotionSnapshot, orbit: RibbonMotio
 }
 
 export const ORBIT_RADIUS = 24;
-export const ORBIT_HEIGHT = 2.8;
+export const ORBIT_HEIGHT = 5.2;
 
 /** Wrap only the trigonometric input, never the accumulated navigation state. */
 export function ribbonOrbitAngle(turns: number) {

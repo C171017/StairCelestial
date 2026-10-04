@@ -26,7 +26,7 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
   const bodyMesh = useRef<THREE.Mesh>(null);
   const intro = useMemo(createIntroIrisMaterial, []);
   const pearl = useMemo(() => new THREE.Color("#f4f1e9"), []);
-  const obsidian = useMemo(() => new THREE.Color("#080a0d"), []);
+  const obsidian = useMemo(() => new THREE.Color("#c1aa83"), []);
   const spinAxis = useMemo(() => new THREE.Vector3(0.25, 1, 0.12).normalize(), []);
   const shape = useMemo(createPlayShapeGeometry, []);
   const iris = useMemo(() => {
@@ -38,7 +38,7 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
   const progress = useRef(0);
   const edges = useMemo(() => new THREE.LineSegments(
     new THREE.EdgesGeometry(shape.geometry, 20),
-    new THREE.LineBasicMaterial({ color: "#bcc8d2", transparent: true, opacity: 0.22, depthWrite: false }),
+    new THREE.LineBasicMaterial({ color: "#d8c8a9", transparent: true, opacity: 0.13, depthWrite: false }),
   ), [shape]);
   const reducedMotion = useRef(false);
   useEffect(() => {
@@ -74,11 +74,11 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
     if (bodyMesh.current) bodyMesh.current.visible = !forming;
     setLocalMaterialOpacity(intro.material, p.reveal);
     intro.material.color.copy(pearl).lerp(obsidian, p.shapeMorph);
-    intro.material.metalness = THREE.MathUtils.lerp(0.08, 0.35, p.shapeMorph);
-    intro.material.roughness = THREE.MathUtils.lerp(0.22, 0.14, p.shapeMorph);
+    intro.material.metalness = THREE.MathUtils.lerp(0.08, 0.83, p.shapeMorph);
+    intro.material.roughness = THREE.MathUtils.lerp(0.22, 0.23, p.shapeMorph);
     intro.detail.value = 1 - THREE.MathUtils.smoothstep(p.shapeMorph, 0, 0.65);
-    edges.material.opacity = reducedMotion.current ? 0.22
-      : 0.22 * THREE.MathUtils.smoothstep(p.elapsed, CONTROL_SHAPE_FORMED_SECONDS, CONTROL_SHAPE_FORMED_SECONDS + 0.4);
+    edges.material.opacity = reducedMotion.current ? 0.13
+      : 0.13 * THREE.MathUtils.smoothstep(p.elapsed, CONTROL_SHAPE_FORMED_SECONDS, CONTROL_SHAPE_FORMED_SECONDS + 0.4);
     // Finish the iris-to-tetrahedron before responding to an early audio click.
     const target = playing && !forming ? 1 : 0;
     if (progress.current === target) return;
@@ -91,9 +91,9 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance 
   return <group ref={spinGroup} scale={scale}>
     <mesh ref={introMesh} args={[iris]} material={intro.material} />
     <mesh ref={bodyMesh} geometry={shape.geometry} visible={false}>
-      <meshPhysicalMaterial ref={bodyMaterial} color="#080a0d"
-        metalness={0.35} roughness={0.14} clearcoat={1} clearcoatRoughness={0.055}
-        envMapIntensity={1.8} depthTest depthWrite
+      <meshPhysicalMaterial ref={bodyMaterial} color="#c1aa83"
+        metalness={0.83} roughness={0.23} clearcoat={0.22} clearcoatRoughness={0.18}
+        envMapIntensity={1.05} depthTest depthWrite
         flatShading polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
     </mesh>
     <primitive object={edges} />

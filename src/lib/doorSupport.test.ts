@@ -7,6 +7,7 @@ import { doorStudies } from "./doorStudies";
 import { doorPlacement } from "./doorPlacement";
 import { fitDoorSupport, getDoorBase, ribbonSurfaceHeight, doorBaseWorldPoint } from "./doorSupport";
 import { RIBBON_PITCH } from "./ribbonGeometry";
+import { floatDoorSupport, DOOR_FLOAT_CLEARANCE } from "./floatingDoor";
 
 const bases = Promise.all(doorStudies.map(async study => {
   const bytes = await readFile(new URL(`../../public/models/doors/${study.id}.glb`, import.meta.url));
@@ -47,6 +48,28 @@ test("fitted doors preserve position, size, and facing across forward and revers
       assert.ok(Math.abs(a.position.y - b.position.y - direction * RIBBON_PITCH) < 1e-10);
       assert.equal(a.scale, b.scale);
       assert.ok(Math.abs(Math.sin(a.yaw - b.yaw)) < 1e-10);
+    }
+  }
+});
+
+
+test("floating portals retain an air gap above the whole curved footprint", async () => {
+  for (const base of await bases) {
+    for (const compact of [false, true]) {
+      const radius = compact ? 2.6 : 5.7, width = compact ? 1.45 : 2.25;
+      for (const occurrence of [-7, 0, 3, 12]) {
+        const seated = fitDoorSupport(doorPlacement(occurrence, 731), base, radius, width, compact);
+        const originalY = seated.position.y;
+        const floating = floatDoorSupport(seated);
+        assert.equal(seated.position.y, originalY, "floating does not mutate the shared fitted support");
+        for (const point of floating.perimeter) {
+          const world = doorBaseWorldPoint(floating, point);
+          const clearance = floating.position.y + base.bottom * floating.scale - ribbonSurfaceHeight(world.x, world.z, floating.turn);
+          assert.ok(clearance >= DOOR_FLOAT_CLEARANCE * floating.scale - 1e-8, "even the uphill edge has a visible gap");
+        }
+        const recycled = floatDoorSupport(fitDoorSupport({ ...doorPlacement(occurrence, 731), turn: seated.turn - 1 }, base, radius, width, compact));
+        assert.ok(Math.abs(floating.position.y - recycled.position.y - RIBBON_PITCH) < 1e-8, "levitation height stays continuous through recycling");
+      }
     }
   }
 });

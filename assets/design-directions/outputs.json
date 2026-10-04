@@ -1,0 +1,30 @@
+[
+  {
+    "id": "a-porcelain-daylight",
+    "path": "assets/design-directions/a-porcelain-daylight.png",
+    "width": 1505,
+    "height": 1045,
+    "bytes": 1914028
+  },
+  {
+    "id": "b-carved-alabaster",
+    "path": "assets/design-directions/b-carved-alabaster.png",
+    "width": 1505,
+    "height": 1045,
+    "bytes": 1701464
+  },
+  {
+    "id": "c-smoked-crystal",
+    "path": "assets/design-directions/c-smoked-crystal.png",
+    "width": 1505,
+    "height": 1045,
+    "bytes": 1957718
+  },
+  {
+    "id": "d-liquid-silver",
+    "path": "assets/design-directions/d-liquid-silver.png",
+    "width": 1505,
+    "height": 1045,
+    "bytes": 1694429
+  }
+]

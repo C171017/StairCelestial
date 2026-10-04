@@ -1,10 +1,10 @@
 # Sanctuary — c171017
 
-A personal portfolio carried by an endless glass ribbon above clouds. Project sculptures travel with the ribbon; vertical scrolling also orbits the camera continuously around its center, inside a surrounding cloud sky.
+A personal portfolio carried by an endless milk-ivory porcelain ribbon above pearl clouds. Six sculptural glass portals float above it and cast soft moving shadows. Scrolling orbits the scene and turns a continuous daylight–sunset–night clock; idle drifting leaves that clock unchanged.
 
 The current design pass uses six irregular framed glass slabs: Melt, Seed, Fault, Hourglass, Cloud, and Orbit. All six travel on the homepage ribbon. Visit `/door-studies` for a numbered comparison room, individual inspection, viewing-angle adjustment, and dissolve experiments. These are provisional shape studies; the six forms reuse the four existing project destinations until a final selection is made.
 
-This reconstruction lives on `codex/glass-ribbon`. The previous celestial staircase remains in Git and in unmounted legacy modules.
+The active design is the floating porcelain B2 direction. Earlier glass-ribbon and celestial-staircase modules remain as references. See [the porcelain implementation](docs/PORCELAIN-IMPLEMENTATION.md) for current rendering and validation details.
 
 ## Run locally
 
@@ -17,8 +17,8 @@ Open [localhost:3000](http://localhost:3000).
 
 ## Controls
 
-- The eye opens into two sculpted glass rings, with soft particles carrying the transition. The central sculpture begins turning as it appears, grows through two eased revolutions over 7.8 seconds, and settles on the ribbon’s center axis at camera height. That world-space anchor follows the spiral when a door opens, rather than staying at the viewport center. The rings dissolve while the ribbon fades in; clicking the control opts into audio without restarting its movement.
-- Scroll or swipe vertically to move the ribbon. Gentle continuous movement resumes in the last travel direction.
+- The eye opens into two sculpted glass rings, with soft particles carrying the transition. The central sculpture begins turning as it appears, grows through two eased revolutions over 7.8 seconds, and settles on the ribbon’s center axis at its composed height. That world-space anchor follows the spiral when a door opens, rather than staying at the viewport center. The rings dissolve while the ribbon fades in; clicking the control opts into audio without restarting its movement.
+- Scroll or swipe vertically to move the ribbon. Explicit travel rotates the key light and its real cast shadows through daylight, sunset and night; reversing travel reverses the clock. Eight user-driven turns complete a day. Gentle idle travel resumes in the last direction without changing the selected time of day.
 - Mobile uses a small document overflow to paint the scene behind Safari's floating bars. Swipes move the ribbon virtually while the large-viewport canvas stays stationary, avoiding scroll-timeline jumps and flashes. The bars no longer collapse/expand with each ribbon swipe. The original intro and pinch zoom remain available; desktop input and layout are unchanged.
 - Select a project sculpture to bring it into focus.
 - Activate the selected sculpture again to open its project. Scroll, press Escape, or use the close control to return smoothly.
@@ -32,14 +32,15 @@ Audio starts on a completed tap/click so touch Safari receives user activation b
 
 Project URLs remain in `src/lib/projects.ts`; display copy, model assignments, and social destinations are in `src/lib/sanctuaryContent.ts`.
 
-The four sculptures are exported from [`blender/sanctuary-assets.blend`](blender/sanctuary-assets.blend). The reproducible builder is [`blender/build_sanctuary_assets.py`](blender/build_sanctuary_assets.py). Runtime GLBs are in `public/models/sanctuary/`. The orbit sky uses a fixed plate and fixed cloud image layers with camera-independent compositing; scrolling changes only the view. Textures are in `public/textures/sanctuary/layers/`: an 8K desktop cloud atlas and a 4K compact atlas, with WebP fallbacks. Original artwork and the 24K rendered reference are retained in `assets/sky/`. The door-study room keeps its flat 4K backdrop.
+The four sculptures are exported from [`blender/sanctuary-assets.blend`](blender/sanctuary-assets.blend). The reproducible builder is [`blender/build_sanctuary_assets.py`](blender/build_sanctuary_assets.py). Runtime GLBs are in `public/models/sanctuary/`. The sky keeps fixed cloud silhouettes and camera-independent painter order. A shared atmospheric clock grades the sky, clouds, lights and reflections, while subtle flow stays inside cloud silhouettes. Textures are in `public/textures/sanctuary/layers/`: an 8K desktop cloud atlas and a 4K compact atlas, with WebP fallbacks. Original artwork and the 24K rendered reference are retained in `assets/sky/`. The door-study room keeps its flat 4K backdrop.
 
-The active pearl-ceramic and champagne-gold doors are exported from [`blender/door-studies.blend`](blender/door-studies.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py). Six stationary slab GLBs live in `public/models/doors/` (about 2.10 MB total). Their coordinated colors are shared through `src/lib/doorPalette.json`. The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
+The active crowned porcelain and champagne-gold doors are exported from [`blender/door-studies-pearl.blend`](blender/door-studies-pearl.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py). Six stationary slab GLBs live in `public/models/doors/` (about 1.99 MB total). Their coordinated colors are shared through `src/lib/doorPalette.json`. The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
 
 ## Development notes
 
 - [Project direction and scope](docs/PROJECT.md)
 - [Current architecture](docs/ARCHITECTURE.md)
+- [Floating porcelain, moving shadows, and the atmospheric clock](docs/PORCELAIN-IMPLEMENTATION.md)
 - [Proposed flowing-cloud sky and scored options](docs/SKY-DESIGN-PLAN.md)
 - [Sky upscaling experiments and reusable lessons](docs/SKY-ASSET-NOTES.md)
 - [Implemented layered sky, resolution, and validation](docs/SKY-IMPLEMENTATION.md)
@@ -47,7 +48,7 @@ The active pearl-ceramic and champagne-gold doors are exported from [`blender/do
 
 The active implementation is `src/components/sanctuary/`. Older `src/components/scene/`, door/orbit modules, and `blender/md/` describe the legacy version, not the current design.
 
-Door panes use a lightly frosted, tinted physical material with a polished reflection layer (`doorMaterials.ts`). Their existing leaf-edge mesh has its own polished finish, which dissolves with the pane. Doors are fitted using their exported ceramic base contours (`doorSupport.ts`): their bases face mostly across the slope, their bases remain inside the ribbon edges, and oversized bases are scaled down on the compact layout. Frames sit directly on the ribbon without added sills or gold bars; hover scaling is disabled so contact stays fixed. Soft contact footprints are shaded directly into the curved ribbon (`ribbonShadows.ts`), following each occurrence's position, scale, facing, and focus visibility without additional scene renders. The shading is concentrated at the door base, with no broad cast patch. These are stylized grounding shadows, not accurate door silhouettes or glass caustics. Three.js's built-in transmission pass does not include other transparent surfaces, so the ribbon seen through a pane is not truly blurred; overlapping glass can still show sorting limitations. Keep depth writes disabled for these translucent surfaces to avoid cutting out the ribbon behind them.
+Door panes use partially silvered cast glass with polished edges and optical thickness variation. Crowned satin porcelain surrounds have a recessed champagne reveal. `floatingDoor.ts` holds each frame above the highest point of its curved footprint, preserving an intentional air gap. A directional sun/moon casts real soft shadows onto `PorcelainRibbon.tsx`; pane shadow coverage is a partial-transmission approximation, not colored caustics. Reflection maps capture the actual layered sky with shaped highlight cards and refresh as the clock changes. Occluded far portals and viewport-edge fragments fade gently; the selected doorway remains fully visible. The original analytic contact shader and glass ribbon are no longer mounted here.
 
 The reconstruction is implemented and undergoing browser validation and independent design review. Do not infer measured performance, a review score, or deployment readiness from this README.
 

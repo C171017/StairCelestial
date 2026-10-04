@@ -9,9 +9,11 @@ import { SkyEffects } from "./SkyEffects";
 import type { RefObject } from "react";
 import { exportSkyMaster } from "./exportSky";
 import { CleanSkyPlate } from "./CleanSkyPlate";
+import type { SanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
 
-export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady }: { paused?:boolean;timeOverride?:number|null;exporter?:RefObject<((progress:(value:string)=>void)=>Promise<void>)|null>;onReady?:()=>void }) {
+export function LayeredSky({ paused=false, timeOverride=null, atmosphere, reflectionScene, exporter, onReady }: { paused?:boolean;timeOverride?:number|null;atmosphere?:RefObject<SanctuaryAtmosphere>;reflectionScene?:RefObject<THREE.Scene|null>;exporter?:RefObject<((progress:(value:string)=>void)=>Promise<void>)|null>;onReady?:()=>void }) {
   const {gl,size,camera} = useThree();
+  const rendererRatio = useThree(state => state.viewport.dpr);
   const [cloudsReady, setCloudsReady] = useState(false);
   const [plateReady, setPlateReady] = useState(false);
   const handleCloudsReady = useCallback(() => setCloudsReady(true), []);
@@ -24,9 +26,13 @@ export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady 
   // Keep the portal container stable through Fast Refresh and effect replay.
   const [skyScene] = useState(()=>new THREE.Scene());
   const [skyCamera] = useState(()=>new THREE.PerspectiveCamera());
-  // Cloud artwork retains its source resolution. The composited sky needs one
-  // sample per CSS pixel on large displays, while narrow views retain 1.5x.
-  const ratio=Math.min(gl.getPixelRatio(),size.width<700?1.5:1);
+  useEffect(() => {
+    if (!reflectionScene || !cloudsReady || !plateReady) return;
+    reflectionScene.current = skyScene;
+    return () => { if (reflectionScene.current === skyScene) reflectionScene.current = null; };
+  }, [cloudsReady, plateReady, reflectionScene, skyScene]);
+  // Preserve the source detail through the entire Retina compositing path.
+  const ratio=Math.min(rendererRatio,2);
   const target=useFBO(Math.round(size.width*ratio),Math.round(size.height*ratio),{
     type:THREE.UnsignedByteType,depthBuffer:true,stencilBuffer:false,
   });
@@ -70,6 +76,9 @@ export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady 
       gl.domElement.dataset.skyMode="layered";
       gl.domElement.dataset.cloudTime=time.current.toFixed(3);
       gl.domElement.dataset.cloudPaused=String(stopped.current||paused);
+      gl.domElement.dataset.skyRatio=ratio.toFixed(2);
+      gl.domElement.dataset.atmosphereTravel=(atmosphere?.current.userTravel??0).toFixed(4);
+      gl.domElement.dataset.atmosphereNight=(atmosphere?.current.night??0).toFixed(4);
       gl.domElement.dataset.skySceneChildren=String(group.current?.children.length??0);
       if(!stopped.current&&!paused&&delta>0&&delta<0.25){
         frameStats.current.seconds+=delta;frameStats.current.frames++;
@@ -91,9 +100,9 @@ export function LayeredSky({ paused=false, timeOverride=null, exporter, onReady 
   },-0.5);
   return <>
     {createPortal(<group ref={group}>
-      <CleanSkyPlate onReady={handlePlateReady}/>
-      <SkyEffects active={!paused} time={time}/>
-      <Suspense fallback={null}><CloudField onReady={handleCloudsReady}/></Suspense>
+      <CleanSkyPlate onReady={handlePlateReady} atmosphere={atmosphere}/>
+      <SkyEffects active={!paused} timeOverride={timeOverride} atmosphere={atmosphere}/>
+      <Suspense fallback={null}><CloudField onReady={handleCloudsReady} atmosphere={atmosphere} time={time}/></Suspense>
     </group>,skyScene,{camera:skyCamera})}
     <mesh renderOrder={-3000} frustumCulled={false} raycast={()=>null}>
       <planeGeometry args={[2,2]}/>

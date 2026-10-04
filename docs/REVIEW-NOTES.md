@@ -1,3 +1,15 @@
+# Floating porcelain review — 2026-10-04
+
+The current homepage is B2: hovering ceramic/champagne portals above an opaque milk-ivory ribbon, with real cast shadows, improved frame profiles, partial silvered-glass reflections, and one reversible scroll-driven day/sunset/night clock. See [implementation details and browser evidence](PORCELAIN-IMPLEMENTATION.md).
+
+GPT-6 Astra at high reasoning reviewed actual browser captures independently through several revisions. Final desktop scores: daylight **7.5/10**, sunset **7.8/10**, night **6.8/10**. The generated B concept's earlier 8.7/10 is not an implementation score. Sunset has the strongest material depth; the night pass still needs more distinct ceramic/champagne highlights. Compact review identified a partially obscured floating gap, prompting a stricter visibility threshold with temporally damped entry/exit.
+
+The corrected compact view scored **7.2/10**. Astra confirmed clean portal silhouettes and suitability for user review, while noting the subdued material contrast and relatively prominent central control.
+
+Validation: 108 tests, ESLint, TypeScript, and production export pass. Browser checks covered entry, day/sunset/night states, portal opening/Escape, compact composition, and actual forward/reverse wheel-driven atmosphere changes. No browser warnings/errors were observed in the final checks. Performance optimization and physical-device benchmarking remain deferred by the owner; nothing was deployed or pushed.
+
+The following section records the earlier glass-ribbon implementation and is historical.
+
 # Glass ribbon handoff — 2026-10-02
 
 Built on `codex/glass-ribbon`. No deployment or remote push was performed.

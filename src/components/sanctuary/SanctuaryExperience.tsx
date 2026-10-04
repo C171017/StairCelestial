@@ -58,7 +58,7 @@ function SanctuaryContent() {
   }, []);
   const project = selection ? sanctuaryProjects[selection.index] : null;
   return <main id="portfolio-scroll-surface" data-intro-phase={phase} className={`sanctuary${entered ? " has-entered" : ""}${project ? " has-selection" : ""}`}>
-    <div className="world-layer original-intro-world" style={{ opacity: 1, transition: "none" }} aria-label="An infinite glass ribbon carrying six pearl ceramic and champagne gold doors">
+    <div className="world-layer original-intro-world" style={{ opacity: 1, transition: "none" }} aria-label="An infinite porcelain ribbon beneath six floating pearl ceramic and champagne gold portals">
       <SceneBoundary onError={errorHandler}>
         <Scene active={entered} selection={selection} onSelect={setSelection} onReady={readyHandler} onPlaceholder={placeholder} />
       </SceneBoundary>

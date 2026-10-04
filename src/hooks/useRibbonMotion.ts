@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { syncRibbonOrbit } from "@/lib/ribbonOrbit";
 import { bindNativeRibbonScroll } from "@/lib/nativeRibbonScroll";
+import { advanceSanctuaryAtmosphere, createSanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
 import {
   addRibbonInput,
   advanceRibbonMotion,
@@ -26,10 +27,21 @@ function isInteractive(target: EventTarget | null): boolean {
 export function useRibbonMotion(options: RibbonMotionOptions) {
   const motion = useRef(createRibbonMotion());
   const orbit = useRef(createRibbonMotion());
+  const atmosphere = useRef(createSanctuaryAtmosphere());
+  const reviewTravel = useRef<number | null>(null);
+  const reviewStill = useRef(false);
   const latest = useRef(options);
   const reducedMotion = useRef(false);
   const visible = useRef(true);
   latest.current = options;
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    const query = new URLSearchParams(window.location.search);
+    const value = query.get("reviewTravel");
+    if (value !== null && value.trim() !== "" && Number.isFinite(Number(value))) reviewTravel.current = Number(value);
+    reviewStill.current = query.get("reviewStill") === "1";
+  }, []);
 
   useEffect(() => {
     if (options.paused || !options.enabled) {
@@ -145,9 +157,11 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
     advanceRibbonMotion(motion.current, delta, {
       paused: latest.current.paused,
       reducedMotion: reducedMotion.current,
+      cruiseSpeed: reviewStill.current ? 0 : undefined,
     });
     syncRibbonOrbit(motion.current, orbit.current);
+    advanceSanctuaryAtmosphere(atmosphere.current, reviewTravel.current ?? motion.current.userPosition, delta, reducedMotion.current);
   }, -2);
 
-  return { motion, orbit };
+  return { motion, orbit, atmosphere };
 }

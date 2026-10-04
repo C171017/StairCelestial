@@ -1,4 +1,4 @@
-export const SKY_EFFECTS_PERIOD = 32;
+export const SKY_EFFECTS_PERIOD = 120;
 
 export type SkyEffect = {
   kind: "meteor" | "glint";
@@ -10,20 +10,16 @@ export type SkyEffect = {
   intensity: number;
 };
 
-// Positions describe the environment, never the camera. The first meteor is
-// visible from the entrance; later events reward looking around the orbit.
+// Sparse world events, independent of cloud motion, scroll, and day/night.
+// Lighting controls their visibility; daytime remains quiet.
 export const SKY_EFFECTS: readonly SkyEffect[] = [
-  { kind: "meteor", start: 2.7, duration: 2.8, azimuth: Math.PI + 0.12, height: 27, tilt: -0.3, intensity: 0.94 },
-  { kind: "meteor", start: 8.1, duration: 2.5, azimuth: Math.PI * 0.52, height: 30, tilt: -0.23, intensity: 0.85 },
-  { kind: "meteor", start: 13.4, duration: 2.6, azimuth: 0.1, height: 25, tilt: -0.38, intensity: 0.9 },
-  { kind: "meteor", start: 18.5, duration: 2.7, azimuth: Math.PI * 1.49, height: 31, tilt: -0.28, intensity: 0.85 },
-  { kind: "meteor", start: 23.1, duration: 2.6, azimuth: Math.PI - 0.38, height: 22, tilt: -0.34, intensity: 0.9 },
-  { kind: "meteor", start: 27.6, duration: 2.5, azimuth: 0.75, height: 28, tilt: -0.25, intensity: 0.85 },
-  { kind: "glint", start: 6.1, duration: 3.6, azimuth: Math.PI - 0.39, height: 34, tilt: 0.15, intensity: 0.45 },
-  { kind: "glint", start: 10.6, duration: 4.1, azimuth: Math.PI * 1.52, height: 17, tilt: -0.1, intensity: 0.38 },
-  { kind: "glint", start: 16.8, duration: 3.8, azimuth: Math.PI * 0.37, height: 32, tilt: 0.2, intensity: 0.42 },
-  { kind: "glint", start: 21.7, duration: 4.0, azimuth: Math.PI + 0.33, height: 15, tilt: -0.12, intensity: 0.4 },
-  { kind: "glint", start: 26.1, duration: 3.8, azimuth: 0.25, height: 37, tilt: 0.1, intensity: 0.38 },
+  { kind: "meteor", start: 12.4, duration: 2.8, azimuth: Math.PI + 0.12, height: 32, tilt: -0.3, intensity: 0.8 },
+  { kind: "meteor", start: 37.6, duration: 2.5, azimuth: Math.PI * 0.52, height: 39, tilt: -0.23, intensity: 0.72 },
+  { kind: "meteor", start: 61.2, duration: 2.6, azimuth: 0.1, height: 29, tilt: -0.38, intensity: 0.76 },
+  { kind: "meteor", start: 85.7, duration: 2.7, azimuth: Math.PI * 1.49, height: 36, tilt: -0.28, intensity: 0.72 },
+  { kind: "meteor", start: 109.3, duration: 2.6, azimuth: Math.PI - 0.38, height: 26, tilt: -0.34, intensity: 0.76 },
+  { kind: "glint", start: 25.1, duration: 4.6, azimuth: Math.PI - 0.39, height: 43, tilt: 0.15, intensity: 0.24 },
+  { kind: "glint", start: 74.6, duration: 4.8, azimuth: Math.PI * 1.52, height: 37, tilt: -0.1, intensity: 0.20 },
 ];
 
 export type SkyEffectSample = { progress: number; opacity: number };

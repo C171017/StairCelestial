@@ -35,12 +35,14 @@ test("the control stays on the transformed spiral axis at camera height througho
 });
 
 test("camera orbit and vertical pool recycling do not detach the axis anchor", () => {
-  const expected = new THREE.Vector3(0, 2.8, 0);
   for (const turns of [-1, -0.25, 0, 0.2, 0.5, 1.001]) {
     for (const offset of [-100, -5, 0, 11, 100]) {
       const scrollingFrame = new THREE.Matrix4().makeTranslation(0, offset, 0);
       const camera = ribbonOrbitPosition(turns);
-      assert.ok(spiralControlAnchor(scrollingFrame, camera.y, new THREE.Vector3()).distanceTo(expected) < 1e-10);
+      for (const anchorHeight of [camera.y, 2.8]) {
+        const expected = new THREE.Vector3(0, anchorHeight, 0);
+        assert.ok(spiralControlAnchor(scrollingFrame, anchorHeight, new THREE.Vector3()).distanceTo(expected) < 1e-10);
+      }
     }
   }
 });

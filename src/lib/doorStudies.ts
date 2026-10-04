@@ -13,4 +13,4 @@ export const doorStudies = [
 export type DoorStudy = (typeof doorStudies)[number];
 
 // Bump when replacing the exported models so existing previews shed cached GLBs.
-export const doorModelUrl = (study: DoorStudy) => `/models/doors/${study.id}.glb?v=7`;
+export const doorModelUrl = (study: DoorStudy) => `/models/doors/${study.id}.glb?v=8`;

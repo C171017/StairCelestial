@@ -111,6 +111,41 @@ def ring(points, inside, mat, name='Fixed_GlassFrame', depth=.13, bevel=.045):
     obj.modifiers['Soft cast edges'].segments=5
     return obj
 
+def ceramic_ring(points, inside, mat):
+    """A gently crowned cast profile; the inner aperture remains unchanged.
+
+    The broad front rolls into a narrow recessed inner wall instead of reading
+    as one mechanically extruded strip. Slow variation changes the shoulder
+    depth around the perimeter, without adding noisy silhouette ripples.
+    """
+    n=len(points)
+    # Perimeter fraction and depth of the closed, softly rounded section.
+    profile=[(0,.052),(.045,.103),(.17,.146),(.40,.157),(.69,.148),
+             (.88,.122),(1,.068),(1,-.068),(.88,-.122),(.69,-.148),
+             (.40,-.157),(.17,-.146),(.045,-.103),(0,-.052)]
+    verts=[]
+    for fraction,depth in profile:
+        for i,((x,z),(ix,iz)) in enumerate(zip(points,inside)):
+            angle=math.tau*i/n
+            shoulder=1+.085*math.sin(angle+.7)+.045*math.cos(2*angle-1.1)
+            # Slight cast variation in section, with an unchanged inner opening.
+            width=1+.07*math.sin(angle-1.2)+.035*math.sin(3*angle+.4)
+            outer_x=ix+(x-ix)*width
+            outer_z=iz+(z-iz)*width
+            verts.append((outer_x+(ix-outer_x)*fraction,depth*shoulder,
+                          outer_z+(iz-outer_z)*fraction))
+    faces=[]
+    for section in range(len(profile)):
+        next_section=(section+1)%len(profile)
+        for i in range(n):
+            j=(i+1)%n
+            faces.append((section*n+i,section*n+j,next_section*n+j,next_section*n+i))
+    # Angular Fault keeps its architectural cuts, with softened corners.
+    obj=mesh('Fixed_GlassFrame',verts,faces,mat,root,.012 if n<=20 else 0)
+    for polygon in obj.data.polygons:
+        polygon.use_smooth = True
+    return obj
+
 def frame_details(points, inside):
     # Both faces are finished: randomized doors can be approached from either side.
     def between(t):
@@ -118,9 +153,9 @@ def frame_details(points, inside):
     # Pull the liner slightly into the aperture, avoiding coincident inner walls
     # with the ceramic (which otherwise shimmer as the camera moves).
     cy=(min(z for _,z in inside)+max(z for _,z in inside))/2
-    ring(between(.80), inset(inside,.989,.994,cy), gold, 'Fixed_ChampagneReveal', .134, .006)
+    ring(between(.90), inset(inside,.995,.997,cy), gold, 'Fixed_ChampagneReveal', .084, .004)
     for side,suffix in [(-1,'Front'),(1,'Back')]:
-        line('Fixed_InnerLight_'+suffix,[(x,side*.141,z) for x,z in between(.89)],.005,inner_light,root,True)
+        line('Fixed_InnerLight_'+suffix,[(x,side*.090,z) for x,z in between(.965)],.0028,inner_light,root,True)
 
 def slab(points, mat, parent):
     n=len(points);depth=.045
@@ -160,11 +195,11 @@ for spec in studies:
     height=max(z for _,z in points);cy=height/2
     inner=inset(points,.85,.91,cy)
     leaf=inset(inner,.957,.973,cy)
-    frame=material('Door_'+name+'_PearlCeramic',linear_color(PALETTE['doors'][name]['color']),rough=.25)
-    frame.node_tree.nodes['Principled BSDF'].inputs['Coat Weight'].default_value=.85
-    frame.node_tree.nodes['Principled BSDF'].inputs['Coat Roughness'].default_value=.14
+    frame=material('Door_'+name+'_PearlCeramic',linear_color('#f0e6d7'),rough=.36)
+    frame.node_tree.nodes['Principled BSDF'].inputs['Coat Weight'].default_value=.25
+    frame.node_tree.nodes['Principled BSDF'].inputs['Coat Roughness'].default_value=.28
     pane=material('Door_'+name+'_LeafGlass',(1,1,1),1,rough=.055)
-    ring(points,inner,frame)
+    ceramic_ring(points,inner,frame)
     frame_details(points,inner)
     # A centered stationary slab group supports visibility only, with no hinge rig.
     slab_group=bpy.data.objects.new('GlassSlab',None);collection.objects.link(slab_group)
@@ -206,6 +241,6 @@ scene.render.resolution_x=1500;scene.render.resolution_y=1000;scene.render.resol
 scene.render.image_settings.file_format='PNG';scene.render.filepath=os.path.join(OUT,'door-studies.png')
 scene.view_settings.view_transform='AgX'
 bpy.ops.object.select_all(action='DESELECT')
-bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'blender/door-studies.blend'))
+bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'blender/door-studies-pearl.blend'))
 with open(os.path.join(OUT,'manifest.json'),'w') as f:json.dump(report,f,indent=2)
 result={'exports':report,'source':bpy.data.filepath,'preserved_scenes':[s.name for s in bpy.data.scenes if s!=scene]}

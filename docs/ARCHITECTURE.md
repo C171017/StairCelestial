@@ -1,14 +1,14 @@
 # Sanctuary architecture
 
-This document describes the active glass-ribbon homepage. The old staircase, rectangular portals, planets, and former staircase camera rig are legacy. Six new irregular glass-door studies are mounted on the ribbon.
+This document describes the active floating-portal porcelain homepage. [PORCELAIN-IMPLEMENTATION.md](PORCELAIN-IMPLEMENTATION.md) records the October 4 rendering changes and supersedes historical glass/video details below. The old staircase, rectangular portals, planets, and former staircase camera rig are legacy. Six new irregular glass-door studies are mounted on the ribbon.
 
 ## Entry and component map
 
 - `src/app/page.tsx` mounts `SanctuaryExperience`.
 - `src/components/sanctuary/SanctuaryExperience.tsx` owns entrance intent/readiness, selection, the project detail panel, placeholder notices, Escape handling, and error/timeout fallback. It dynamically imports the Canvas with SSR disabled.
 - `SanctuaryScene.tsx` creates the orbit camera, surrounding cloud sky, studio environment, readiness marker, and ribbon world.
-- `OrbitSky.tsx` mounts `LayeredSky.tsx`: `CleanSkyPlate` plus 80 fixed `CloudField` image layers are composed into an opaque background for glass refraction. `cloudField.ts` gives every layer a unique, camera-independent radial draw order. The homepage pauses sky effects; `/sky-review` retains optional effects, an orbit continuity probe, and video recording.
-- `GlassRibbon.tsx` renders the procedurally swept glass strip and fine edge highlights.
+- `OrbitSky.tsx` mounts `LayeredSky.tsx`: `CleanSkyPlate` plus 80 fixed `CloudField` image layers are composed into an opaque background for glass refraction. `cloudField.ts` gives every layer a unique, camera-independent radial draw order. The homepage grades the sky with the atmosphere clock and enables restrained night effects; `/sky-review` retains optional effects, an orbit continuity probe, and video recording.
+- `PorcelainRibbon.tsx` renders the opaque swept porcelain receiver with soft real shadow maps. `GlassRibbon.tsx` and `ribbonShadows.ts` remain unmounted references. `floatingDoor.ts` adds footprint-safe clearance and three-quarter presentation.
 - `ProjectArtifact.tsx` supplies the door hit target and accessible label. `GlassDoor.tsx` clones each shared GLB hierarchy, owns/disposes cloned materials, and dissolves only the stationary `door_role=slab` subtree. Fixed frames remain stationary. `ProjectSculpture.tsx` mounts the matching preserved project sculpture only for the selected door, wholly behind its slab, with its own reversible reveal easing. Shape identifiers live in `src/lib/doorStudies.ts` independently of project records.
 - `/door-studies` mounts `DoorStudyExperience` and `DoorStudyScene`, reusing the cloud texture, studio lighting, and `GlassDoor`. It presents a responsive irregular scatter and individual views with dissolve and viewing-angle controls. It deliberately bypasses the portfolio entrance for direct review.
 - `SocialArtifacts.tsx` renders the LinkedIn and GitHub tokens and their labels outside the moving ribbon hierarchy.
@@ -51,22 +51,18 @@ To add a project, supply both the base project record and its Sanctuary presenta
 
 Both social URLs are deliberately `null`. Activating a token shows a placeholder notice. Once configured, the token and label open the supplied URL with `noopener,noreferrer`. Do not infer a personal social account from a project-hosting URL.
 
-## Assets and rendering budget
+## Current assets and rendering
 
-- `blender/sanctuary-assets.blend` contains the four sculptures and a studio inspection scene, preserving the original default scene.
-- `blender/build_sanctuary_assets.py` builds and exports the sculptures without depending on remote asset downloads.
-- `public/models/sanctuary/{music,jazz,atlas,network}.glb` use named portable materials, ground-centered origins, and glTF Y-up coordinates. Each sculpture has 4–7 material meshes; the four files total approximately 1.80 MB uncompressed.
-- `public/models/sanctuary/studio-preview.png` is an inspection render, not a runtime texture.
-- `public/textures/sanctuary/cloudscape-360-8k.webp` is the 8192 × 4096 homepage sky (1,313,292 bytes), assembled from four overlapping ByteDance 4K upscales. Screens below 700 CSS pixels use `cloudscape-360-4k.webp` (4096 × 2048; 559,154 bytes). GPU texture limits can lower the selection further. A nested Suspense keeps the original `cloudscape-360.webp` visible while the selected texture loads. The high-resolution panorama already has a continuous wraparound section; only the original fallback needs the shader longitude repair. Both retain pole blending and a world-fixed sky shell with subtle positional parallax. This is not volumetric cloud geometry.
-- The door-study room uses `cloudscape-4k.webp` (4096 × 2305; 172,818 bytes). The original `cloudscape.webp` is retained for low-limit GPUs and the CSS loading background.
-- `scripts/prepare-sky-upscale.mjs` creates the overlapping source tiles and repairs the original longitude join within a single wraparound tile. `scripts/stitch-sky-upscale.mjs` validates tile dimensions, aligns fractional offsets, blends overlaps in linear light, exports the 8K/4K assets, and measures boundary continuity. Run both from the repository root with a working-directory argument; place the four 4096-square model outputs in that directory as specified by its manifest.
-- `public/videos/sanctuary/cloud-drift-desktop.mp4` is 2720 × 1360 (8,609,827 bytes); `cloud-drift-compact.mp4` is 1536 × 768 (5,736,283 bytes). Each muted H.264 file contains 192 frames at 24 fps: an eight-second loop played at 0.8 speed for a ten-second cycle. The compact version serves screens below 700 CSS pixels or GPUs with texture limits below 4096.
-- `blender/door-studies.blend` preserves earlier scenes and adds the six-threshold studio. `blender/build_door_studies.py` reproduces six GLBs with a centered `door_role=slab` group, glass surface and polished edge, beveled ceramic frame, champagne lining, and paired warm light strips, without handles or hinge rigs. `public/models/doors/manifest.json` records export sizes, heights, and source-space slab centers; runtime coordinates are glTF Y-up. Total door GLB size is 2,098,068 bytes.
-- `src/lib/doorPalette.json` is shared by Blender and runtime `doorMaterials.ts`. Clearcoat ceramic is opaque; gold uses metallic-roughness shading. The clear leaves preserve the site's alpha/transmission approximation for overlapping glass. Only the slab surface and polished edge dissolve; instance-owned ceramic, gold, and light materials keep the frame intact. `StudioLight` captures the cloud panorama plus studio highlight panels once into a 256-pixel cube environment; reflections change with viewing angle, but do not track the animated sky video. The warm strips are emissive surfaces, not dynamic area lights.
+- Six version-8 GLBs, 84,032 total unique triangles and 1,991,408 bytes, are exported from `blender/door-studies-pearl.blend`. The earlier `.blend` remains preserved. Apertures and slab transforms retain their existing contract.
+- `doorMaterials.ts` and `porcelainFinish.ts` separate satin ceramic, recessed champagne metal, and partially silvered cast glass. Glass has shallow normal and thickness variation; this is not full scene ray tracing.
+- `SceneEnvironment.tsx` rotates a 4096-map directional key light and uses PCSS soft shadows. Fade-aware custom depth materials preserve shadow consistency through entrance, focus and dissolve.
+- A 512 cube/PMREM capture samples the actual layered sky plus deliberate reflection cards. The map updates after small solar-phase changes; direct lighting updates each frame. Capture resources are shared and cleaned up; cards are reattached on StrictMode effect replay.
+- The canvas uses 1.5–2 DPR, full-resolution transmission, and a sky compositor following renderer DPR. This is a visual-quality prototype, not a certified M4 or mobile performance tier.
+- Source cloud atlases stay 8K desktop / 4K compact, with WebP fallback. The clean sky and cloud palettes come from `sanctuaryAtmosphere.ts`; stars are behind cloud opacity.
+- The camera is modestly elevated; the central bronze control keeps a lower composed world-height anchor on the transformed ribbon axis.
 
-The Canvas caps DPR at 1.5 and captures a low-resolution studio environment once. Avoid full volumetric clouds, unnecessary render passes, per-frame model cloning, or expanding the finite pool. These are implementation choices, not proof of a measured frame rate; device performance still requires validation.
+## Historical animated sky and loop validation
 
-## Animated sky and loop validation
 
 The sky shader explicitly decodes video sRGB before blending in linear light. At steady playback, video contributes 65% near the cloud floor, rising smoothly to 80% in the upper sky; the 8K/4K still retains sharp structure. Both poles taper back to the still panorama. Video and effects remain fixed in world space as the camera orbits. Shooting stars and glints use a separate bounded 32-second schedule, so a meteor is not cut by the cloud video's loop boundary.
 

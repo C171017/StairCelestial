@@ -5,6 +5,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import * as THREE from "three";
 import { LayeredSky } from "@/components/sanctuary/LayeredSky";
+import { createSanctuaryAtmosphere, sampleSanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
 
 type CapturedFrame = {
   pixels: Uint8ClampedArray;
@@ -117,6 +118,9 @@ export default function SkyReview() {
   const [status,setStatus]=useState('');
   const [busy,setBusy]=useState(false);
   const [moment,setMoment]=useState<number|null>(null);
+  const [travel,setTravel]=useState(0);
+  const atmosphere=useRef(createSanctuaryAtmosphere());
+  useEffect(()=>{sampleSanctuaryAtmosphere(travel,atmosphere.current);},[travel]);
   const exporter=useRef<((progress:(value:string)=>void)=>Promise<void>)|null>(null);
   const pointer=useRef<number|null>(null);
   const capture=useRef<Capture|null>(null);
@@ -229,9 +233,9 @@ export default function SkyReview() {
   return <main style={{width:"100vw",height:"100dvh"}} onWheel={e=>{if(!busy)setAzimuth(a=>a+e.deltaY*0.0015);}}
     onPointerDown={e=>{if(!busy)pointer.current=e.clientX;}} onPointerMove={e=>{if(!busy&&pointer.current!==null){setAzimuth(a=>a+(e.clientX-pointer.current!)*0.005);pointer.current=e.clientX;}}}
     onPointerUp={()=>{pointer.current=null;}} onPointerCancel={()=>{pointer.current=null;}} onPointerLeave={()=>{pointer.current=null;}}>
-    <Canvas dpr={[1,1.5]} camera={{position:[0,2.8,24],fov:42,far:3000}} gl={{antialias:false}}
+    <Canvas dpr={[1,2]} camera={{position:[0,2.8,24],fov:42,far:3000}} gl={{antialias:false}}
       onCreated={({gl})=>{gl.toneMapping=THREE.NoToneMapping;}}>
-      <View azimuth={azimuth} probeAzimuth={probeAzimuth}/><Suspense fallback={null}><LayeredSky paused={paused} timeOverride={moment} exporter={exporter}/></Suspense>
+      <View azimuth={azimuth} probeAzimuth={probeAzimuth}/><Suspense fallback={null}><LayeredSky paused={paused} timeOverride={moment} atmosphere={atmosphere} exporter={exporter}/></Suspense>
       <FrameCapture capture={capture} probeAzimuth={probeAzimuth}/>
     </Canvas>
     <div style={{position:"absolute",bottom:20,left:20,right:20,width:"fit-content",maxWidth:"calc(100% - 40px)",display:"flex",flexWrap:"wrap",gap:12,color:"#17394b",background:"#ffffffdd",padding:12,borderRadius:12}} onPointerDown={e=>e.stopPropagation()} onWheel={e=>e.stopPropagation()}>
@@ -239,6 +243,7 @@ export default function SkyReview() {
       <button disabled={busy} onClick={()=>setAzimuth(0)}>Entrance view</button>
       <label>View ° <input disabled={busy} aria-label="View azimuth in degrees" type="number" step="0.01" value={azimuth*180/Math.PI} style={{width:90}} onChange={e=>setAzimuth(Number(e.target.value)*Math.PI/180)}/></label>
       <label>Effect time <input disabled={busy} aria-label="Effect time in seconds" type="number" min="0" max="36000" value={moment??''} style={{width:66}} onChange={e=>{const value=Number(e.target.value);setMoment(Number.isFinite(value)?Math.min(36000,Math.max(0,value)):0);setPaused(true);}}/></label>
+      <label>Sky travel <input disabled={busy} aria-label="Sky travel in turns" type="number" step="0.1" value={travel} style={{width:66}} onChange={e=>{const value=Number(e.target.value);if(Number.isFinite(value))setTravel(value);}}/></label>
       <button disabled={busy} onClick={runProbe}>Run continuity probe</button>
       {report&&<button disabled={busy} onClick={()=>saveReport(report)}>Save probe report</button>}
       <button disabled={busy} onClick={async()=>{setPaused(true);setBusy(true);try{if(!exporter.current)throw new Error('Sky is still loading');await exporter.current(setStatus);setStatus('Master saved');}catch{setStatus('Export failed — try again after the sky loads.');}finally{setBusy(false);}}}>Save master</button>

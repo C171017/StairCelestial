@@ -4,7 +4,8 @@ import { advanceSkyEffectsTime, sampleSkyEffect, SKY_EFFECTS, SKY_EFFECTS_PERIOD
 
 test("sky effects are dark on both sides of their independent cycle boundary", () => {
   for (const effect of SKY_EFFECTS) {
-    for (const boundary of [-64, -32, 0, 32, 64, 32000]) {
+    for (const cycle of [-1000, -2, -1, 0, 1, 2, 1000]) {
+      const boundary = cycle * SKY_EFFECTS_PERIOD;
       for (const offset of [-0.2, -1 / 60, 0, 1 / 60, 0.2]) {
         assert.equal(sampleSkyEffect(effect, boundary + offset, { progress: 0, opacity: 0 }).opacity, 0);
       }
@@ -43,16 +44,23 @@ test("world events repeat deterministically through forward and reverse cycles",
   }
 });
 
-test("the entrance meteor is bright near four seconds and its path is fixed in the initial sky", () => {
+test("meteors are sparse, non-overlapping world events with a quiet cycle boundary", () => {
   const first = SKY_EFFECTS[0];
   assert.equal(first.kind, "meteor");
   assert.ok(Math.cos(first.azimuth) < -0.98);
-  assert.ok(sampleSkyEffect(first, 4, { progress: 0, opacity: 0 }).opacity > 0.9);
+  assert.ok(sampleSkyEffect(first, first.start + first.duration * 0.4, { progress: 0, opacity: 0 }).opacity > 0.7);
+  const meteors = SKY_EFFECTS.filter(effect => effect.kind === "meteor");
+  for (let index = 0; index < meteors.length; index++) {
+    const current = meteors[index];
+    const nextStart = index + 1 < meteors.length ? meteors[index + 1].start : meteors[0].start + SKY_EFFECTS_PERIOD;
+    assert.ok(nextStart - current.start >= 23, "keep at least 23 seconds between worldwide meteors");
+    assert.ok(nextStart - current.start - current.duration > 20, "no meteor shower or overlapping trails");
+  }
 });
 
 test("paused clocks do not advance and returning from suspension cannot skip an event", () => {
   assert.equal(advanceSkyEffectsTime(4, 90, true), 4);
   assert.ok(Math.abs(advanceSkyEffectsTime(4, 90, false) - 4.1) < 1e-12);
   assert.equal(advanceSkyEffectsTime(4, -1, false), 4);
-  assert.ok(Math.abs(advanceSkyEffectsTime(31.99, 0.02, false) - 0.01) < 1e-12);
+  assert.ok(Math.abs(advanceSkyEffectsTime(SKY_EFFECTS_PERIOD - 0.01, 0.02, false) - 0.01) < 1e-12);
 });

@@ -106,10 +106,11 @@ type FlyPose = {
   billboard: number;
 };
 
-export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }: {
+export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, anchorHeight }: {
   theme?: "original" | "cloud";
   ribbonMotion?: RefObject<RibbonMotionSnapshot>;
   ribbonFrame?: RefObject<THREE.Group | null>;
+  anchorHeight?: number;
 }) {
   const cloud = theme === "cloud";
   const groupRef = useRef<THREE.Group>(null);
@@ -545,7 +546,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame }:
     if (cloud) {
       const frame = ribbonFrame?.current;
       frame?.updateWorldMatrix(true, false);
-      spiralControlAnchor(frame?.matrixWorld, camera.position.y, axisAnchor);
+      spiralControlAnchor(frame?.matrixWorld, anchorHeight ?? camera.position.y, axisAnchor);
       worldPos.lerp(axisAnchor, 1 - pose.billboard);
     }
     group.position.copy(worldPos);

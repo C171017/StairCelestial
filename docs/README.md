@@ -2,11 +2,13 @@
 
 The active homepage is the Sanctuary glass-ribbon experience. Read:
 
-1. [PROJECT.md](PROJECT.md) — current user direction, scope, content, and constraints.
-2. [ARCHITECTURE.md](ARCHITECTURE.md) — rendering, motion, focus, entrance, and assets.
-3. [WEB-PHASES.md](WEB-PHASES.md) — implementation and validation status.
-4. [REVIEW-NOTES.md](REVIEW-NOTES.md) — independent design reviews and decisions for the owner.
-5. [ASSETS.md](ASSETS.md) — asset source and generation notes.
+1. [PORCELAIN-IMPLEMENTATION.md](PORCELAIN-IMPLEMENTATION.md) — active floating B2 renderer, atmospheric clock, shadows, and validation.
+2. [PROJECT.md](PROJECT.md) — current user direction, scope, content, and constraints.
+3. [ARCHITECTURE.md](ARCHITECTURE.md) — rendering, motion, focus, entrance, and assets.
+4. [WEB-PHASES.md](WEB-PHASES.md) — implementation and validation status.
+5. [REVIEW-NOTES.md](REVIEW-NOTES.md) — independent design reviews and decisions for the owner.
+6. [ASSETS.md](ASSETS.md) — asset source and generation notes.
+7. [VISUAL-POLISH-REVIEW.md](VISUAL-POLISH-REVIEW.md) — October 4 design critique, measured preview limits, proposed M2 performance budget, and deferred ascent-to-night idea.
 
 Update these documents whenever the mounted experience, interactions, or asset pipeline changes. Run `npm test`, `npm run lint`, and `npm run build` for substantive scene changes; record manual browser evidence separately from automated tests.
 

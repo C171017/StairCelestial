@@ -1,0 +1,75 @@
+"use client";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+/** Temporary diagnostic. Query GPU render work without blocking for results. */
+export function VisualAuditProbe() {
+  const { gl } = useThree();
+  const samples = useRef<{dt:number;calls:number;triangles:number}[]>([]);
+  const gpuFrames = useRef<number[]>([]);
+  const started = useRef(0);
+  const frame = useRef(0);
+  const poll = useRef<()=>void>(()=>{});
+  useEffect(() => {
+    const originalReset = gl.info.autoReset;
+    const originalRender = gl.render;
+    gl.info.autoReset = false;
+    started.current = performance.now();
+    const context = gl.getContext() as WebGL2RenderingContext;
+    const ext = context.getExtension('EXT_disjoint_timer_query_webgl2');
+    const queue: {q:WebGLQuery; frame:number}[]=[];
+    const totals = new Map<number,{pending:number;ms:number}>();
+    if (ext) {
+      gl.render = function(scene,camera) {
+        if(performance.now()-started.current<16000 || context.getQuery(ext.TIME_ELAPSED_EXT,context.CURRENT_QUERY)) return originalRender.call(gl,scene,camera);
+        const q = context.createQuery();
+        if(!q)return originalRender.call(gl,scene,camera);
+        const entry = totals.get(frame.current)||{pending:0,ms:0};entry.pending++;totals.set(frame.current,entry);
+        context.beginQuery(ext.TIME_ELAPSED_EXT,q);
+        try { originalRender.call(gl,scene,camera); }
+        finally { context.endQuery(ext.TIME_ELAPSED_EXT);queue.push({q,frame:frame.current}); }
+      };
+      poll.current=()=>{
+        const disjoint=context.getParameter(ext.GPU_DISJOINT_EXT);
+        for(let i=queue.length-1;i>=0;i--){
+          const item=queue[i];
+          if(!context.getQueryParameter(item.q,context.QUERY_RESULT_AVAILABLE))continue;
+          const entry=totals.get(item.frame);
+          if(entry){entry.pending--;entry.ms+=context.getQueryParameter(item.q,context.QUERY_RESULT)/1e6;}
+          context.deleteQuery(item.q);queue.splice(i,1);
+        }
+        for(const [id,entry] of totals){
+          if(entry.pending===0&&id<frame.current){if(!disjoint)gpuFrames.current.push(entry.ms);totals.delete(id);}
+        }
+        if(disjoint){gpuFrames.current=[];totals.clear();}
+      };
+    }
+    return () => {
+      gl.info.autoReset=originalReset;gl.render=originalRender;
+      queue.forEach(item=>context.deleteQuery(item.q));poll.current=()=>{};
+      delete gl.domElement.dataset.visualAudit;
+    };
+  }, [gl]);
+  useFrame((_, delta) => {
+    frame.current++;poll.current();
+    if (!document.hidden && performance.now() - started.current > 16000) {
+      samples.current.push({dt:delta*1000,calls:gl.info.render.calls,triangles:gl.info.render.triangles});
+      if (samples.current.length >= 300) {
+        const rows=samples.current,times=rows.map(r=>r.dt).sort((a,b)=>a-b),gpu=gpuFrames.current.sort((a,b)=>a-b);
+        gl.domElement.dataset.visualAudit = JSON.stringify({
+          capturedAt:new Date().toISOString(),samples:rows.length,
+          meanFrameMs:rows.reduce((s,r)=>s+r.dt,0)/rows.length,
+          p50FrameMs:times[Math.floor(times.length*.5)],p95FrameMs:times[Math.floor(times.length*.95)],
+          framesOver33ms:rows.filter(r=>r.dt>33.34).length,
+          meanDrawCalls:rows.reduce((s,r)=>s+r.calls,0)/rows.length,
+          meanTriangles:rows.reduce((s,r)=>s+r.triangles,0)/rows.length,
+          gpuSamples:gpu.length,meanRenderGpuMs:gpu.length?gpu.reduce((s,r)=>s+r,0)/gpu.length:null,p95RenderGpuMs:gpu[Math.floor(gpu.length*.95)]??null,
+          textures:gl.info.memory.textures,geometries:gl.info.memory.geometries,
+          dpr:gl.getPixelRatio(),width:gl.domElement.width,height:gl.domElement.height
+        });
+        samples.current=[];gpuFrames.current=[];
+      }
+    } else {samples.current=[];gpuFrames.current=[];}
+    gl.info.reset();
+  }, -2);
+  return null;
+}

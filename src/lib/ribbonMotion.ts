@@ -5,6 +5,8 @@ export interface RibbonMotionSnapshot {
 }
 
 export interface RibbonMotionState extends RibbonMotionSnapshot {
+  /** Unwrapped user-driven travel, excluding the independently eased cruise. */
+  userPosition: number;
   pendingInput: number;
   inputVelocity: number;
   cruiseVelocity: number;
@@ -27,6 +29,7 @@ export function relativeCycle(value: number, period = 1): number {
 export function createRibbonMotion(): RibbonMotionState {
   return {
     position: 0,
+    userPosition: 0,
     velocity: 0,
     pendingInput: 0,
     inputVelocity: 0,
@@ -116,6 +119,7 @@ export function advanceRibbonMotion(
     }
 
     motion.position += inputTravel + (previousCruiseVelocity + motion.cruiseVelocity) * 0.5 * dt;
+    motion.userPosition += inputTravel;
     motion.velocity = motion.inputVelocity + motion.cruiseVelocity;
   }
 }

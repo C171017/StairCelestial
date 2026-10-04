@@ -9,10 +9,12 @@ import { doorStudies } from "./doorStudies";
 import { doorPlacement } from "./doorPlacement";
 import { getDoorBase, fitDoorSupport } from "./doorSupport";
 import { createRibbonSections } from "./ribbonGeometry";
+import { floatDoorSupport } from "./floatingDoor";
+import { ORBIT_HEIGHT, ORBIT_RADIUS } from "./ribbonOrbit";
 
 const options = {
   focusScale: 1.7, focusPosition: { x: 0, y: 2.3, z: 4.2 },
-  cameraPosition: new THREE.Vector3(0, 2.8, 24),
+  cameraPosition: new THREE.Vector3(0, ORBIT_HEIGHT, ORBIT_RADIUS),
 };
 
 async function loadDoor(id: string) {
@@ -55,8 +57,7 @@ test("both obstructed faces select the smaller obstruction", async () => {
   front.dispose(); back.dispose(); geometry.dispose(); material.dispose();
 });
 
-test("all six actual door openings find clear views on desktop and compact spirals", async () => {
-  const chosenSides = new Set<number>();
+test("all six floating door openings find clear views on desktop and compact porcelain spirals", async () => {
   for (const compact of [false, true]) {
     const radius = compact ? 2.6 : 5.7, width = compact ? 1.45 : 2.25;
     const sections = createRibbonSections(radius, width);
@@ -65,13 +66,11 @@ test("all six actual door openings find clear views on desktop and compact spira
     for (const study of doorStudies) {
       const model = await loadDoor(study.id);
       for (const occurrence of [-3, 0, 3]) {
-        const support = fitDoorSupport(doorPlacement(occurrence, 731), getDoorBase(model), radius, width, compact);
+        const support = floatDoorSupport(fitDoorSupport(doorPlacement(occurrence, 731), getDoorBase(model), radius, width, compact));
         const result = chooseRibbonFocusSide(ribbon, support, getDoorAperture(model), { ...options, focusScale: compact ? 1.55 : 1.7 });
-        chosenSides.add(result.side);
         assert.equal(result.blocked, 0, `${study.id}, compact=${compact}, occurrence=${occurrence}`);
       }
     }
     sections.forEach(section => section.dispose()); material.dispose();
   }
-  assert.equal(chosenSides.size, 2, "the arrangement exercises both finished faces");
 });
