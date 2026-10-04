@@ -43,8 +43,8 @@ function SanctuaryContent() {
   useLayoutEffect(() => {
     const root = document.documentElement;
     if (!entered || !root.classList.contains("native-ribbon-scroll")) return;
-    // Seed the document layer before its first paint. The CSS scroll timeline
-    // takes over without a frame at the runway's off-screen document origin.
+    // Place the document layer before its first paint. Mobile swipes move the
+    // ribbon internally, leaving this canvas at the same document coordinate.
     root.style.setProperty("--ribbon-scroll-position", `${window.scrollY}px`);
   }, [entered]);
   useEffect(() => {

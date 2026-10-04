@@ -10,49 +10,36 @@ button:disabled { cursor: default; }
 .sanctuary { width: 100%; height: 100dvh; position: relative; overflow: hidden; touch-action: pan-x pinch-zoom; background: #dceaf0 url('/textures/sanctuary/cloudscape.webp') center/cover; }
 .world-layer { position: absolute; inset: 0; opacity: 0; transition: opacity var(--entrance-fade-duration, 1100ms) ease; }
 .world-layer > div { overflow: clip !important; }
-/* Native document scrolling lets mobile browser bars expand/collapse. Keep the
-   artwork on the LARGE viewport so those transitions never resize the camera. */
+/* A small scrollable document lets Safari paint behind its floating chrome.
+   Vertical swipes move the ribbon, not this document or its WebGL layer. */
 @media (hover: none) and (pointer: coarse) {
   .sanctuary { height: 100lvh; }
   html.native-ribbon-scroll, .native-ribbon-scroll body { height: auto; min-height: 100%; overflow: visible; overflow-x: clip; }
-  html.native-ribbon-scroll { --ribbon-scroll-runway: 200000px; scrollbar-width: none; scroll-behavior: auto; overflow-anchor: none; }
+  html.native-ribbon-scroll { --ribbon-overdraw: 100px; --ribbon-scroll-runway: calc(200lvh + 400px); scrollbar-width: none; scroll-behavior: auto; overflow-anchor: none; }
   .native-ribbon-scroll::-webkit-scrollbar { display: none; }
   .native-ribbon-scroll body::after { content: ''; display: block; height: var(--ribbon-scroll-runway); pointer-events: none; }
-  .native-ribbon-scroll .sanctuary { position: fixed; top: 0; left: 0; overflow: clip; touch-action: pan-y pinch-zoom; }
+  .native-ribbon-scroll .sanctuary {
+    position: fixed;
+    top: calc(-1 * var(--ribbon-overdraw));
+    left: 0;
+    height: calc(100lvh + 2 * var(--ribbon-overdraw));
+    overflow: clip;
+    touch-action: pan-x pinch-zoom;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
   .sanctuary [data-eye-theme="cloud"] { position: absolute; width: 100%; height: 100%; }
-  /* Allow vertical gestures through both the canvas and its wrapper. */
-  .native-ribbon-scroll .world-layer > div, .native-ribbon-scroll canvas { touch-action: pan-y pinch-zoom !important; }
+  .native-ribbon-scroll .world-layer > div, .native-ribbon-scroll canvas { touch-action: pan-x pinch-zoom !important; }
+  .native-ribbon-scroll.native-ribbon-zoomed .sanctuary,
+  .native-ribbon-scroll.native-ribbon-zoomed .world-layer > div,
+  .native-ribbon-scroll.native-ribbon-zoomed canvas { touch-action: manipulation !important; }
+  .native-ribbon-scroll .world-layer { transform: translateZ(0); backface-visibility: hidden; }
   .native-ribbon-scroll .project-detail { margin-left: env(safe-area-inset-left); margin-bottom: env(safe-area-inset-bottom); }
-
-  @supports (animation-timeline: scroll(root)) and (animation-range: 0px 1px) {
-    /* Safari clips fixed/sticky layers at its browser chrome. A document layer
-       can paint beneath it. Cancel document movement 1:1 on the scroll timeline
-       (including momentum), without a JS scroll handler moving the canvas.
-       Equal pixel distances keep this independent of the changing viewport.
-       Overdraw covers the chrome even when Safari reports zero safe-area insets. */
-    .native-ribbon-scroll .sanctuary {
-      --ribbon-overdraw: 100px;
-      top: calc(-1 * var(--ribbon-overdraw));
-      height: calc(100lvh + 2 * var(--ribbon-overdraw));
-      will-change: transform;
-      backface-visibility: hidden;
-    }
-    /* Keep the filtered SVG and sphere entrance in the fixed viewport. Safari
-       can cull the SVG if it starts inside a large scroll-translated layer. */
-    .native-ribbon-scroll .sanctuary.has-entered {
-      position: absolute;
-      /* Keep the first paint pinned while the scroll timeline attaches. */
-      transform: translate3d(0, var(--ribbon-scroll-position, 0px), 0);
-      animation: ribbon-viewport-pin linear both;
-      /* This is layout compensation; reduced motion must keep it in sync too. */
-      animation-duration: auto !important;
-      animation-timeline: scroll(root);
-      animation-range: 0px var(--ribbon-scroll-runway);
-    }
-    @keyframes ribbon-viewport-pin {
-      from { transform: translate3d(0, 0, 0); }
-      to { transform: translate3d(0, var(--ribbon-scroll-runway), 0); }
-    }
+  /* The eye and sphere entrance stay fixed. After entry, this stationary
+     document layer covers the chrome without a scroll-driven transform. */
+  .native-ribbon-scroll .sanctuary.has-entered {
+    position: absolute;
+    top: calc(var(--ribbon-scroll-position, 0px) - var(--ribbon-overdraw));
   }
 }
 .has-entered .world-layer, .world-layer.is-revealing { opacity: 1; }

@@ -3,7 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { syncRibbonOrbit } from "@/lib/ribbonOrbit";
-import { bindNativeRibbonScroll, MOBILE_SCROLL_QUERY } from "@/lib/nativeRibbonScroll";
+import { bindNativeRibbonScroll } from "@/lib/nativeRibbonScroll";
 import {
   addRibbonInput,
   advanceRibbonMotion,
@@ -73,13 +73,10 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
       addRibbonInput(motion.current, pixels, reducedMotion.current);
     };
 
-    const nativeScroll = bindNativeRibbonScroll((pixels) => {
-      suppressClickUntil = performance.now() + 450;
-      navigate(pixels);
-    }, () => touch !== null);
+    const nativeScroll = bindNativeRibbonScroll();
+    const isZoomed = () => nativeScroll.active && (window.visualViewport?.scale ?? 1) > 1.01;
 
     const onWheel = (event: WheelEvent) => {
-      if (nativeScroll.active) return;
       if (!latest.current.enabled || event.ctrlKey || isInteractive(event.target) || Math.abs(event.deltaY) < 0.1) return;
       event.preventDefault();
       const units = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? surface.clientHeight : 1;
@@ -87,7 +84,7 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
     };
 
     const onTouchStart = (event: TouchEvent) => {
-      if (!latest.current.enabled || event.touches.length !== 1 || isInteractive(event.target)) {
+      if (!latest.current.enabled || event.touches.length !== 1 || isZoomed() || isInteractive(event.target)) {
         touch = null;
         return;
       }
@@ -96,7 +93,7 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
     };
 
     const onTouchMove = (event: TouchEvent) => {
-      if (event.touches.length !== 1) { touch = null; return; }
+      if (event.touches.length !== 1 || isZoomed()) { touch = null; return; }
       if (!touch || !latest.current.enabled) return;
       const point = event.touches[0];
       const distanceX = point.clientX - touch.x;
@@ -106,9 +103,8 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
         touch.dragging = true;
       }
       suppressClickUntil = performance.now() + 450;
-      // Let Safari scroll the document and collapse its chrome. The scroll
-      // listener supplies movement, including momentum, exactly once.
-      if (nativeScroll.active) return;
+      // The same eased motion drives touch and wheel input. Keep the mobile
+      // document stationary so Safari never translates the WebGL surface.
       event.preventDefault();
       navigate((touch.previousY - point.clientY) * 1.8);
       touch.previousY = point.clientY;
@@ -125,15 +121,7 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
       }
     };
 
-    // Native swipes never call preventDefault. Let the compositor start them
-    // without waiting for the WebGL/main thread, including on direction changes.
-    const touchMode = window.matchMedia(MOBILE_SCROLL_QUERY);
-    const bindTouchMove = () => {
-      surface.removeEventListener("touchmove", onTouchMove);
-      surface.addEventListener("touchmove", onTouchMove, { passive: touchMode.matches });
-    };
-    bindTouchMove();
-    touchMode.addEventListener("change", bindTouchMove);
+    surface.addEventListener("touchmove", onTouchMove, { passive: false });
     surface.addEventListener("wheel", onWheel, { passive: false });
     surface.addEventListener("touchstart", onTouchStart, { passive: true });
     surface.addEventListener("touchend", onTouchEnd);
@@ -141,7 +129,6 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
     surface.addEventListener("click", onClick, true);
     return () => {
       nativeScroll.dispose();
-      touchMode.removeEventListener("change", bindTouchMove);
       preference.removeEventListener("change", updatePreference);
       document.removeEventListener("visibilitychange", updateVisibility);
       surface.removeEventListener("wheel", onWheel);
