@@ -5,8 +5,14 @@ import { bindNativeRibbonScroll } from "./nativeRibbonScroll";
 function browser(t: TestContext, mobile = true) {
   t.mock.timers.enable({ apis: ["setTimeout"] });
   const classes = new Set<string>();
+  const properties = new Map<string, string>();
   const query = Object.assign(new EventTarget(), { matches: mobile });
   const root = {
+    style: {
+      setProperty(name: string, value: string) { properties.set(name, value); },
+      removeProperty(name: string) { properties.delete(name); },
+      getPropertyValue(name: string) { return properties.get(name) ?? ""; },
+    },
     clientHeight: 664,
     get scrollHeight() { return classes.has("native-ribbon-scroll") ? 200000 : 664; },
     classList: {
@@ -43,6 +49,8 @@ test("native swipes and momentum drive the ribbon once, with no initialization j
   assert.equal(b.binding.active, true);
   assert.equal(b.history.scrollRestoration, "manual");
   const center = b.win.scrollY;
+  assert.equal(b.root.style.getPropertyValue("--ribbon-scroll-position"), `${center}px`,
+    "the scene is already pinned on the frame before the CSS scroll timeline attaches");
   b.scroll(center);
   assert.deepEqual(b.input, []);
   b.scroll(center + 100);
@@ -111,4 +119,5 @@ test("desktop stays virtual and leaving mobile restores document settings and li
   assert.deepEqual(b.input, []);
   assert.equal(b.classes.size, 0);
   assert.equal(b.history.scrollRestoration, "auto");
+  assert.equal(b.root.style.getPropertyValue("--ribbon-scroll-position"), "");
 });

@@ -5,6 +5,7 @@ import { useGLTF } from "@react-three/drei";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import { useRibbonMotion } from "@/hooks/useRibbonMotion";
+import { MOBILE_SCROLL_QUERY } from "@/lib/nativeRibbonScroll";
 import { type RibbonMotionSnapshot } from "@/lib/ribbonMotion";
 import { advanceRibbonFocus, createRibbonFocus } from "@/lib/ribbonFocus";
 import { RIBBON_PITCH } from "@/lib/ribbonGeometry";
@@ -166,7 +167,18 @@ function Content(props: Props) {
 }
 
 export function SanctuaryScene(props: Props) {
+  const [nativeViewport, setNativeViewport] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia(MOBILE_SCROLL_QUERY);
+    const update = () => setNativeViewport(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  // Mobile's canvas is pinned; scroll cannot change its dimensions.
+  // ResizeObserver still handles orientation and actual size changes.
   return <Canvas camera={{ position: [0, ORBIT_HEIGHT, ORBIT_RADIUS], fov: 42, near: 0.1, far: 2400 }} dpr={[1, 1.5]}
+    resize={{ scroll: !nativeViewport }}
     gl={{ antialias: true, alpha: false, stencil: true, powerPreference: "high-performance" }}
     onCreated={({ camera, gl }) => {
       camera.lookAt(0, 0, 0);

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { sanctuaryProjects } from "@/lib/sanctuaryContent";
 import { AudioConsentGate } from "@/components/ui/AudioConsentGate";
 import { SiteAudioProvider } from "@/hooks/useSiteAudio";
@@ -40,6 +40,13 @@ function SanctuaryContent() {
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
   // Strict Mode and live updates replay effects; only a real exit ends the visit.
   useEffect(retainIntroSession, []);
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (!entered || !root.classList.contains("native-ribbon-scroll")) return;
+    // Seed the document layer before its first paint. The CSS scroll timeline
+    // takes over without a frame at the runway's off-screen document origin.
+    root.style.setProperty("--ribbon-scroll-position", `${window.scrollY}px`);
+  }, [entered]);
   useEffect(() => {
     const timeout = setTimeout(() => { if (!ready) setFailed(true); }, 15000);
     return () => clearTimeout(timeout);

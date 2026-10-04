@@ -32,9 +32,17 @@ button:disabled { cursor: default; }
        Overdraw covers the chrome even when Safari reports zero safe-area insets. */
     .native-ribbon-scroll .sanctuary {
       --ribbon-overdraw: 100px;
-      position: absolute;
       top: calc(-1 * var(--ribbon-overdraw));
       height: calc(100lvh + 2 * var(--ribbon-overdraw));
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+    /* Keep the filtered SVG and sphere entrance in the fixed viewport. Safari
+       can cull the SVG if it starts inside a large scroll-translated layer. */
+    .native-ribbon-scroll .sanctuary.has-entered {
+      position: absolute;
+      /* Keep the first paint pinned while the scroll timeline attaches. */
+      transform: translate3d(0, var(--ribbon-scroll-position, 0px), 0);
       animation: ribbon-viewport-pin linear both;
       /* This is layout compensation; reduced motion must keep it in sync too. */
       animation-duration: auto !important;
@@ -42,8 +50,8 @@ button:disabled { cursor: default; }
       animation-range: 0px var(--ribbon-scroll-runway);
     }
     @keyframes ribbon-viewport-pin {
-      from { transform: translateY(0); }
-      to { transform: translateY(var(--ribbon-scroll-runway)); }
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(0, var(--ribbon-scroll-runway), 0); }
     }
   }
 }

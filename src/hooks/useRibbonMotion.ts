@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
-import { bindNativeRibbonScroll } from "@/lib/nativeRibbonScroll";
+import { bindNativeRibbonScroll, MOBILE_SCROLL_QUERY } from "@/lib/nativeRibbonScroll";
 import {
   addRibbonInput,
   advanceRibbonMotion,
@@ -127,14 +127,23 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
       }
     };
 
+    // Native swipes never call preventDefault. Let the compositor start them
+    // without waiting for the WebGL/main thread, including on direction changes.
+    const touchMode = window.matchMedia(MOBILE_SCROLL_QUERY);
+    const bindTouchMove = () => {
+      surface.removeEventListener("touchmove", onTouchMove);
+      surface.addEventListener("touchmove", onTouchMove, { passive: touchMode.matches });
+    };
+    bindTouchMove();
+    touchMode.addEventListener("change", bindTouchMove);
     surface.addEventListener("wheel", onWheel, { passive: false });
     surface.addEventListener("touchstart", onTouchStart, { passive: true });
-    surface.addEventListener("touchmove", onTouchMove, { passive: false });
     surface.addEventListener("touchend", onTouchEnd);
     surface.addEventListener("touchcancel", onTouchEnd);
     surface.addEventListener("click", onClick, true);
     return () => {
       nativeScroll.dispose();
+      touchMode.removeEventListener("change", bindTouchMove);
       preference.removeEventListener("change", updatePreference);
       document.removeEventListener("visibilitychange", updateVisibility);
       surface.removeEventListener("wheel", onWheel);

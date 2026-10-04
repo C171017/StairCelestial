@@ -23,6 +23,7 @@ export function bindNativeRibbonScroll(
     // Rebase only the document coordinate, never the virtual ribbon position.
     previousY = Math.floor(maxScroll() / 2);
     window.scrollTo({ top: previousY, behavior: "instant" });
+    root.style.setProperty("--ribbon-scroll-position", `${previousY}px`);
   };
   const settle = () => {
     settleTimer = null;
@@ -54,7 +55,10 @@ export function bindNativeRibbonScroll(
     root.classList.toggle("native-ribbon-scroll", active);
     history.scrollRestoration = active ? "manual" : restoration;
     if (active) center();
-    else previousY = scrollY();
+    else {
+      previousY = scrollY();
+      root.style.removeProperty("--ribbon-scroll-position");
+    }
   };
 
   update();
@@ -69,6 +73,7 @@ export function bindNativeRibbonScroll(
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       root.classList.remove("native-ribbon-scroll");
+      root.style.removeProperty("--ribbon-scroll-position");
       history.scrollRestoration = restoration;
     },
   };
