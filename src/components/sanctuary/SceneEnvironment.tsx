@@ -6,6 +6,7 @@ import { Suspense, useEffect, useMemo, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
 import { createSanctuaryAtmosphere, type SanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
+import { syncReflectionSky, type ReflectionSkySnapshot } from "@/lib/reflectionSky";
 
 // Shared BRDF lookup textures are initialized once, including Fast Refresh.
 if (!("LTC_FLOAT_1" in THREE.UniformsLib)) RectAreaLightUniformsLib.init();
@@ -30,10 +31,11 @@ export function Sky() {
 type LightProps = {
   atmosphere?: RefObject<SanctuaryAtmosphere>;
   reflectionScene?: RefObject<THREE.Scene | null>;
+  onReady?: () => void;
 };
 
 /** One moving sun/moon governs form, cast shadows and reflection highlights. */
-export function StudioLight({ atmosphere, reflectionScene }: LightProps = {}) {
+export function StudioLight({ atmosphere, reflectionScene, onReady }: LightProps = {}) {
   const fallback = useRef(createSanctuaryAtmosphere());
   const clock = atmosphere ?? fallback;
   const { scene, gl } = useThree();
@@ -85,22 +87,34 @@ export function StudioLight({ atmosphere, reflectionScene }: LightProps = {}) {
       shadow-camera-near={0.1} shadow-camera-far={95} />
     <rectAreaLight ref={softbox} width={9} height={14} intensity={4.5} color="#fff0da" />
     <directionalLight ref={fill} position={[10, 7, -12]} intensity={0.45} color="#b9d2f0" />
-    <Suspense fallback={null}><ReflectionEnvironment atmosphere={clock} reflectionScene={reflectionScene} /></Suspense>
+    <Suspense fallback={null}><ReflectionEnvironment atmosphere={clock} reflectionScene={reflectionScene} onReady={onReady} /></Suspense>
   </>;
 }
 
 /** Match the visible layered sky, with a few deliberate studio reflection
  * shapes. A changed solar phase refreshes the prefiltered map, never per door. */
-function ReflectionEnvironment({ atmosphere, reflectionScene }: Required<Pick<LightProps, "atmosphere">> & Pick<LightProps, "reflectionScene">) {
-  const { gl, scene } = useThree();
+type ReflectionProps = Required<Pick<LightProps, "atmosphere">> & Pick<LightProps, "reflectionScene" | "onReady">;
+function ReflectionEnvironment(props: ReflectionProps) {
+  // The production sky supplies its own complete fallback plate. Loading a
+  // second panorama here would decode/upload a never-visible 4K texture.
+  return props.reflectionScene ? <LiveReflectionEnvironment {...props} /> : <FallbackReflectionEnvironment {...props} />;
+}
+
+function FallbackReflectionEnvironment(props: ReflectionProps) {
   const source = useTexture("/textures/sanctuary/cloudscape-360-4k.webp");
   const fallbackTexture = useMemo(() => {
     const texture = source.clone(); texture.colorSpace = THREE.SRGBColorSpace; texture.needsUpdate = true; return texture;
   }, [source]);
+  useEffect(() => () => fallbackTexture.dispose(), [fallbackTexture]);
+  return <LiveReflectionEnvironment {...props} fallbackTexture={fallbackTexture} />;
+}
+
+function LiveReflectionEnvironment({ atmosphere, reflectionScene, onReady, fallbackTexture }: ReflectionProps & { fallbackTexture?: THREE.Texture }) {
+  const { gl, scene } = useThree();
   const resources = useMemo(() => {
     const capture = new THREE.Scene();
     const sphereGeometry = new THREE.SphereGeometry(450, 48, 24);
-    const sphereMaterial = new THREE.MeshBasicMaterial({ map: fallbackTexture, side: THREE.BackSide, toneMapped: false });
+    const sphereMaterial = new THREE.MeshBasicMaterial({ map: fallbackTexture ?? null, side: THREE.BackSide, toneMapped: false });
     const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial); sphere.renderOrder = -4000;
     capture.add(sphere);
     const geometry = new THREE.PlaneGeometry(1, 1);
@@ -129,32 +143,43 @@ function ReflectionEnvironment({ atmosphere, reflectionScene }: Required<Pick<Li
     return { capture, sphere, sphereGeometry, sphereMaterial, geometry, panels, feather, target, camera, pmrem };
   }, [gl, fallbackTexture]);
   const prefiltered = useRef<THREE.WebGLRenderTarget | null>(null);
-  const clonedSky = useRef<THREE.Object3D | null>(null);
+  const clonedSky = useRef<ReflectionSkySnapshot | null>(null);
   const phase = useRef(Infinity);
   const captureInterval = useRef(0);
   const sourceId = useRef("");
+  const readySent = useRef(false);
+  const captures = useRef(0);
+  const clones = useRef(0);
   const previous = useRef(scene.environment);
   useEffect(() => {
     phase.current = Infinity; sourceId.current = "";
+    readySent.current = false;
     // Strict Mode replays setup after cleanup: reattach owned highlight cards.
     resources.capture.add(resources.sphere, ...resources.panels);
     resources.pmrem.compileCubemapShader();
+    const restored = () => { phase.current = Infinity; };
+    gl.domElement.addEventListener("webglcontextrestored", restored);
     const priorEnvironment = previous.current;
     return () => {
+    gl.domElement.removeEventListener("webglcontextrestored", restored);
     scene.environment = priorEnvironment;
     prefiltered.current?.dispose();
     resources.target.dispose(); resources.pmrem.dispose(); resources.geometry.dispose();
     resources.panels.forEach(panel => panel.material.dispose());
     resources.feather.dispose();
-    resources.sphereGeometry.dispose(); resources.sphereMaterial.dispose(); fallbackTexture.dispose();
+    resources.sphereGeometry.dispose(); resources.sphereMaterial.dispose();
     resources.capture.clear(); prefiltered.current = null; clonedSky.current = null;
     };
-  }, [scene, resources, fallbackTexture]);
+  }, [scene, gl, resources]);
   useFrame((_, delta) => {
+    if (document.hidden) return;
     captureInterval.current += Math.min(delta, 0.1);
     const mood = atmosphere.current;
     const sky = reflectionScene?.current;
-    const id = sky ? `${sky.uuid}:${sky.getObjectByName("cloud-0")?.uuid ?? "plate"}` : "fallback";
+    // Core readiness waits for this first map, so no unreflected foreground
+    // can escape the entrance when the layered artwork is still loading.
+    if (reflectionScene && !sky) return;
+    const id = sky ? `${sky.uuid}:${sky.userData.reflectionRevision ?? 0}` : "fallback";
     if (Math.abs(mood.solarPhase - phase.current) < 0.045 && sourceId.current === id) return;
     // A six-face capture + PMREM is the expensive part of changing time. Keep
     // direct lighting smooth each frame, and bound these broad reflection
@@ -162,12 +187,11 @@ function ReflectionEnvironment({ atmosphere, reflectionScene }: Required<Pick<Li
     if (sourceId.current === id && captureInterval.current < 0.16) return;
     captureInterval.current = 0;
     phase.current = mood.solarPhase; sourceId.current = id;
-    if (clonedSky.current) resources.capture.remove(clonedSky.current);
-    clonedSky.current = sky?.clone(true) ?? null;
-    if (clonedSky.current) {
-      const effects = clonedSky.current.getObjectByName("sky-effects");
-      if (effects) effects.visible = false;
-      resources.capture.add(clonedSky.current);
+    const previousSnapshot = clonedSky.current;
+    clonedSky.current = sky ? syncReflectionSky(sky, previousSnapshot) : null;
+    if (previousSnapshot?.root !== clonedSky.current?.root) {
+      if (previousSnapshot) resources.capture.remove(previousSnapshot.root);
+      if (clonedSky.current) { resources.capture.add(clonedSky.current.root); clones.current++; }
     }
     resources.sphere.visible = !sky;
     resources.sphereMaterial.color.setRGB(...mood.reflectionTint);
@@ -188,9 +212,17 @@ function ReflectionEnvironment({ atmosphere, reflectionScene }: Required<Pick<Li
     try {
       gl.shadowMap.enabled = false;
       resources.camera.update(gl, resources.capture);
-      const next = resources.pmrem.fromCubemap(resources.target.texture);
-      const old = prefiltered.current;
-      prefiltered.current = next; scene.environment = next.texture; old?.dispose();
+      // Three accepts a destination target. Reuse it so travel neither churns
+      // a 1536x2048 half-float allocation nor changes material env-map identity.
+      prefiltered.current = resources.pmrem.fromCubemap(resources.target.texture, prefiltered.current);
+      scene.environment = prefiltered.current.texture;
+      captures.current++;
+      if (process.env.NODE_ENV === "development") {
+        gl.domElement.dataset.reflectionCaptures = String(captures.current);
+        gl.domElement.dataset.reflectionSkyClones = String(clones.current);
+        gl.domElement.dataset.reflectionReady = "true";
+      }
+      if (!readySent.current) { readySent.current = true; onReady?.(); }
     } finally { gl.shadowMap.enabled = shadowEnabled; }
   }, -0.55);
   return null;

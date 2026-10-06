@@ -110,8 +110,13 @@ button:disabled { cursor: default; }
 
 /* Original eye choreography, gently recolored for the cloud environment. */
 .world-layer.original-intro-world { opacity: 1; transition: none; }
-.original-intro-fallback { position: absolute; z-index: 60; bottom: 32px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; }
-.original-intro-fallback a { display: grid; place-items: center; width: 44px; height: 44px; color: #476d82; text-decoration: none; }
+.original-intro-fallback { position: absolute; z-index: 60; bottom: max(32px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: grid; justify-items: center; gap: 12px; width: min(90vw, 560px); padding: 18px; color: #304958; background: #edf3f5f0; border: 1px solid #476d8224; border-radius: 12px; text-align: center; font-size: 14px; }
+.original-intro-fallback p { margin: 0; }
+.original-intro-fallback button, .original-intro-fallback a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 12px; color: #304958; text-decoration: none; }
+.original-intro-fallback button { border: 1px solid #476d8250; border-radius: 6px; background: transparent; cursor: pointer; }
+.original-intro-fallback :is(button, a):focus-visible { outline: 2px solid #476d82; outline-offset: 3px; }
+.original-intro-project-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.native-ribbon-scroll .original-intro-fallback { bottom: calc(var(--ribbon-overdraw, 0px) + max(32px, env(safe-area-inset-bottom))); }
 
 /* The separate study room gives the six provisional shapes names for review. */
 .door-study-room { width: 100%; height: 100dvh; position: relative; overflow: hidden; background: #dceaf0; }

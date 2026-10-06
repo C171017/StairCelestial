@@ -1,0 +1,9 @@
+{
+  "beforeHour": 12,
+  "afterDown": {
+    "height": 720,
+    "hour": "13.200",
+    "travel": "0.4000",
+    "width": 1280
+  }
+}

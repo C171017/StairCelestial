@@ -30,8 +30,13 @@ function SanctuaryContent() {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const readyHandler = useCallback(() => { setReady(true); usePortfolioStore.getState().setSceneBootstrapped(true); }, []);
+  const readyHandler = useCallback(() => { setReady(true); setFailed(false); usePortfolioStore.getState().setSceneBootstrapped(true); }, []);
   const errorHandler = useCallback(() => { setFailed(true); setReady(false); usePortfolioStore.getState().setSceneBootstrapped(false); }, []);
+  const retry = useCallback(() => {
+    // A fresh visit also retries rejected dynamic-import and model promises.
+    // Simply remounting Canvas would reuse those cached loader failures.
+    window.location.reload();
+  }, []);
   const placeholder = useCallback((name: string) => {
     setNotice(`${name} — personal link to be added.`);
     if (timer.current) clearTimeout(timer.current);
@@ -63,8 +68,12 @@ function SanctuaryContent() {
         <Scene active={entered} selection={selection} onSelect={setSelection} onReady={readyHandler} onPlaceholder={placeholder} />
       </SceneBoundary>
     </div>
-    <AudioConsentGate theme="cloud" />
-    {failed && !entered && <div className="original-intro-fallback">{sanctuaryProjects.map(p => <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" aria-label={`Explore ${p.title}`}>↗</a>)}</div>}
+    <AudioConsentGate theme="cloud" loadingFailed={failed} />
+    {failed && <div className="original-intro-fallback">
+      <p role="status">The scene is taking longer to load. You can retry or explore a project.</p>
+      <button type="button" onClick={retry}>Retry scene</button>
+      <div className="original-intro-project-links">{sanctuaryProjects.map(p => <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer">{p.title} ↗</a>)}</div>
+    </div>}
     {entered && <>
       <div className={`project-detail${project ? " is-visible" : ""}`} aria-live="polite">
         {project && <>

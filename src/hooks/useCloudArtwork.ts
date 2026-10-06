@@ -7,12 +7,13 @@ import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
 
 export function useCloudArtwork() {
   const {gl,size}=useThree();
-  const compact=size.width<700;
+  // Keep this visit's immutable artwork through orientation/layout changes;
+  // resizing must not dispose textures that the visible scene still borrows.
+  const [compact]=useState(()=>size.width<700);
   const [maps,setMaps]=useState<THREE.Texture[]|null>(null);
   useEffect(()=>{
     let disposed=false;
     const owned=new Set<THREE.Texture>();
-    let decoder:KTX2Loader|null=null;
     const prepare=(texture:THREE.Texture)=>{
       texture.colorSpace=THREE.SRGBColorSpace;
       texture.anisotropy=Math.min(8,gl.capabilities.getMaxAnisotropy());
@@ -21,32 +22,36 @@ export function useCloudArtwork() {
       return texture;
     };
     const loader=new THREE.TextureLoader();
-    // Resolve the final artwork before publishing it. A late WebP -> KTX swap
-    // must not change an already visible, fixed cloud composition.
-    Promise.all([
-      loader.loadAsync(`/textures/sanctuary/layers/cumulus-${compact||gl.capabilities.maxTextureSize<4096?2048:4096}.webp`).then(prepare),
-      loader.loadAsync('/textures/sanctuary/layers/cirrus.webp').then(prepare),
-    ]).then(async textures=>{
-      if(disposed)return;
+    // Resolve one final bank before publishing it. Compressed-capable browsers
+    // need not download/decode an unused 4K WebP before starting the same KTX.
+    const loadBank=async()=>{
       const compressed=gl.extensions.has('WEBGL_compressed_texture_astc')||gl.extensions.has('EXT_texture_compression_bptc')||gl.extensions.has('WEBGL_compressed_texture_s3tc')||gl.extensions.has('WEBGL_compressed_texture_etc');
-      if(!compressed||gl.capabilities.maxTextureSize<4096){setMaps(textures);return;}
-      const width=compact||gl.capabilities.maxTextureSize<8192?4096:8192;
-      decoder=new KTX2Loader().setTranscoderPath('/basis/').setWorkerLimit(1).detectSupport(gl);
-      try{
-        const enhanced=prepare(await decoder.loadAsync(`/textures/sanctuary/layers/cumulus-${width}.ktx2`));
-        if(disposed){enhanced.dispose();return;}
-        // KTX pixel rows are exported flipped to match TextureLoader's convention.
-        setMaps([enhanced,textures[1]]);
-      }catch{
-        // Use the already decoded WebP when compression/transcoding is unavailable.
-        if(!disposed)setMaps(textures);
+      if(compressed&&gl.capabilities.maxTextureSize>=4096){
+        const width=compact||gl.capabilities.maxTextureSize<8192?4096:8192;
+        const decoder=new KTX2Loader().setTranscoderPath('/basis/').setWorkerLimit(1).detectSupport(gl);
+        try{
+          // KTX rows are exported to match TextureLoader's orientation.
+          return prepare(await decoder.loadAsync(`/textures/sanctuary/layers/cumulus-${width}.ktx2`));
+        }catch{
+          if(disposed)throw new Error("Cloud artwork load cancelled");
+          // Transcoding/network failure keeps the established WebP fallback.
+        }finally{decoder.dispose();}
       }
+      return prepare(await loader.loadAsync(`/textures/sanctuary/layers/cumulus-${compact||gl.capabilities.maxTextureSize<4096?2048:4096}.webp`));
+    };
+    Promise.all([
+      loadBank(),loader.loadAsync('/textures/sanctuary/layers/cirrus.webp').then(prepare),
+    ]).then(textures=>{
+      if(!disposed)setMaps(textures);
     }).catch(()=>{
       // The procedural clean plate stays visible if even the fallback cannot load.
       // An empty settled result lets the intro proceed with that complete fallback.
       if(!disposed)setMaps([]);
     });
-    return()=>{disposed=true;decoder?.dispose();owned.forEach(t=>t.dispose());};
+    // KTX2Loader.dispose terminates workers without settling pending promises.
+    // Let in-flight decoding settle and release its worker in finally; prepare
+    // disposes any late texture immediately instead of publishing stale state.
+    return()=>{disposed=true;owned.forEach(t=>t.dispose());};
   },[compact,gl]);
   return maps;
 }

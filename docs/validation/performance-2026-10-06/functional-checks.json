@@ -1,0 +1,56 @@
+[
+  {
+    "name": "loading-eye",
+    "passed": true,
+    "details": {
+      "distinctLoadingPaths": 4,
+      "entered": true
+    },
+    "errors": []
+  },
+  {
+    "name": "essential-failure-and-retry",
+    "passed": true,
+    "details": {
+      "links": [
+        "Music ↗",
+        "JazzTree ↗",
+        "Guanchang ↗",
+        "Columbia-Barnard Network ↗"
+      ],
+      "retryEntered": true
+    },
+    "errors": [
+      "Error: Could not load /models/doors/melt.glb?v=8: Failed to fetch"
+    ]
+  },
+  {
+    "name": "optional-chunk-failure",
+    "passed": true,
+    "details": {
+      "blockedChunk": "740.adda94009579b89b.js",
+      "coreEntered": true
+    },
+    "errors": [
+      "ChunkLoadError: Loading chunk 740 failed.\n(error: http://127.0.0.1:3101/_next/static/chunks/740.adda94009579b89b.js)"
+    ]
+  },
+  {
+    "name": "compressed-texture-fallback",
+    "passed": true,
+    "details": {
+      "webpFallbackRequested": true,
+      "entered": true
+    },
+    "errors": []
+  },
+  {
+    "name": "reduced-motion",
+    "passed": true,
+    "details": {
+      "entered": true,
+      "eyeDismissed": true
+    },
+    "errors": []
+  }
+]

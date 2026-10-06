@@ -60,8 +60,7 @@ const fragment = `
     float glow = pow(facingSun, 18.0)
       * exp(-pow(elevation * 4.0, 2.0));
     color += vec3(0.052, 0.033, 0.014) * glow * daylight;
-    color += mix(vec3(0.22, 0.105, 0.026), vec3(0.18, 0.075, 0.064), sunset)
-      * glow * dusk;
+    color += (vec3(0.28, 0.12, 0.024) * dawn + vec3(0.19, 0.067, 0.084) * sunset) * glow;
     if (sunVisibility > 0.001) {
       float sunDistance = length(d - sunDirection);
       float sunRadius = mix(0.0085, 0.0105, dawn);
@@ -70,7 +69,7 @@ const fragment = `
       // The disc dissolves into pearl daylight. A broad atmospheric bloom is
       // most pronounced at the warm horizon, without a screen-space lens flare.
       float halo = exp(-pow(sunDistance / 0.042, 1.45));
-      vec3 sunlight = mix(vec3(1.0, 0.56, 0.24), vec3(1.0, 0.74, 0.40), dawn);
+      vec3 sunlight = mix(vec3(1.0, 0.56, 0.48), vec3(1.0, 0.69, 0.30), dawn);
       color += sunlight * halo * sunVisibility * 0.36;
       // Morning's low gold glare has a wider horizontal haze and a soft
       // rising column. It follows the real sun direction and stays behind

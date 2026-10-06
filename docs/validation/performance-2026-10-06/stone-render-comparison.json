@@ -1,0 +1,16 @@
+[
+  {
+    "mood": "day",
+    "mae": 0.019502572016460905,
+    "max": 5,
+    "channelsAbove2Percent": 0.0002314814814814815,
+    "channelsAbove8Percent": 0
+  },
+  {
+    "mood": "night",
+    "mae": 0.027689300411522635,
+    "max": 3,
+    "channelsAbove2Percent": 0.0001286008230452675,
+    "channelsAbove8Percent": 0
+  }
+]

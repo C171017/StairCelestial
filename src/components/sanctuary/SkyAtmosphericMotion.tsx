@@ -7,7 +7,7 @@ import { createCloudAdvection, sampleCloudAdvection } from "@/lib/cloudAdvection
 import { createSanctuaryAtmosphere, type SanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
 
 export type SkyStudy = "none" | "mist" | "light" | "rays" | "clouds" | "combined" | "all";
-type MotionProps = { atmosphere?: RefObject<SanctuaryAtmosphere>; time: RefObject<number>; balanced?: boolean };
+type MotionProps = { atmosphere?: RefObject<SanctuaryAtmosphere>; time: RefObject<number>; balanced?: boolean; reveal?: RefObject<number> };
 const WHITE = new THREE.Color(1, 1, 1);
 const vertex = `varying vec2 vUv;
 void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
@@ -38,10 +38,10 @@ void main(){
 }`;
 
 /** Movement reads ambient seconds only. World time supplies lighting, never wind. */
-function WindLayers({ kind, atmosphere, time, source, balanced=false }: MotionProps & { kind: "mist" | "clouds"; source: THREE.Texture }) {
+function WindLayers({ kind, atmosphere, time, source, balanced=false, reveal }: MotionProps & { kind: "mist" | "clouds"; source: THREE.Texture }) {
   const fallback=useMemo(createSanctuaryAtmosphere,[]);
   const resources=useMemo(()=>{
-    // Borrow the same uploaded artwork as the fixed clouds. LayeredSky owns it.
+    // Borrow the same uploaded artwork as the slow banks. LayeredSky owns it.
     const texture=source;
     const geometry=new THREE.PlaneGeometry(1,1);
     const items=Array.from({length:8},(_,index)=>{
@@ -52,13 +52,12 @@ function WindLayers({ kind, atmosphere, time, source, balanced=false }: MotionPr
       const height=wisp?195:300;
       const cloud={index:index+100,x:Math.sin(angle)*radius,y:wisp?-5+layer*40:-82-layer*15,
         z:Math.cos(angle)*radius,width,height,wisp,tile,opacity:1,haze:0,renderOrder:-62-layer};
-      const base=createCloudAdvection(cloud);
-      // Deliberately unhurried, distinct depth speeds. Near/far banks travel
-      // at 8.4/4.8 world units per second; mist at 10.8/6.0. Long handoffs
-      // keep a small artwork set from feeling like rapidly repeated scenery.
-      const speed=wisp?(layer?2.5:4.5):(layer?1.2:3.5);
-      const flow={...base,velocityU:base.velocityU*speed,velocityV:base.velocityV*speed,
-        period:wisp?(layer?46:32):(layer?56:40),phaseOffset:(index*.381966+.27)%1};
+      // Roughly one third slower than the first integration. Longer periods
+      // preserve the travel distance and let each shape remain recognizable.
+      const flow={...createCloudAdvection(cloud,{
+        speed:wisp?(layer?4.0:6.8):(layer?3.2:5.4),
+        period:wisp?(layer?69:50):(layer?84:62),
+      }),phaseOffset:(index*.381966+.27)%1};
       const sample={aU:0,aV:0,bU:0,bV:0,blend:0};
       const material=new THREE.ShaderMaterial({vertexShader:vertex,fragmentShader:vaporFragment,
         transparent:true,depthTest:false,depthWrite:false,toneMapped:false,side:THREE.DoubleSide,forceSinglePass:true,
@@ -67,7 +66,7 @@ function WindLayers({ kind, atmosphere, time, source, balanced=false }: MotionPr
           atlasScale:{value:wisp?1:.5},opacity:{value:0},
           mist:{value:wisp?1:0},time:{value:0},highlight:{value:new THREE.Color()},shadow:{value:new THREE.Color()}}});
       const mesh=new THREE.Mesh(geometry,material);
-      mesh.position.set(cloud.x,cloud.y,cloud.z);mesh.scale.set(width,height,1);mesh.lookAt(0,20,0);
+      mesh.position.set(cloud.x,cloud.y,cloud.z);mesh.scale.set(width,height,1);mesh.lookAt(0,wisp?20:25,0);
       mesh.renderOrder=cloud.renderOrder+index*.001;mesh.raycast=()=>null;
       const opacity=balanced?(wisp?(layer?.28:.46):(layer?.50:.78)):(wisp?(layer?.48:.78):(layer?.68:.94));
       return {mesh,material,flow,sample,opacity};
@@ -80,9 +79,9 @@ function WindLayers({ kind, atmosphere, time, source, balanced=false }: MotionPr
       sampleCloudAdvection(time.current,item.flow,item.sample);
       const u=item.material.uniforms;
       u.offsets.value.set(item.sample.aU,item.sample.aV,item.sample.bU,item.sample.bV);
-      u.blend.value=item.sample.blend;u.time.value=time.current;
+      u.blend.value=item.sample.blend;u.time.value=time.current*.65;
       // Leave room for stars and moon at night, and pearl detail at noon.
-      u.opacity.value=item.opacity*(balanced?(kind==="mist"?1-.18*mood.daylight-.24*mood.night:1-.12*mood.night):1);
+      u.opacity.value=item.opacity*(balanced?(kind==="mist"?1-.18*mood.daylight-.24*mood.night:1-.12*mood.night):1)*(reveal?.current??1);
       u.highlight.value.setRGB(...mood.cloudHighlight);u.shadow.value.setRGB(...mood.cloudShadow);
     }
   },-.65);
@@ -117,7 +116,7 @@ void main(){
   gl_FragColor=vec4(tint,fan*taper*hemisphere*strength);
   #include <colorspace_fragment>
 }`;
-function LightShafts({ atmosphere, time, balanced=false }: MotionProps) {
+function LightShafts({ atmosphere, time, balanced=false, reveal }: MotionProps) {
   const fallback=useMemo(createSanctuaryAtmosphere,[]);
   const resources=useMemo(()=>{
     const geometry=new THREE.SphereGeometry(430,48,24);
@@ -140,7 +139,10 @@ function LightShafts({ atmosphere, time, balanced=false }: MotionProps) {
     const accent=THREE.MathUtils.smoothstep(accentPhase,.06,.23)*(1-THREE.MathUtils.smoothstep(accentPhase,.65,.88));
     u.strength.value=(balanced
       ?(.44*mood.dawn+.36*mood.sunset+.07*mood.daylight+.12*mood.night)*accent
-      :(.68*mood.dawn+.58*mood.sunset+.12*mood.daylight+.27*mood.night))*handoff*handoff;
+      :(.68*mood.dawn+.58*mood.sunset+.12*mood.daylight+.27*mood.night))*handoff*handoff*(reveal?.current??1);
+    // The accent spends part of its cycle at exact zero. Skip the full-screen
+    // translucent sphere then, retaining every nonzero lighting contribution.
+    resources.mesh.visible = u.strength.value > 0;
   },-.65);
   useEffect(()=>()=>{resources.geometry.dispose();resources.material.dispose();},[resources]);
   return <primitive object={resources.mesh} dispose={null}/>;

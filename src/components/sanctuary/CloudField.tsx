@@ -33,9 +33,6 @@ const fragment = `
   uniform float atlasScale;
   uniform float opacity;
   uniform float haze;
-  uniform float flowPhase;
-  uniform float flowStrength;
-  uniform float flowSeed;
   uniform vec4 flowOffsets;
   uniform float flowBlend;
   uniform vec3 cloudHighlight;
@@ -48,43 +45,28 @@ const fragment = `
   #ifdef LIGHT_STUDY
     varying float studyLight;
   #endif
-  #ifdef WISP_FLOW
-    vec4 sampleWisp(vec2 position) {
-      vec2 edge = smoothstep(vec2(0.0), vec2(0.08), position)
-        * (1.0 - smoothstep(vec2(0.92), vec2(1.0), position));
-      return texture2D(artwork, clamp(position, 0.002, 0.998)) * edge.x * edge.y;
-    }
-  #endif
-  void main() {
+  vec4 sampleCloud(vec2 position) {
     #ifdef WISP_FLOW
-      // Full RGBA features travel continuously with a shared wind. Each sample
-      // resets only at zero weight; premultiplied mixing avoids doubled opacity.
-      // CPU offsets replace the old per-pixel sine/cosine deformation.
-      vec4 c = mix(sampleWisp(cloudUv - flowOffsets.zw),
-        sampleWisp(cloudUv - flowOffsets.xy), flowBlend);
-      vec2 edge = smoothstep(vec2(0.0), vec2(0.1), cloudUv)
-        * (1.0 - smoothstep(vec2(0.9), vec2(1.0), cloudUv));
-      c *= edge.x * edge.y;
+      const float feather = 0.08;
     #else
-    vec2 edge = smoothstep(vec2(0.0), vec2(0.018), cloudUv)
-      * (1.0 - smoothstep(vec2(0.982), vec2(1.0), cloudUv));
-    // The artwork contains linear-premultiplied RGB, encoded as sRGB.
-    vec4 c = texture2D(artwork, atlasOffset + clamp(cloudUv, 0.002, 0.998) * atlasScale)
-      * edge.x * edge.y;
+      const float feather = 0.018;
     #endif
+    vec2 edge = smoothstep(vec2(0.0), vec2(feather), position)
+      * (1.0 - smoothstep(vec2(1.0 - feather), vec2(1.0), position));
+    return texture2D(artwork, atlasOffset + clamp(position, 0.002, 0.998) * atlasScale)
+      * edge.x * edge.y;
+  }
+  void main() {
+    // Move the complete silhouette, including formerly stationary banks.
+    // Both samples stay inside their own atlas tile and reset at zero weight;
+    // the premultiplied mix preserves opacity and the stable painter stack.
+    vec4 c = mix(sampleCloud(cloudUv - flowOffsets.zw),
+      sampleCloud(cloudUv - flowOffsets.xy), flowBlend);
+    vec2 edge = smoothstep(vec2(0.0), vec2(0.025), cloudUv)
+      * (1.0 - smoothstep(vec2(0.975), vec2(1.0), cloudUv));
+    c *= edge.x * edge.y;
     if (c.a * opacity < 0.002) discard;
     vec3 source = c.rgb / max(c.a, 0.0001);
-    #ifdef INTERIOR_FLOW
-      // The alpha is always sampled at its original location. Vapor detail
-      // drifts inside each cloud without moving its silhouette or layer order.
-      vec2 pattern = vec2(cloudUv.y * 7.0, cloudUv.x * 8.0) + flowSeed;
-      vec2 drift = vec2(sin(pattern.x + flowPhase * 2.0) - sin(pattern.x),
-        cos(pattern.y + flowPhase) - cos(pattern.y)) * flowStrength;
-      vec4 moved = texture2D(artwork,
-        atlasOffset + clamp(cloudUv + drift, 0.002, 0.998) * atlasScale);
-      float interior = smoothstep(0.08, 0.55, c.a) * smoothstep(0.08, 0.55, moved.a);
-      source = mix(source, moved.rgb / max(moved.a, 0.0001), interior * 0.7);
-    #endif
     // Keep photographic shape/detail while replacing the former baked yellow
     // cast with pearl highlights and blue-grey shadow. Night is a different
     // cloud lighting palette, not an opacity fade over daylight artwork.
@@ -115,7 +97,7 @@ const fragment = `
   }
 `;
 
-/** Anchored banks and painter order, with two softly drifting cirrus depths. */
+/** Slow bank silhouettes and drifting cirrus, sharing a stable painter order. */
 export function CloudField({ onReady, atmosphere, time, sources, lightStudy=false }: { onReady?: () => void; atmosphere?: RefObject<SanctuaryAtmosphere>; time?: RefObject<number>;sources: readonly THREE.Texture[]|null;lightStudy?:boolean }) {
   const fallback = useMemo(createSanctuaryAtmosphere, []);
   useEffect(() => {
@@ -129,23 +111,19 @@ export function CloudField({ onReady, atmosphere, time, sources, lightStudy=fals
     geometry.computeVertexNormals();
     const clouds = (sources?.length === 2 ? createCloudField() : []).map(cloud => {
       const { wisp, tile } = cloud;
-      const flowStrength = !wisp && Math.hypot(cloud.x, cloud.z) < 440 ? 0.0028 : 0;
-      // Existing surfaces keep the two wind depths and fixed painter order.
-      const advection = wisp ? createCloudAdvection(cloud) : null;
+      const advection = createCloudAdvection(cloud);
       const flowSample = { aU: 0, aV: 0, bU: 0, bV: 0, blend: 0 };
-      const flowSeed = cloud.index * 1.618;
       const material = new THREE.ShaderMaterial({
         vertexShader: vertex, fragmentShader: fragment, transparent: true,
         // This sky is composited separately from the foreground. One immutable
         // painter stack avoids both view-sorted alpha swaps and core/edge seams.
         depthWrite: false, depthTest: false, toneMapped: false,
         side: THREE.DoubleSide, forceSinglePass: true,
-        defines: { ...(wisp ? { WISP_FLOW: 1 } : flowStrength ? { INTERIOR_FLOW: 1 } : {}), ...(lightStudy ? { LIGHT_STUDY: 1 } : {}) },
+        defines: { ...(wisp ? { WISP_FLOW: 1 } : {}), ...(lightStudy ? { LIGHT_STUDY: 1 } : {}) },
         uniforms: {
           artwork: { value: textures[wisp ? 1 : 0] }, atlasScale: { value: wisp ? 1 : 0.5 },
           atlasOffset: { value: new THREE.Vector2(wisp ? 0 : (tile % 2) * 0.5, wisp ? 0 : Math.floor(tile / 2) * 0.5) },
           opacity: { value: cloud.opacity }, haze: { value: cloud.haze },
-          flowPhase: { value: 0 }, flowStrength: { value: flowStrength }, flowSeed: { value: flowSeed },
           flowOffsets: { value: new THREE.Vector4() }, flowBlend: { value: 0 },
           studyTime: { value: 0 },
           cloudHighlight: { value: new THREE.Color() }, cloudShadow: { value: new THREE.Color() }, cloudHaze: { value: new THREE.Color() },
@@ -170,7 +148,6 @@ export function CloudField({ onReady, atmosphere, time, sources, lightStudy=fals
     // LayeredSky owns this ambient clock and pauses it for reduced motion,
     // hidden pages, and explicit pause independently of the world-time mood.
     const seconds = time?.current ?? 0;
-    const phase = (seconds % 720) / 720 * Math.PI * 2;
     for (const { material, wisp, advection, flowSample } of resources.clouds) {
       material.uniforms.cloudHighlight.value.setRGB(...mood.cloudHighlight);
       material.uniforms.cloudShadow.value.setRGB(...mood.cloudShadow);
@@ -178,13 +155,10 @@ export function CloudField({ onReady, atmosphere, time, sources, lightStudy=fals
       material.uniforms.sunDirection.value.set(...mood.sunDirection);
       material.uniforms.cloudSunlight.value.setRGB(...mood.keyColor);
       material.uniforms.twilightLight.value = (mood.dawn + mood.sunset) * (wisp ? 0.45 : 1);
-      material.uniforms.flowPhase.value = phase * 2;
       material.uniforms.studyTime.value = seconds;
-      if (advection) {
-        sampleCloudAdvection(seconds, advection, flowSample);
-        material.uniforms.flowOffsets.value.set(flowSample.aU, flowSample.aV, flowSample.bU, flowSample.bV);
-        material.uniforms.flowBlend.value = flowSample.blend;
-      }
+      sampleCloudAdvection(seconds, advection, flowSample);
+      material.uniforms.flowOffsets.value.set(flowSample.aU, flowSample.aV, flowSample.bU, flowSample.bV);
+      material.uniforms.flowBlend.value = flowSample.blend;
     }
     if (process.env.NODE_ENV !== "development") return;
     const landmark = resources.clouds[19]?.mesh;
@@ -195,7 +169,8 @@ export function CloudField({ onReady, atmosphere, time, sources, lightStudy=fals
     gl.domElement.dataset.cloudArtwork = String(resources.textures[0]?.image?.width ?? 0);
     gl.domElement.dataset.cloudLayout = "fixed";
     gl.domElement.dataset.cloudCount = String(resources.clouds.length);
-    gl.domElement.dataset.cloudFlow = "continuous-wind-cirrus";
+    gl.domElement.dataset.cloudFlow = "continuous-wind-banks-and-cirrus";
+    gl.domElement.dataset.cloudBankOffset = resources.clouds[19].flowSample.aU.toFixed(6);
   }, -0.7);
   useEffect(() => () => {
     resources.geometry.dispose();

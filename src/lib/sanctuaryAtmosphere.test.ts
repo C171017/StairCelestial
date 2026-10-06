@@ -2,23 +2,40 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { advanceSanctuaryAtmosphere, atmosphereTravelFromRibbon, ATMOSPHERE_CYCLE_TURNS, createSanctuaryAtmosphere, sampleSanctuaryAtmosphere } from "./sanctuaryAtmosphere";
 import { addRibbonInput, advanceRibbonMotion, createRibbonMotion } from "./ribbonMotion";
+import { RIBBON_PITCH } from "./ribbonGeometry";
 
 const sample = (travel: number) => sampleSanctuaryAtmosphere(travel, createSanctuaryAtmosphere());
 const lightness = (color: readonly number[]) => color[0] * 0.2126 + color[1] * 0.7152 + color[2] * 0.0722;
 
-test("scrolling down advances pink sunset, night, golden sunrise; scrolling back reverses it", () => {
+test("lowering the stairs advances white, pink, night, gold, white; raising them reverses the full cycle", () => {
   const motion = createRibbonMotion();
   const scroll = (pixels: number) => {
     addRibbonInput(motion, pixels);
     for (let frame = 0; frame < 900; frame++) advanceRibbonMotion(motion, 1 / 120, { cruiseSpeed: 0 });
     return sample(atmosphereTravelFromRibbon(motion.userPosition));
   };
+  assert.equal(sample(atmosphereTravelFromRibbon(motion.userPosition)).daylight, 1);
   for (const key of ["sunset", "night", "dawn", "daylight"] as const) {
-    for (let gesture = 0; gesture < 3; gesture++) scroll(900);
-    assert.equal(scroll(900)[key], 1, `downward scroll should reach ${key}`);
+    const previousY = -motion.position * RIBBON_PITCH;
+    for (let gesture = 0; gesture < 9; gesture++) scroll(-900);
+    assert.ok(scroll(-900)[key] > 0.999999, `downward structures should reach ${key}`);
+    assert.ok(-motion.position * RIBBON_PITCH < previousY, "stairs and doors moved downward");
   }
-  for (let gesture = 0; gesture < 3; gesture++) scroll(-900);
-  assert.equal(scroll(-900).dawn, 1, "reversing from the next noon returns to golden sunrise");
+  for (const key of ["dawn", "night", "sunset", "daylight"] as const) {
+    const previousY = -motion.position * RIBBON_PITCH;
+    for (let gesture = 0; gesture < 9; gesture++) scroll(900);
+    assert.ok(scroll(900)[key] > 0.999999, `upward structures should return to ${key}`);
+    assert.ok(-motion.position * RIBBON_PITCH > previousY, "stairs and doors moved upward");
+  }
+});
+
+test("the sky clock runs 2.5 times slower than ribbon travel in both directions", () => {
+  for (const turns of [-20, -10, -5, -1, 0, 1, 5, 10, 20]) {
+    const mood = sample(atmosphereTravelFromRibbon(turns));
+    assert.ok(Math.abs(mood.solarPhase - turns / 20 * Math.PI * 2) < 1e-12);
+  }
+  assert.equal(sample(atmosphereTravelFromRibbon(5)).sunset, 1);
+  assert.equal(sample(atmosphereTravelFromRibbon(-5)).dawn, 1);
 });
 
 test("the clock starts at pearl daylight, passes sunset and reaches readable indigo night", () => {
@@ -66,13 +83,13 @@ test("sunrise and sunset are distinct, with coherent moving celestial directions
 test("meteors remain visible through sunset and the whole night, fading into sunrise", () => {
   assert.equal(sample(2).meteorVisibility, 0.78);
   assert.equal(sample(4).meteorVisibility, 1);
-  assert.equal(sample(4.5).meteorVisibility, 1);
+  assert.ok(sample(4.5).meteorVisibility > sample(5).meteorVisibility);
   assert.ok(sample(5).meteorVisibility > 0 && sample(5).meteorVisibility < 1);
-  for (const t of [0, 0.5, 6, 7, -2]) assert.equal(sample(t).meteorVisibility, 0);
+  for (const t of [0, 6, 7, -2]) assert.equal(sample(t).meteorVisibility, 0);
   for (const t of [1.5, 3, 4.9]) assert.ok(Math.abs(sample(t).meteorVisibility - sample(t+8).meteorVisibility) < 1e-12);
 });
 
-test("all four moods receive equal journey length with broad full-color cores", () => {
+test("all four peak moments receive equal influence and change throughout the journey", () => {
   const keys = ["daylight", "sunset", "night", "dawn"] as const;
   const integrals = [0, 0, 0, 0], dominant = [0, 0, 0, 0];
   const target = createSanctuaryAtmosphere();
@@ -88,16 +105,28 @@ test("all four moods receive equal journey length with broad full-color cores", 
   for (let j = 0; j < keys.length; j++) {
     assert.ok(Math.abs(integrals[j] - 2) < 1e-8, `${keys[j]} must occupy one quarter of the cycle`);
     assert.equal(dominant[j], 2000);
-    for (const offset of [-0.5, 0, 0.5]) assert.equal(sample(j * 2 + offset)[keys[j]], 1);
+    assert.equal(sample(j * 2)[keys[j]], 1);
+    // Even just after a peak, and just before the next one, time keeps moving.
+    for (let offset = 0; offset < 2; offset += 0.02) {
+      const current = sample(j * 2 + offset), next = sample(j * 2 + offset + 0.01);
+      assert.ok(next[keys[j]] < current[keys[j]], `${keys[j]} holds at ${offset}`);
+      assert.ok(Math.hypot(...next.skyHorizon.map((c, i) => c - current.skyHorizon[i])) > 1e-7);
+    }
   }
 });
 
-test("full-color holds meet gradual blends without color or star visibility jumps", () => {
-  for (let quarter = -4; quarter < 8; quarter++) for (const offset of [.56, 1, 1.44, 2]) {
+test("continuous palette blends cross peaks without color, velocity or visibility jumps", () => {
+  for (let quarter = -4; quarter < 8; quarter++) for (const offset of [0, .56, 1, 1.44, 2]) {
     const boundary = quarter * 2 + offset;
     const a = sample(boundary - 1e-6), b = sample(boundary + 1e-6);
     for (const key of ["daylight", "dawn", "sunset", "night", "starVisibility", "meteorVisibility"] as const)
       assert.ok(Math.abs(a[key] - b[key]) < 1e-5, `${key} jumped at ${boundary}`);
+    const center = sample(boundary);
+    for (const key of ["skyHorizon", "cloudHighlight", "cloudShadow"] as const) for (let c = 0; c < 3; c++) {
+      const incoming = (center[key][c] - a[key][c]) / 1e-6;
+      const outgoing = (b[key][c] - center[key][c]) / 1e-6;
+      assert.ok(Math.abs(incoming - outgoing) < 2e-6, `${key} velocity jumped at ${boundary}`);
+    }
   }
 });
 

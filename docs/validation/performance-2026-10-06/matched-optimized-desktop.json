@@ -1,0 +1,130 @@
+{
+  "phases": [
+    {
+      "phase": "hidden",
+      "ms": 38
+    }
+  ],
+  "frames": 0,
+  "meanMs": null,
+  "p50Ms": null,
+  "p95Ms": null,
+  "over33Pct": null,
+  "over50Pct": null,
+  "canvas": [],
+  "bodyText": "The scene is taking longer to load. Retry or explore a project below.\n\nThe scene is taking longer to load. You can retry or explore a project.\n\nRetry scene\nMusic ↗\nJazzTree ↗\nGuanchang ↗\nColumbia-Barnard Network ↗",
+  "resources": [
+    {
+      "name": "css/f4445f2d4702d107.css",
+      "transfer": 24666,
+      "duration": 6
+    },
+    {
+      "name": "chunks/webpack-1e9714fb012302e2.js",
+      "transfer": 4230,
+      "duration": 7
+    },
+    {
+      "name": "chunks/255-d47fd57964443afe.js",
+      "transfer": 173911,
+      "duration": 8
+    },
+    {
+      "name": "chunks/4bd1b696-c023c6e3521b1417.js",
+      "transfer": 173319,
+      "duration": 8
+    },
+    {
+      "name": "chunks/main-app-c15971d1015e1924.js",
+      "transfer": 857,
+      "duration": 8
+    },
+    {
+      "name": "app/page-cf86725b83ff94a5.js",
+      "transfer": 26768,
+      "duration": 9
+    },
+    {
+      "name": "chunks/850-58d1c157fa6219d8.js",
+      "transfer": 22955,
+      "duration": 9
+    },
+    {
+      "name": "chunks/c15bf2b0-52e8419f34af26ab.js",
+      "transfer": 51844,
+      "duration": 9
+    },
+    {
+      "name": "sanctuary/cloudscape.webp",
+      "transfer": 38438,
+      "duration": 1
+    },
+    {
+      "name": "chunks/bd904a5c-334a95609f8769ab.js",
+      "transfer": 368641,
+      "duration": 8
+    },
+    {
+      "name": "chunks/b79b7286-b809957f2c25091d.js",
+      "transfer": 147605,
+      "duration": 7
+    },
+    {
+      "name": "chunks/b536a0f1-677c31318207bb0b.js",
+      "transfer": 332835,
+      "duration": 10
+    },
+    {
+      "name": "chunks/e5134ad9.953b38ed1ac1536a.js",
+      "transfer": 247520,
+      "duration": 8
+    },
+    {
+      "name": "chunks/851-daad11f084fa8da3.js",
+      "transfer": 13198,
+      "duration": 7
+    },
+    {
+      "name": "chunks/946-02430916941758e7.js",
+      "transfer": 0,
+      "duration": 3
+    },
+    {
+      "name": "chunks/491.2d02d7fb47042be5.js",
+      "transfer": 84327,
+      "duration": 9
+    },
+    {
+      "name": "chunks/176-1af529a73945abf1.js",
+      "transfer": 33960,
+      "duration": 9
+    },
+    {
+      "name": "chunks/646.f4925021ab67d434.js",
+      "transfer": 20979,
+      "duration": 10
+    },
+    {
+      "name": "chunks/877.ba12b4684561c051.js",
+      "transfer": 48528,
+      "duration": 10
+    },
+    {
+      "name": "127.0.0.1:3101/icon.svg?v=2",
+      "transfer": 637,
+      "duration": 7
+    },
+    {
+      "name": "audio/consent-sting.m4a",
+      "transfer": 19526,
+      "duration": 2
+    }
+  ],
+  "quality": null,
+  "active": false,
+  "errors": [],
+  "engine": "chromium",
+  "profile": "desktop",
+  "cpuThrottle": 1,
+  "url": "http://127.0.0.1:3101"
+}

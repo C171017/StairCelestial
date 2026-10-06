@@ -28,9 +28,12 @@ const IRIS_RAY_COUNT = 40;
 
 export const EYE_LID_PATHS = {
   apertureClosed: "M 12 103 C 48 99 143 96 190 96 C 145 104 51 107 12 103 Z",
+  apertureWaiting: "M 12 103 C 45 73 135 58 190 96 C 157 125 58 137 12 103 Z",
   apertureOpen: "M 11 103 C 43 55 127 31 190 94 C 158 145 57 157 11 103 Z",
   upperClosed: "M 12 103 C 48 99 143 96 190 96",
   lowerClosed: "M 12 103 C 51 107 145 104 190 96",
+  upperWaiting: "M 12 103 C 45 73 135 58 190 96",
+  lowerWaiting: "M 12 103 C 58 137 157 125 190 96",
   upperOpen: "M 11 103 C 43 55 127 31 190 94",
   lowerOpen: "M 11 103 C 57 157 158 145 190 94",
 };

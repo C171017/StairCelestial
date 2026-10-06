@@ -6,7 +6,7 @@ import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 const base = "/textures/sanctuary/materials/Marble021_4K-JPG";
-const sources = [`${base}_Color.jpg`, `${base}_Roughness.jpg`, `${base}_Displacement.jpg`];
+const sources = [`${base}_Color-q98.webp`, `${base}_Roughness-q98.webp`, `${base}_Displacement-q98.webp`];
 
 /** Loader-owned maps are shared by all marble ribbon sections. Materials are
  * instance-owned; disposing them must not dispose these cached textures. */

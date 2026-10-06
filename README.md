@@ -1,6 +1,6 @@
 # Sanctuary — c171017
 
-Latest follow-up: [integrated sailing clouds, flowing mist and shifting light](docs/validation/integrated-motion-2026-10-06/README.md).
+Latest follow-up: [continuous day cycle, slower layered wind, and photographic twilight colors](docs/validation/continuous-atmosphere-2026-10-06/README.md).
 All three approved effects run on the homepage with slow depth-dependent wind,
 balanced opacity and intermittent light accents. Scrolling changes the day;
 ambient wind continues independently. The preceding [material-depth pass](docs/validation/material-depth/README.md)
@@ -10,7 +10,7 @@ records the marble, directional metal and beveled platinum control refinements.
 satin-metal frames and restrained gold reveals. See the [updated handoff](docs/MATERIAL-BUILD-HANDOFF.md)
 and [actual website screenshots and validation](docs/validation/black-gold-marble/README.md).
 
-A personal portfolio carried by an endless softly polished white-marble ribbon above pearl clouds. Six sculptural glass portals float above it and cast soft moving shadows. Scrolling down advances a continuous daylight–pink sunset–night–golden sunrise cycle; reversing scroll reverses the clock. Idle drifting leaves that clock unchanged.
+A personal portfolio carried by an endless softly polished white-marble ribbon above pearl clouds. Six sculptural glass portals float above it and cast soft moving shadows. Moving the ribbon and portals downward advances a continuous daylight–pink sunset–night–golden sunrise–daylight cycle; moving them upward reverses the clock. Idle drifting leaves that clock unchanged.
 
 The October 5 [material refinement](docs/TEXTURE-REFINEMENT.md) implements restrained marble veins, softly shaped reflections, blackened-metal outer frames and brushed-gold insets. It retains the local CC0 marble maps, floating B2 forms and tinted glass. The earlier ivory-frame trial is documented as history. Visual quality comes first; device optimization follows the accepted visual reference. Generated studies are labeled separately from actual browser captures.
 
@@ -30,7 +30,7 @@ Open [localhost:3000](http://localhost:3000).
 ## Controls
 
 - The eye opens into two sculpted glass rings, with soft particles carrying the transition. The central sculpture begins turning as it appears, grows through two eased revolutions over 7.8 seconds, and settles on the ribbon’s center axis at its composed height. That world-space anchor follows the spiral when a door opens, rather than staying at the viewport center. The rings dissolve while the ribbon fades in; clicking the control opts into audio without restarting its movement.
-- Scroll or swipe vertically to move the ribbon. Explicit travel rotates the key light and its real cast shadows through daylight, sunset and night; reversing travel reverses the clock. Eight user-driven turns complete a day. Gentle idle travel resumes in the last direction without changing the selected time of day.
+- Scroll or swipe vertically to move the ribbon. Explicit travel rotates the key light and its real cast shadows through daylight, sunset and night; reversing travel reverses the clock. Twenty user-driven turns complete a day, making the background time change 2.5 times slower relative to the structures. Gentle idle travel resumes in the last direction without changing the selected time of day.
 - Mobile uses a small document overflow to paint the scene behind Safari's floating bars. Swipes move the ribbon virtually while the large-viewport canvas stays stationary, avoiding scroll-timeline jumps and flashes. The bars no longer collapse/expand with each ribbon swipe. The original intro and pinch zoom remain available; desktop input and layout are unchanged.
 - Select a project sculpture to bring it into focus.
 - Activate the selected sculpture again to open its project. Scroll, press Escape, or use the close control to return smoothly.
@@ -44,7 +44,7 @@ Audio starts on a completed tap/click so touch Safari receives user activation b
 
 Project URLs remain in `src/lib/projects.ts`; display copy, model assignments, and social destinations are in `src/lib/sanctuaryContent.ts`.
 
-The four sculptures are exported from [`blender/sanctuary-assets.blend`](blender/sanctuary-assets.blend). The reproducible builder is [`blender/build_sanctuary_assets.py`](blender/build_sanctuary_assets.py). Runtime GLBs are in `public/models/sanctuary/`. The sky keeps fixed cloud silhouettes and camera-independent painter order. A shared atmospheric clock grades the sky, clouds, lights and reflections, while subtle flow stays inside cloud silhouettes. Textures are in `public/textures/sanctuary/layers/`: an 8K desktop cloud atlas and a 4K compact atlas, with WebP fallbacks. Original artwork and the 24K rendered reference are retained in `assets/sky/`. The door-study room keeps its flat 4K backdrop.
+The four sculptures are exported from [`blender/sanctuary-assets.blend`](blender/sanctuary-assets.blend). The reproducible builder is [`blender/build_sanctuary_assets.py`](blender/build_sanctuary_assets.py). Runtime GLBs are in `public/models/sanctuary/`. The sky keeps camera-independent painter order while complete cloud silhouettes drift at different depths: large banks move slowly beneath faster cirrus, sailing clouds, and mist. A shared atmospheric clock continuously grades the sky, clouds, lights and reflections between equally spaced peak moments. Textures are in `public/textures/sanctuary/layers/`: an 8K desktop cloud atlas and a 4K compact atlas, with WebP fallbacks. Original artwork and the 24K rendered reference are retained in `assets/sky/`. The door-study room keeps its flat 4K backdrop.
 
 The crowned door geometry was exported from [`blender/door-studies-pearl.blend`](blender/door-studies-pearl.blend) by [`blender/build_door_studies.py`](blender/build_door_studies.py); the current black-metal and gold materials are assigned at runtime. Six stationary slab GLBs live in `public/models/doors/` (about 1.99 MB total). Their coordinated glass colors are shared through `src/lib/doorPalette.json`. The earlier project sculptures and Blender scenes are preserved. Shape descriptions and reference links are in [the door study notes](docs/DOOR-STUDIES.md).
 

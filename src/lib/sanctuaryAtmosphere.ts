@@ -33,13 +33,15 @@ export interface SanctuaryAtmosphere {
   environmentIntensity: number;
 }
 
-// One complete clock cycle is eight user-driven ribbon turns. The finite door
-// pool and automatic idle cruise have no part in this coordinate.
+// Eight sky-travel units complete a day. Ribbon input is scaled below so a
+// complete day now takes twenty user-driven ribbon turns (2.5x slower).
+// The finite door pool and automatic idle cruise do not advance this clock.
 export const ATMOSPHERE_CYCLE_TURNS = 8;
-/** Downward wheel / upward finger travel is negative in ribbon coordinates,
- * but advances the day: noon -> pink sunset -> night -> golden sunrise. */
+/** Positive ribbon travel lowers the stairs/doors (world Y = -travel * pitch),
+ * advancing white -> pink sunset -> night -> golden sunrise -> white.
+ * Reverse travel retraces the same clock at the same reduced rate. */
 export function atmosphereTravelFromRibbon(userPosition: number) {
-  return -userPosition;
+  return userPosition / 2.5;
 }
 const TAU = Math.PI * 2;
 const colorKeys = ["skyZenith", "skyHorizon", "skyLower", "cloudHighlight", "cloudShadow", "cloudHaze", "keyColor", "fillColor", "ambientColor", "reflectionTint"] as const;
@@ -58,14 +60,16 @@ const palettes: Record<"day" | "dawn" | "sunset" | "night", Record<ColorKey, Atm
     keyColor: linear("#f7f5ed"), fillColor: linear("#c8dcf0"), ambientColor: linear("#dce5f1"), reflectionTint: linear("#f0f3fb"),
   },
   dawn: {
-    skyZenith: linear("#839dbb"), skyHorizon: linear("#f5b569"), skyLower: linear("#c8a084"),
-    cloudHighlight: linear("#ffe1a3"), cloudShadow: linear("#81889e"), cloudHaze: linear("#ddb48d"),
-    keyColor: linear("#ffd08a"), fillColor: linear("#bbc8dd"), ambientColor: linear("#dec9b4"), reflectionTint: linear("#f1d2a7"),
+    // Amber horizon / honey-lit crests, with cool slate in the unlit billows.
+    skyZenith: linear("#8d9eaf"), skyHorizon: linear("#f6ac58"), skyLower: linear("#af9186"),
+    cloudHighlight: linear("#ffdb9c"), cloudShadow: linear("#777b91"), cloudHaze: linear("#cfaa8c"),
+    keyColor: linear("#ffd089"), fillColor: linear("#b6c6df"), ambientColor: linear("#dbc8b6"), reflectionTint: linear("#eed0a7"),
   },
   sunset: {
-    skyZenith: linear("#827ca9"), skyHorizon: linear("#f2aec8"), skyLower: linear("#aa89ab"),
-    cloudHighlight: linear("#ffcae0"), cloudShadow: linear("#817494"), cloudHaze: linear("#d2a7c2"),
-    keyColor: linear("#ffcab0"), fillColor: linear("#b5b1dc"), ambientColor: linear("#cbb8d1"), reflectionTint: linear("#e4c1d2"),
+    // Rose-peach light over lavender-blue shadows, drawn from a coastal sunset.
+    skyZenith: linear("#8586ad"), skyHorizon: linear("#efa9bc"), skyLower: linear("#a18aa7"),
+    cloudHighlight: linear("#ffc3d0"), cloudShadow: linear("#77718f"), cloudHaze: linear("#c7a2bb"),
+    keyColor: linear("#ffcebf"), fillColor: linear("#adb6d9"), ambientColor: linear("#cbbccd"), reflectionTint: linear("#e2bfd0"),
   },
   night: {
     skyZenith: linear("#142542"), skyHorizon: linear("#425574"), skyLower: linear("#263b59"),
@@ -87,12 +91,12 @@ export function sampleSanctuaryAtmosphere(userTravel: number, target: SanctuaryA
   const phase = target.solarPhase % TAU;
   target.worldHour = ((12 + userTravel / ATMOSPHERE_CYCLE_TURNS * 24) % 24 + 24) % 24;
   const elevation = Math.cos(phase);
-  // Four equal two-turn moods, not two long day/night plateaus punctuated by
-  // brief twilight flashes. Each has a 1.12-turn full-color core, joined by
-  // 0.88-turn eased overlaps. Their integrated weights are exactly equal.
+  // Equally spaced peak moments on one continuous clock. Blend throughout
+  // the entire interval: there are no full-palette holds. Cosine weights meet
+  // with zero slope at each peak and give each palette equal total influence.
   const quarter = ((userTravel / (ATMOSPHERE_CYCLE_TURNS / 4)) % 4 + 4) % 4;
   const from = Math.floor(quarter), to = (from + 1) % 4;
-  const blend = smoothstep(0.28, 0.72, quarter - from);
+  const blend = (1 - Math.cos((quarter - from) * Math.PI)) / 2;
   const daylight = (from === 0 ? 1 - blend : 0) + (to === 0 ? blend : 0);
   const sunset = (from === 1 ? 1 - blend : 0) + (to === 1 ? blend : 0);
   const night = (from === 2 ? 1 - blend : 0) + (to === 2 ? blend : 0);

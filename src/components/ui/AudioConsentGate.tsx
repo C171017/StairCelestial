@@ -1,27 +1,13 @@
 "use client";
 
-/**
- * Eye intro overlay (SVG). 3D play control + enter transition live in PlayControl3D.
- */
+/** The SVG loading eye starts before the dynamically loaded 3D scene. */
 import gsap from "gsap";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
-import {
-  AUDIO_CONSENT_TIMING,
-  getLidOpenStart,
-  getStarRevealStart,
-} from "@/lib/audioConsentTiming";
-import {
-  getDynamicViewportSize,
-  getEyeControlSidePx,
-} from "@/lib/eyeControlMetrics";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
+import { getDynamicViewportSize, getEyeControlSidePx } from "@/lib/eyeControlMetrics";
 import { CONTROL_EYE_DISSOLVE_SECONDS } from "@/lib/controlEntrance";
 import { EYE_CONTROL_SIZE_CLASS } from "@/lib/eyeConsentLayout";
+import { createIntroEyeReadiness } from "@/lib/introEyeReadiness";
 import { usePortfolioStore } from "@/lib/store";
 import { EYE_LID_PATHS, EyeConsentSvg } from "./EyeConsentSvg";
 
@@ -30,7 +16,10 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function AudioConsentGate({ theme = "original" }: { theme?: "original" | "cloud" }) {
+export function AudioConsentGate({ theme = "original", loadingFailed = false }: {
+  theme?: "original" | "cloud";
+  loadingFailed?: boolean;
+}) {
   const backdrop = theme === "cloud" ? "#edf3f5" : "#030508";
   const clearBackdrop = theme === "cloud" ? "rgba(237, 243, 245, 0)" : "rgba(3, 5, 8, 0)";
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -46,38 +35,21 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
   const playIconRef = useRef<SVGPolygonElement>(null);
   const pauseIconRef = useRef<SVGGElement>(null);
   const iconGroupRef = useRef<SVGGElement>(null);
-
-  const timelineRef = useRef<gsap.core.Timeline | null>(null);
-  const starRevealDoneRef = useRef(false);
-  const runStarRevealRef = useRef<(() => void) | null>(null);
-
-  const [visible, setVisible] = useState(true);
   const [reducedMotion] = useState(prefersReducedMotion);
   const introPlayPhase = usePortfolioStore((s) => s.introPlayPhase);
-
   const sceneBootstrapped = usePortfolioStore((s) => s.sceneBootstrapped);
 
   useLayoutEffect(() => {
-    if (typeof window === "undefined") return;
-
     const root = document.documentElement;
     const viewport = window.visualViewport;
     const syncControlSide = () => {
-      const { width, height } = getDynamicViewportSize(
-        window.innerWidth,
-        window.innerHeight,
-      );
-      root.style.setProperty(
-        "--eye-control-side",
-        `${getEyeControlSidePx(width, height)}px`,
-      );
+      const { width, height } = getDynamicViewportSize(window.innerWidth, window.innerHeight);
+      root.style.setProperty("--eye-control-side", `${getEyeControlSidePx(width, height)}px`);
     };
-
     syncControlSide();
     window.addEventListener("resize", syncControlSide);
     viewport?.addEventListener("resize", syncControlSide);
     viewport?.addEventListener("scroll", syncControlSide);
-
     return () => {
       window.removeEventListener("resize", syncControlSide);
       viewport?.removeEventListener("resize", syncControlSide);
@@ -85,318 +57,165 @@ export function AudioConsentGate({ theme = "original" }: { theme?: "original" | 
     };
   }, []);
 
-  const setIntroReveal = useCallback(
-    (reveal: {
-      introMainOpacity?: number;
-      introShootingStarIntensity?: number;
-      introStarsOpacity?: number;
-    }) => {
-      usePortfolioStore.getState().setIntroReveal(reveal);
-    },
-    [],
-  );
-
-  const completeIntro = useCallback(() => {
-    setIntroReveal({
+  useEffect(() => {
+    if (introPlayPhase !== "active") return;
+    usePortfolioStore.getState().setIntroReveal({
       introMainOpacity: 1,
       introShootingStarIntensity: 1,
       introStarsOpacity: 1,
     });
-    setVisible(false);
-  }, [setIntroReveal]);
+  }, [introPlayPhase]);
 
-  const showPlayControl = useCallback(() => {
-    usePortfolioStore.getState().setIntroPlayPhase("awaitClick");
-    const overlay = overlayRef.current;
-    if (overlay) {
-      overlay.style.pointerEvents = "none";
-    }
-  }, []);
-
-  const finishPlayControlHandoff = useCallback(() => {
+  useEffect(() => {
+    if (loadingFailed) return;
     const overlay = overlayRef.current;
     const control = controlRef.current;
-
-    if (control) {
-      gsap.set(control, { opacity: 0 });
-    }
-    if (overlay) {
-      overlay.style.pointerEvents = "none";
-    }
-  }, []);
-
-  useEffect(() => {
-    if (introPlayPhase !== "active") return;
-    const overlay = overlayRef.current;
-    if (overlay) {
-      gsap.to(overlay, {
-        opacity: 0,
-        duration: AUDIO_CONSENT_TIMING.overlayFade,
-        ease: "sine.inOut",
-      });
-    }
-    completeIntro();
-  }, [introPlayPhase, completeIntro]);
-
-  useEffect(() => {
-    if (!sceneBootstrapped) return;
-    runStarRevealRef.current?.();
-  }, [sceneBootstrapped]);
-
-  useEffect(() => {
-    // Start the handoff only when its 3D counterpart is ready to render.
-    if (!sceneBootstrapped) return;
-    const t = AUDIO_CONSENT_TIMING;
-    const store = usePortfolioStore.getState();
-    // Effect replay must not restart an entrance whose DOM handoff has already
-    // completed. The active overlay has no DOM refs and cannot restart safely.
-    if (store.introPlayPhase !== "hidden") {
-      finishPlayControlHandoff();
-      if (overlayRef.current) gsap.set(overlayRef.current, { backgroundColor: clearBackdrop });
-      if (store.introPlayPhase === "active") completeIntro();
-      return;
-    }
-    if (store.introEpochMs === null) {
-      store.setIntroEpochMs(performance.now());
-    }
-
-    starRevealDoneRef.current = false;
-    runStarRevealRef.current = null;
-    setIntroReveal({
-      introMainOpacity: 0,
-      introShootingStarIntensity: 0,
-      introStarsOpacity: 0,
-    });
-
-    const control = controlRef.current;
-    const overlay = overlayRef.current;
     const aperture = eyeApertureRef.current;
     const eyeInterior = eyeInteriorRef.current;
     const upper = upperLidRef.current;
     const lower = lowerLidRef.current;
     const sclera = scleraExtrasRef.current;
-    const iris = irisRef.current;
-    const pupil = pupilRef.current;
+    if (!overlay || !control || !aperture || !eyeInterior || !upper || !lower || !sclera) return;
 
-    if (
-      !control ||
-      !aperture ||
-      !eyeInterior ||
-      !upper ||
-      !lower ||
-      !iris ||
-      !pupil
-    ) {
+    const store = usePortfolioStore.getState();
+    // Strict Mode and Fast Refresh must preserve an already completed handoff.
+    if (store.introPlayPhase !== "hidden") {
+      gsap.set(control, { opacity: 0 });
+      gsap.set(overlay, { backgroundColor: clearBackdrop });
+      overlay.style.pointerEvents = "none";
       return;
     }
 
-    if (overlay) {
-      gsap.set(overlay, {
-        backgroundColor: backdrop,
-        opacity: 1,
-      });
-      overlay.style.pointerEvents = "auto";
-    }
-
-    gsap.set(control, {
-      opacity: 0,
-      scale: 0.985,
-      transformOrigin: "center center",
-    });
-    gsap.set(aperture, {
-      attr: { d: EYE_LID_PATHS.apertureClosed },
-    });
-    gsap.set(upper, {
-      attr: { d: EYE_LID_PATHS.upperClosed },
-      opacity: 0,
-      y: 0,
-    });
-    gsap.set(lower, {
-      attr: { d: EYE_LID_PATHS.lowerClosed },
-      opacity: 0,
-      y: 0,
-    });
+    const t = AUDIO_CONSENT_TIMING;
+    const eyeArtwork = [upper, lower, sclera, eyeInterior];
+    const revealState = { stars: 0, shooting: 0 };
+    let openingTimeline: gsap.core.Timeline | null = null;
+    let blinkTimeline: gsap.core.Timeline | null = null;
+    let blinkTimer: ReturnType<typeof setTimeout> | null = null;
+    let unsubscribe = () => {};
+    gsap.set(overlay, { backgroundColor: backdrop, opacity: 1 });
+    overlay.style.pointerEvents = "auto";
+    gsap.set(control, { opacity: 1, scale: 1, transformOrigin: "center center" });
+    gsap.set(aperture, { attr: { d: EYE_LID_PATHS.apertureClosed } });
+    gsap.set(upper, { attr: { d: EYE_LID_PATHS.upperClosed }, opacity: 1, y: 0 });
+    gsap.set(lower, { attr: { d: EYE_LID_PATHS.lowerClosed }, opacity: 1, y: 0 });
     gsap.set(sclera, { opacity: 0 });
     gsap.set(eyeInterior, { opacity: 1 });
-    gsap.set([iris, pupil], { opacity: 1 });
+    store.setIntroReveal({ introMainOpacity: 0, introShootingStarIntensity: 0, introStarsOpacity: 0 });
 
-    const tl = gsap.timeline();
-    timelineRef.current = tl;
-    const revealState = {
-      shooting: 0,
-      stars: 0,
-    };
-
-    const runStarReveal = () => {
-      if (starRevealDoneRef.current) return;
-      if (!usePortfolioStore.getState().sceneBootstrapped) return;
-
-      starRevealDoneRef.current = true;
-      gsap.killTweensOf(revealState);
+    const revealBackground = () => {
       gsap.to(revealState, {
-        stars: 1,
-        shooting: 1,
-        duration: t.starCrossfade,
+        stars: 1, shooting: 1,
+        duration: reducedMotion ? 0 : t.starCrossfade,
         ease: "sine.inOut",
-        onUpdate: () => {
-          setIntroReveal({
-            introShootingStarIntensity: revealState.shooting,
-            introStarsOpacity: revealState.stars,
-          });
-        },
+        onUpdate: () => usePortfolioStore.getState().setIntroReveal({
+          introShootingStarIntensity: revealState.shooting,
+          introStarsOpacity: revealState.stars,
+        }),
       });
-      if (overlay) {
-        gsap.to(overlay, {
-          backgroundColor: clearBackdrop,
-          duration: t.starCrossfade,
-          ease: "sine.inOut",
-        });
+      gsap.to(overlay, {
+        backgroundColor: clearBackdrop,
+        duration: reducedMotion ? 0 : t.starCrossfade,
+        ease: "sine.inOut",
+      });
+    };
+    const handoff = () => {
+      usePortfolioStore.getState().setIntroPlayPhase("awaitClick");
+      overlay.style.pointerEvents = "none";
+    };
+    const open = () => {
+      unsubscribe();
+      if (blinkTimer) clearTimeout(blinkTimer);
+      blinkTimeline?.kill();
+      const state = usePortfolioStore.getState();
+      if (state.introEpochMs === null) state.setIntroEpochMs(performance.now());
+      if (reducedMotion) {
+        gsap.set(eyeArtwork, { opacity: 0 });
+        gsap.set(control, { opacity: 0 });
+        revealBackground();
+        handoff();
+        return;
       }
-    };
-
-    if (reducedMotion) {
-      runStarRevealRef.current = () => {
-        if (starRevealDoneRef.current) return;
-        if (!usePortfolioStore.getState().sceneBootstrapped) return;
-        starRevealDoneRef.current = true;
-        setIntroReveal({
-          introShootingStarIntensity: 1,
-          introStarsOpacity: 1,
-        });
-        if (overlay) {
-          gsap.set(overlay, { backgroundColor: clearBackdrop });
-        }
-      };
-
-      gsap.set([upper, lower, sclera, eyeInterior], { opacity: 0 });
-
-      tl.call(() => {
-        runStarRevealRef.current?.();
-        showPlayControl();
-        finishPlayControlHandoff();
-      }, [], 0);
-    } else {
-      runStarRevealRef.current = runStarReveal;
-
-      const openStart = getLidOpenStart(t);
-      const starRevealStart = getStarRevealStart(t);
-
-      tl.to(
-        control,
-        {
-          opacity: 1,
-          scale: 1,
-          duration: t.revealClosedEye,
-          ease: "sine.inOut",
-        },
-        t.blackHold,
-      );
-      tl.to(
-        [upper, lower],
-        {
-          opacity: 1,
-          duration: t.revealClosedEye,
-          ease: "sine.inOut",
-        },
-        t.blackHold,
-      );
-      tl.to(
-        aperture,
-        {
-          attr: { d: EYE_LID_PATHS.apertureOpen },
-          duration: t.lidOpen,
-          ease: "power2.inOut",
-        },
-        openStart,
-      );
-      tl.to(
-        upper,
-        {
-          attr: { d: EYE_LID_PATHS.upperOpen },
-          duration: t.lidOpen,
-          ease: "power2.inOut",
-        },
-        openStart,
-      );
-      tl.to(
-        lower,
-        {
-          attr: { d: EYE_LID_PATHS.lowerOpen },
-          duration: t.lidOpen,
-          ease: "power2.inOut",
-        },
-        openStart,
-      );
-      tl.to(
-        sclera,
-        { opacity: 1, duration: t.lidOpen * 0.6, ease: "power2.out" },
-        openStart + t.lidOpen * 0.22,
-      );
-
-      tl.call(runStarReveal, [], starRevealStart);
-
-      const vanishStart = starRevealStart + t.openEyeHold;
-      const eyeArtwork = [upper, lower, sclera, eyeInterior];
+      openingTimeline = gsap.timeline();
+      openingTimeline.to(aperture, {
+        attr: { d: EYE_LID_PATHS.apertureOpen }, duration: t.lidOpen, ease: "power2.inOut",
+      }, 0);
+      openingTimeline.to(upper, {
+        attr: { d: EYE_LID_PATHS.upperOpen }, duration: t.lidOpen, ease: "power2.inOut",
+      }, 0);
+      openingTimeline.to(lower, {
+        attr: { d: EYE_LID_PATHS.lowerOpen }, duration: t.lidOpen, ease: "power2.inOut",
+      }, 0);
+      openingTimeline.to(sclera, {
+        opacity: 1, duration: t.lidOpen * 0.6, ease: "power2.out",
+      }, t.lidOpen * 0.22);
+      openingTimeline.call(revealBackground, [], t.lidOpen);
+      const vanishStart = t.lidOpen + t.openEyeHold;
       const dissolveDuration = theme === "cloud" ? CONTROL_EYE_DISSOLVE_SECONDS : t.eyeVanishAfterOpen;
-
-      tl.to(
-        eyeArtwork,
-        {
-          opacity: 0,
-          duration: dissolveDuration,
-          ease: "sine.inOut",
-        },
-        vanishStart,
-      );
-
-      const handoffAt = vanishStart + dissolveDuration;
-      tl.call(showPlayControl, [], vanishStart);
-      tl.call(finishPlayControlHandoff, [], handoffAt);
-      tl.set(control, { opacity: 0 }, handoffAt);
-    }
-
-    return () => {
-      timelineRef.current?.kill();
-      timelineRef.current = null;
-      gsap.killTweensOf(revealState);
-      if (overlay) gsap.killTweensOf(overlay);
+      openingTimeline.to(eyeArtwork, {
+        opacity: 0, duration: dissolveDuration, ease: "sine.inOut",
+      }, vanishStart);
+      openingTimeline.call(handoff, [], vanishStart);
+      openingTimeline.set(control, { opacity: 0 }, vanishStart + dissolveDuration);
     };
-  }, [backdrop, clearBackdrop, completeIntro, finishPlayControlHandoff, reducedMotion, sceneBootstrapped, showPlayControl, setIntroReveal, theme]);
+    const readiness = createIntroEyeReadiness(open);
+    const scheduleBlink = () => {
+      blinkTimer = setTimeout(() => blink(false), 1100);
+    };
+    const blink = (initial: boolean) => {
+      if (!readiness.beginBlink()) return;
+      blinkTimeline = gsap.timeline({ onComplete: () => {
+        readiness.finishBlink();
+        if (!usePortfolioStore.getState().sceneBootstrapped) scheduleBlink();
+      } });
+      if (!initial) {
+        blinkTimeline.to(aperture, { attr: { d: EYE_LID_PATHS.apertureClosed }, duration: 0.11 }, 0);
+        blinkTimeline.to(upper, { attr: { d: EYE_LID_PATHS.upperClosed }, duration: 0.11 }, 0);
+        blinkTimeline.to(lower, { attr: { d: EYE_LID_PATHS.lowerClosed }, duration: 0.11 }, 0);
+      }
+      const reopenAt = initial ? 0 : 0.155;
+      blinkTimeline.to(aperture, {
+        attr: { d: EYE_LID_PATHS.apertureWaiting }, duration: 0.28, ease: "sine.inOut",
+      }, reopenAt);
+      blinkTimeline.to(upper, {
+        attr: { d: EYE_LID_PATHS.upperWaiting }, duration: 0.28, ease: "sine.inOut",
+      }, reopenAt);
+      blinkTimeline.to(lower, {
+        attr: { d: EYE_LID_PATHS.lowerWaiting }, duration: 0.28, ease: "sine.inOut",
+      }, reopenAt);
+    };
+    // Subscribe directly so scene readiness never tears down a loading blink.
+    unsubscribe = usePortfolioStore.subscribe(state => readiness.setReady(state.sceneBootstrapped));
+    readiness.setReady(store.sceneBootstrapped);
+    if (!store.sceneBootstrapped && !reducedMotion) blink(true);
+    return () => {
+      readiness.dispose();
+      unsubscribe();
+      if (blinkTimer) clearTimeout(blinkTimer);
+      blinkTimeline?.kill();
+      openingTimeline?.kill();
+      gsap.killTweensOf(revealState);
+      gsap.killTweensOf(overlay);
+    };
+  }, [backdrop, clearBackdrop, loadingFailed, reducedMotion, theme]);
 
-  if (!visible) return null;
-
+  if (introPlayPhase === "active") return null;
   const eyeRefs = {
-    eyeAperture: eyeApertureRef,
-    eyeInterior: eyeInteriorRef,
-    upperLid: upperLidRef,
-    lowerLid: lowerLidRef,
-    scleraExtras: scleraExtrasRef,
-    iris: irisRef,
-    pupil: pupilRef,
-    playRing: playRingRef,
-    playIcon: playIconRef,
-    pauseIcon: pauseIconRef,
-    iconGroup: iconGroupRef,
+    eyeAperture: eyeApertureRef, eyeInterior: eyeInteriorRef,
+    upperLid: upperLidRef, lowerLid: lowerLidRef, scleraExtras: scleraExtrasRef,
+    iris: irisRef, pupil: pupilRef, playRing: playRingRef,
+    playIcon: playIconRef, pauseIcon: pauseIconRef, iconGroup: iconGroupRef,
   };
-
   return (
-    <div
-      ref={overlayRef}
-      className="fixed inset-0 z-50 grid h-dvh w-dvw place-items-center"
-      data-eye-theme={theme}
-      style={{ backgroundColor: backdrop }}
-      role="dialog"
-      aria-label="Site intro"
-      aria-modal={introPlayPhase !== "active"}
-    >
-      <div
-        ref={controlRef}
-        className={`${EYE_CONTROL_SIZE_CLASS} flex items-center justify-center pointer-events-none`}
-        style={{ filter: theme === "cloud" ? "invert(1) hue-rotate(180deg) saturate(.35)" : undefined }}
-        aria-hidden
-      >
+    <div ref={overlayRef} className="fixed inset-0 z-50 grid h-dvh w-dvw place-items-center"
+      data-eye-theme={theme} data-eye-loading={!sceneBootstrapped && !loadingFailed}
+      style={{ backgroundColor: backdrop }} role="dialog" aria-label="Site intro"
+      aria-modal={introPlayPhase === "hidden" && !loadingFailed} aria-busy={!sceneBootstrapped && !loadingFailed}>
+      <div ref={controlRef} className={`${EYE_CONTROL_SIZE_CLASS} flex items-center justify-center pointer-events-none`}
+        style={{ filter: theme === "cloud" ? "invert(1) hue-rotate(180deg) saturate(.35)" : undefined }} aria-hidden>
         <EyeConsentSvg refs={eyeRefs} />
       </div>
+      <span className="sr-only" role="status">{loadingFailed ? "The scene is taking longer to load. Retry or explore a project below." : introPlayPhase === "hidden" ? "Preparing the scene." : "The scene is ready. The central control enables sound."}</span>
     </div>
   );
 }

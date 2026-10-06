@@ -25,6 +25,7 @@ import { OrbitCamera } from "./OrbitCamera";
 import { floatDoorSupport, FLOATING_DOOR_COUNT, readReviewSeed } from "@/lib/floatingDoor";
 import { fitDoorSupport, getDoorBase } from "@/lib/doorSupport";
 import { doorPresentationSamples } from "@/lib/portalPresentation";
+import { AdaptiveQuality } from "./AdaptiveQuality";
 
 const FOCUS_POSITION = { x: 0, y: 2.3, z: 4.2 };
 const FOCUS_CAMERA = new THREE.Vector3(0, ORBIT_HEIGHT, ORBIT_RADIUS);
@@ -43,12 +44,19 @@ function Ready({ ready, onReady }: { ready: boolean; onReady: () => void }) {
   const compiled = useRef(false);
   const frames = useRef(0);
   const sent = useRef(false);
+  const [failure, setFailure] = useState<Error | null>(null);
   useEffect(() => {
     if (!ready) return;
     let cancelled = false;
     compiled.current = false;
     frames.current = 0;
-    gl.compileAsync(scene, camera).then(() => { if (!cancelled) compiled.current = true; });
+    // Compile after the sky-derived environment exists so the visible material
+    // variant is prepared before the eye hands off to the scene.
+    Promise.resolve().then(() => gl.compileAsync(scene, camera)).then(() => {
+      if (!cancelled) compiled.current = true;
+    }).catch((error: unknown) => {
+      if (!cancelled) setFailure(error instanceof Error ? error : new Error("Scene preparation failed"));
+    });
     return () => { cancelled = true; };
   }, [ready, gl, scene, camera]);
   useFrame(() => {
@@ -56,6 +64,7 @@ function Ready({ ready, onReady }: { ready: boolean; onReady: () => void }) {
       sent.current = true; onReady();
     }
   });
+  if (failure) throw failure;
   return null;
 }
 
@@ -158,21 +167,19 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
 }
 
 function Content(props: Props) {
-  const { setDpr } = useThree();
   const [skyReady, setSkyReady] = useState(false);
   const handleSkyReady = useCallback(() => setSkyReady(true), []);
-  useEffect(() => {
-    // The visual prototype keeps Retina detail instead of the former 1x cap.
-    setDpr(Math.min(Math.max(window.devicePixelRatio, 1.5), 2));
-  }, [setDpr]);
+  const [environmentReady, setEnvironmentReady] = useState(false);
+  const handleEnvironmentReady = useCallback(() => setEnvironmentReady(true), []);
   const ribbonFrame = useRef<THREE.Group>(null);
   const reflectionScene = useRef<THREE.Scene | null>(null);
   const { active, selection, onSelect } = props;
   const onNavigate = useCallback(() => onSelect(null), [onSelect]);
   const { motion, orbit, atmosphere } = useRibbonMotion({ enabled: active, paused: selection !== null, onUserNavigate: onNavigate });
   return <>
+    <AdaptiveQuality enabled={active} />
     <OrbitCamera orbit={orbit} />
-    <StudioLight atmosphere={atmosphere} reflectionScene={reflectionScene} />
+    <StudioLight atmosphere={atmosphere} reflectionScene={reflectionScene} onReady={handleEnvironmentReady} />
     <PlayControl3D theme="cloud" anchorHeight={2.8} ribbonMotion={motion} ribbonFrame={ribbonFrame} atmosphere={atmosphere} />
     <Suspense fallback={null}>
       {/* Finish the immutable sky before allowing the entrance to reveal it. */}
@@ -180,7 +187,7 @@ function Content(props: Props) {
       <IntroSceneReveal>
         <RibbonWorld {...props} motion={motion} orbit={orbit} ribbonFrame={ribbonFrame} />
       </IntroSceneReveal>
-      <Ready ready={skyReady} onReady={props.onReady} />
+      <Ready ready={skyReady && environmentReady} onReady={props.onReady} />
     </Suspense>
   </>;
 }

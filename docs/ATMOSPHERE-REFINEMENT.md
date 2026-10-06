@@ -1,5 +1,15 @@
 # Atmosphere refinement: distance, time, light, and motion
 
+**Latest continuous-cycle refinement (October 6):** the four concept looks are
+peak moments, with continuously changing cosine blends across each complete
+two-turn interval and equal integrated palette weights. There are no palette
+holds. Pink belongs to 18:00 sunset, amber-gold to 06:00 sunrise. All existing
+bank silhouettes now drift slowly in the same world wind; faster clouds and
+mist run roughly one third slower. The two twilight palettes use photographic
+references, with cool shadowed cloud faces beneath rose or honey highlights.
+See [implementation, references, and live captures](validation/continuous-atmosphere-2026-10-06/README.md).
+This supersedes the full-color cores and fixed-bank descriptions below.
+
 **Implemented on the homepage (October 6):** the owner approved all three
 effects together at a noticeable but natural level. `OrbitSky` now mounts
 the balanced `SkyAtmosphericMotion` mix: eight sailing-cloud surfaces,

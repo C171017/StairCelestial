@@ -2,6 +2,8 @@
 
 The active homepage is the Sanctuary floating-portal experience. Read:
 
+- **[Performance and loading brief](PERFORMANCE-AND-LOADING.md) — durable requirements for quality-preserving adaptation, the readiness-driven eye, staged entrance work, and user-experience validation.**
+
 - **[Integrated cloud, mist and light motion](validation/integrated-motion-2026-10-06/README.md) — latest October 6 implementation: all three approved effects are active on the homepage, with balanced strengths, separate wind/time clocks and shared artwork.**
 
 - **[Equal moods and visible effects](validation/atmosphere-visibility-2026-10-06/README.md) — latest October 6 correction: 25% journey per mood, golden sunrise/pink sunset, restored shadows, denser stars, full-night meteors, visible shared-wind clouds, and actual motion recording.**

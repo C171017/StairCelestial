@@ -1,0 +1,275 @@
+{
+  "phases": [
+    {
+      "phase": "hidden",
+      "ms": 15
+    },
+    {
+      "phase": "awaitClick",
+      "ms": 3365
+    },
+    {
+      "phase": "entering",
+      "ms": 5365
+    },
+    {
+      "phase": "active",
+      "ms": 12415
+    }
+  ],
+  "frames": 655,
+  "meanMs": 21.06793893129771,
+  "p50Ms": 16.700000000000728,
+  "p95Ms": 33.400000000001455,
+  "over33Pct": 6.564885496183206,
+  "over50Pct": 0,
+  "canvas": [
+    {
+      "width": 2880,
+      "height": 2000,
+      "data": {
+        "engine": "three.js r175"
+      }
+    }
+  ],
+  "bodyText": "",
+  "resources": [
+    {
+      "name": "css/34d928237f89f41a.css",
+      "transfer": 24538,
+      "duration": 5
+    },
+    {
+      "name": "chunks/webpack-7c561e7b66e9edf8.js",
+      "transfer": 4230,
+      "duration": 6
+    },
+    {
+      "name": "chunks/main-app-c15971d1015e1924.js",
+      "transfer": 857,
+      "duration": 7
+    },
+    {
+      "name": "chunks/c15bf2b0-52e8419f34af26ab.js",
+      "transfer": 51844,
+      "duration": 9
+    },
+    {
+      "name": "chunks/850-58d1c157fa6219d8.js",
+      "transfer": 22955,
+      "duration": 9
+    },
+    {
+      "name": "app/page-c95afccaa1f697aa.js",
+      "transfer": 27002,
+      "duration": 10
+    },
+    {
+      "name": "chunks/255-d47fd57964443afe.js",
+      "transfer": 173911,
+      "duration": 8
+    },
+    {
+      "name": "chunks/4bd1b696-c023c6e3521b1417.js",
+      "transfer": 173319,
+      "duration": 9
+    },
+    {
+      "name": "sanctuary/cloudscape.webp",
+      "transfer": 38438,
+      "duration": 2
+    },
+    {
+      "name": "chunks/b79b7286-b809957f2c25091d.js",
+      "transfer": 147605,
+      "duration": 4
+    },
+    {
+      "name": "chunks/bd904a5c-334a95609f8769ab.js",
+      "transfer": 368641,
+      "duration": 5
+    },
+    {
+      "name": "chunks/b536a0f1-677c31318207bb0b.js",
+      "transfer": 332835,
+      "duration": 9
+    },
+    {
+      "name": "chunks/e5134ad9.953b38ed1ac1536a.js",
+      "transfer": 247520,
+      "duration": 9
+    },
+    {
+      "name": "chunks/851-daad11f084fa8da3.js",
+      "transfer": 13198,
+      "duration": 6
+    },
+    {
+      "name": "chunks/946-02430916941758e7.js",
+      "transfer": 85371,
+      "duration": 8
+    },
+    {
+      "name": "chunks/491.2d02d7fb47042be5.js",
+      "transfer": 84327,
+      "duration": 10
+    },
+    {
+      "name": "chunks/176-66930b05f6ae2c50.js",
+      "transfer": 33390,
+      "duration": 12
+    },
+    {
+      "name": "chunks/646.f328133947cb806f.js",
+      "transfer": 20836,
+      "duration": 13
+    },
+    {
+      "name": "chunks/877.03821e82da80353d.js",
+      "transfer": 48285,
+      "duration": 13
+    },
+    {
+      "name": "127.0.0.1:3101/icon.svg?v=2",
+      "transfer": 637,
+      "duration": 6
+    },
+    {
+      "name": "audio/consent-sting.m4a",
+      "transfer": 19526,
+      "duration": 1
+    },
+    {
+      "name": "sanctuary/jazz.glb",
+      "transfer": 387696,
+      "duration": 3
+    },
+    {
+      "name": "sanctuary/music.glb",
+      "transfer": 541412,
+      "duration": 4
+    },
+    {
+      "name": "sanctuary/atlas.glb",
+      "transfer": 378212,
+      "duration": 3
+    },
+    {
+      "name": "sanctuary/network.glb",
+      "transfer": 494692,
+      "duration": 3
+    },
+    {
+      "name": "doors/melt.glb?v=8",
+      "transfer": 321936,
+      "duration": 5
+    },
+    {
+      "name": "doors/seed.glb?v=8",
+      "transfer": 290536,
+      "duration": 6
+    },
+    {
+      "name": "doors/fault.glb?v=8",
+      "transfer": 163228,
+      "duration": 5
+    },
+    {
+      "name": "doors/hourglass.glb?v=8",
+      "transfer": 416340,
+      "duration": 6
+    },
+    {
+      "name": "doors/cloud.glb?v=8",
+      "transfer": 479176,
+      "duration": 7
+    },
+    {
+      "name": "doors/orbit.glb?v=8",
+      "transfer": 321992,
+      "duration": 6
+    },
+    {
+      "name": "materials/Marble021_4K-JPG_Color.jpg",
+      "transfer": 11821108,
+      "duration": 29
+    },
+    {
+      "name": "materials/Marble021_4K-JPG_Roughness.jpg",
+      "transfer": 4427021,
+      "duration": 20
+    },
+    {
+      "name": "materials/Marble021_4K-JPG_Displacement.jpg",
+      "transfer": 7696950,
+      "duration": 26
+    },
+    {
+      "name": "doors/cloud.glb?v=8",
+      "transfer": 0,
+      "duration": 1
+    },
+    {
+      "name": "doors/orbit.glb?v=8",
+      "transfer": 0,
+      "duration": 0
+    },
+    {
+      "name": "doors/hourglass.glb?v=8",
+      "transfer": 0,
+      "duration": 0
+    },
+    {
+      "name": "doors/seed.glb?v=8",
+      "transfer": 0,
+      "duration": 1
+    },
+    {
+      "name": "doors/fault.glb?v=8",
+      "transfer": 0,
+      "duration": 0
+    },
+    {
+      "name": "doors/melt.glb?v=8",
+      "transfer": 0,
+      "duration": 0
+    },
+    {
+      "name": "layers/cumulus-4096.webp",
+      "transfer": 1721154,
+      "duration": 4
+    },
+    {
+      "name": "layers/cirrus.webp",
+      "transfer": 610204,
+      "duration": 3
+    },
+    {
+      "name": "layers/cumulus-8192.ktx2",
+      "transfer": 6275367,
+      "duration": 10
+    },
+    {
+      "name": "basis/basis_transcoder.js",
+      "transfer": 57829,
+      "duration": 2
+    },
+    {
+      "name": "basis/basis_transcoder.wasm",
+      "transfer": 527633,
+      "duration": 3
+    },
+    {
+      "name": "chunks/740.adda94009579b89b.js",
+      "transfer": 6224,
+      "duration": 2
+    }
+  ],
+  "quality": null,
+  "active": true,
+  "errors": [],
+  "engine": "chromium",
+  "profile": "desktop",
+  "cpuThrottle": 1,
+  "url": "http://127.0.0.1:3101"
+}
