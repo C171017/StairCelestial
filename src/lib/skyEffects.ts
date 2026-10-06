@@ -1,7 +1,7 @@
-export const SKY_EFFECTS_PERIOD = 120;
+export const SKY_EFFECTS_PERIOD = 116;
 
 export type SkyEffect = {
-  kind: "meteor" | "glint";
+  kind: "meteor";
   start: number;
   duration: number;
   azimuth: number;
@@ -10,16 +10,18 @@ export type SkyEffect = {
   intensity: number;
 };
 
-// Sparse world events, independent of cloud motion, scroll, and day/night.
-// Lighting controls their visibility; daytime remains quiet.
+// One clear trail every 13–17 active sunset/night seconds, independent of
+// scroll. Several paths face the entrance, while others reward camera orbit.
+// The clock pauses only when the atmosphere hides meteors, never at midnight.
 export const SKY_EFFECTS: readonly SkyEffect[] = [
-  { kind: "meteor", start: 12.4, duration: 2.8, azimuth: Math.PI + 0.12, height: 32, tilt: -0.3, intensity: 0.8 },
-  { kind: "meteor", start: 37.6, duration: 2.5, azimuth: Math.PI * 0.52, height: 39, tilt: -0.23, intensity: 0.72 },
-  { kind: "meteor", start: 61.2, duration: 2.6, azimuth: 0.1, height: 29, tilt: -0.38, intensity: 0.76 },
-  { kind: "meteor", start: 85.7, duration: 2.7, azimuth: Math.PI * 1.49, height: 36, tilt: -0.28, intensity: 0.72 },
-  { kind: "meteor", start: 109.3, duration: 2.6, azimuth: Math.PI - 0.38, height: 26, tilt: -0.34, intensity: 0.76 },
-  { kind: "glint", start: 25.1, duration: 4.6, azimuth: Math.PI - 0.39, height: 43, tilt: 0.15, intensity: 0.24 },
-  { kind: "glint", start: 74.6, duration: 4.8, azimuth: Math.PI * 1.52, height: 37, tilt: -0.1, intensity: 0.20 },
+  { kind: "meteor", start: 5.0, duration: 1.8, azimuth: Math.PI + 0.12, height: 23, tilt: -0.27, intensity: 0.98 },
+  { kind: "meteor", start: 18.0, duration: 2.1, azimuth: Math.PI - 0.42, height: 19, tilt: -0.35, intensity: 0.92 },
+  { kind: "meteor", start: 34.0, duration: 1.7, azimuth: Math.PI * 0.52, height: 29, tilt: -0.22, intensity: 0.96 },
+  { kind: "meteor", start: 47.0, duration: 2.0, azimuth: Math.PI + 0.36, height: 28, tilt: -0.31, intensity: 0.94 },
+  { kind: "meteor", start: 62.0, duration: 1.9, azimuth: Math.PI - 0.20, height: 15, tilt: -0.25, intensity: 0.98 },
+  { kind: "meteor", start: 75.0, duration: 2.1, azimuth: 0.1, height: 22, tilt: -0.38, intensity: 0.92 },
+  { kind: "meteor", start: 89.0, duration: 1.8, azimuth: Math.PI - 0.34, height: 31, tilt: -0.29, intensity: 0.96 },
+  { kind: "meteor", start: 104.0, duration: 2.0, azimuth: Math.PI * 1.49, height: 18, tilt: -0.26, intensity: 0.94 },
 ];
 
 export type SkyEffectSample = { progress: number; opacity: number };
@@ -40,16 +42,16 @@ export function sampleSkyEffect(effect: SkyEffect, elapsed: number, target: SkyE
   target.progress = Math.max(0, Math.min(1, progress));
   if (progress <= 0 || progress >= 1) {
     target.opacity = 0;
-  } else if (effect.kind === "meteor") {
-    target.opacity = effect.intensity * smoothstep(0, 0.2, progress) * (1 - smoothstep(0.57, 1, progress));
   } else {
-    // A single slow breath, with zero velocity at both ends; no blinking.
-    target.opacity = effect.intensity * Math.sin(progress * Math.PI) ** 2;
+    target.opacity = effect.intensity * smoothstep(0, 0.2, progress) * (1 - smoothstep(0.57, 1, progress));
   }
   return target;
 }
 
-export function advanceSkyEffectsTime(elapsed: number, delta: number, paused: boolean) {
+export function advanceSkyEffectsTime(elapsed: number, delta: number, paused: boolean, visibility = 1) {
   // Bound the first frame after a suspended browser without jumping an effect.
-  return paused ? elapsed : skyEffectsPhase(elapsed + Math.max(0, Math.min(delta, 0.1)));
+  // Visibility is only an enable gate: changing or reversing world time cannot
+  // restart a trail, shorten the cadence, or turn one crossing into a shower.
+  if (paused || !Number.isFinite(delta) || !Number.isFinite(visibility) || visibility <= 0.001) return elapsed;
+  return skyEffectsPhase(elapsed + Math.max(0, Math.min(delta, 0.1)));
 }

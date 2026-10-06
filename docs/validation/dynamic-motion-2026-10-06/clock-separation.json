@@ -1,0 +1,14 @@
+{
+  "initial": {
+    "hour": "6.000",
+    "seconds": "61.397"
+  },
+  "forward": {
+    "hour": "7.800",
+    "seconds": "97.652"
+  },
+  "reverse": {
+    "hour": "6.000",
+    "seconds": "124.184"
+  }
+}

@@ -15,7 +15,7 @@ export function useCloudArtwork() {
     let decoder:KTX2Loader|null=null;
     const prepare=(texture:THREE.Texture)=>{
       texture.colorSpace=THREE.SRGBColorSpace;
-      texture.anisotropy=1;
+      texture.anisotropy=Math.min(8,gl.capabilities.getMaxAnisotropy());
       texture.needsUpdate=true;
       if(disposed)texture.dispose();else owned.add(texture);
       return texture;

@@ -22,41 +22,28 @@ const meteorShader = `
   uniform float opacity;
   varying vec2 effectUv;
   void main() {
-    float head = 0.29 + progress * 0.64;
+    float head = 0.13 + progress * 0.81;
     float behind = head - effectUv.x;
     float y = (effectUv.y - 0.5) * 2.0;
-    float tail = smoothstep(0.0, 0.015, behind)
-      * (1.0 - smoothstep(0.025, 0.29, behind));
-    // The sky is bright daylight. A roughly 2–3 px core and a warm, soft halo
-    // remain readable at normal page size without a flashing exposure change.
-    float core = exp(-y * y * 70.0) * tail;
-    float halo = exp(-y * y * 13.0) * tail * 0.34;
-    vec2 tip = vec2((effectUv.x - head) * 30.0, y);
-    float headGlow = exp(-dot(tip, tip) * 11.0);
-    float alpha = clamp(core + halo + headGlow, 0.0, 1.0) * opacity;
-    vec3 color = mix(vec3(1.0, 0.73, 0.34), vec3(1.0, 0.99, 0.94),
-      clamp(core + headGlow, 0.0, 1.0));
+    float trail = smoothstep(-0.002, 0.012, behind) * exp(-max(behind, 0.0) * 5.0)
+      * (1.0 - smoothstep(0.27, 0.40, behind));
+    // The advancing warm-white head pulls a long cool trail that narrows and
+    // fades behind it. A restrained outer glow reads against pink dusk too.
+    float width = mix(0.48, 1.0, 1.0 - smoothstep(0.01, 0.40, max(behind, 0.0)));
+    float core = exp(-y * y * 100.0 / (width * width)) * trail;
+    float halo = exp(-y * y * 11.0) * trail * 0.42;
+    vec2 tip = vec2((effectUv.x - head) * 43.0, y * 1.9);
+    float headCore = exp(-dot(tip, tip) * 14.0);
+    float headGlow = exp(-dot(tip, tip) * 2.8) * 0.38;
+    float alpha = clamp(core + halo + headCore + headGlow, 0.0, 1.0) * opacity;
+    vec3 color = mix(vec3(0.66, 0.81, 1.0), vec3(1.0, 0.97, 0.87),
+      clamp(core * 1.4 + headCore + headGlow, 0.0, 1.0));
     gl_FragColor = vec4(color, alpha);
     #include <colorspace_fragment>
   }
 `;
 
-const glintShader = `
-  uniform float opacity;
-  varying vec2 effectUv;
-  void main() {
-    vec2 p = (effectUv - 0.5) * 2.0;
-    float halo = exp(-dot(p, p) * 14.0) * 0.4;
-    float horizontal = exp(-p.y * p.y * 260.0 - abs(p.x) * 6.5);
-    float vertical = exp(-p.x * p.x * 260.0 - abs(p.y) * 6.5);
-    float edge = 1.0 - smoothstep(0.65, 1.0, length(p));
-    float alpha = clamp(halo + horizontal + vertical, 0.0, 1.0) * opacity * edge;
-    gl_FragColor = vec4(vec3(1.0, 0.97, 0.85), alpha);
-    #include <colorspace_fragment>
-  }
-`;
-
-/** World-anchored meteors and slow glints, drawn behind the cloud layers. */
+/** Clear, separated sunset/night meteors, drawn behind the cloud layers. */
 export function SkyEffects({ active = true, timeOverride = null, atmosphere }: { active?: boolean; timeOverride?: number|null; atmosphere?: RefObject<SanctuaryAtmosphere> }) {
   const group = useRef<THREE.Group>(null);
   const fallback = useMemo(createSanctuaryAtmosphere, []);
@@ -78,7 +65,7 @@ export function SkyEffects({ active = true, timeOverride = null, atmosphere }: {
         side: THREE.DoubleSide, toneMapped: false,
         uniforms: { progress: { value: 0 }, opacity: { value: 0 } },
         vertexShader,
-        fragmentShader: effect.kind === "meteor" ? meteorShader : glintShader,
+        fragmentShader: meteorShader,
       });
       const mesh = new THREE.Mesh(geometry, material);
       const radius = 220;
@@ -87,7 +74,7 @@ export function SkyEffects({ active = true, timeOverride = null, atmosphere }: {
       outward.set(Math.sin(effect.azimuth), 0, Math.cos(effect.azimuth));
       rotation.makeBasis(right, up, outward);
       mesh.quaternion.setFromRotationMatrix(rotation).multiply(tilt.setFromAxisAngle(zAxis, effect.tilt));
-      mesh.scale.set(effect.kind === "meteor" ? 44 : 1.8, effect.kind === "meteor" ? 2.6 : 1.8, 1);
+      mesh.scale.set(68, 3.8, 1);
       mesh.visible = false;
       mesh.renderOrder = -90;
       mesh.raycast = ignoreRaycast;
@@ -126,9 +113,9 @@ export function SkyEffects({ active = true, timeOverride = null, atmosphere }: {
       skipFrame.current = false;
       return;
     }
-    elapsed.current = timeOverride ?? advanceSkyEffectsTime(elapsed.current, delta, false);
     const mood = atmosphere?.current ?? fallback;
-    const visibility = mood.starVisibility * 0.86 + mood.dusk * 0.11;
+    const visibility = mood.meteorVisibility;
+    elapsed.current = timeOverride ?? advanceSkyEffectsTime(elapsed.current, delta, false, visibility);
     if (process.env.NODE_ENV === "development") gl.domElement.dataset.skyEffectsPhase = elapsed.current.toFixed(3);
     for (const { effect, material, mesh } of resources.items) {
       sampleSkyEffect(effect, elapsed.current, sample.current);

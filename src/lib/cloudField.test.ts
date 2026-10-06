@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { cloudLayerOrders, createCloudField } from './cloudField';
 import { cloudRenderOrder } from './cloudMotion';
 
-test('the fixed field retains the original cloud artwork and time-zero composition', () => {
+test('the fixed field retains bank artwork and composes restrained horizon wisps', () => {
   const field = createCloudField();
   assert.equal(field.length, 80);
   assert.equal(field.filter(cloud => cloud.wisp).length, 16);
@@ -17,18 +17,52 @@ test('the fixed field retains the original cloud artwork and time-zero compositi
   assert.equal(bank.opacity, 1);
   const wisp = field[64];
   assert.equal(wisp.x, -565.9325803657703);
-  assert.equal(wisp.y, 207.78683193959296);
+  assert.equal(wisp.y, 85.99268441088498);
   assert.equal(wisp.z, -538.7417328213633);
   assert.equal(wisp.width, 686.3580794764857);
   assert.equal(wisp.height, 288.270393380124);
-  assert.equal(wisp.opacity, 0.036270941222958215);
+  assert.ok(Math.abs(wisp.opacity - 0.020044467517950595) < 1e-12);
   assert.deepEqual(createCloudField(), field, 'recreating resources must retain every cloud');
   assert.ok(Object.isFrozen(field));
   assert.ok(field.every(Object.isFrozen));
   for (const cloud of field) {
     assert.ok(cloud.tile >= 0 && cloud.tile < 4);
-    assert.ok(cloud.opacity >= 0 && cloud.opacity <= (cloud.wisp ? 0.38 : 1));
+    assert.ok(cloud.opacity >= 0 && cloud.opacity <= (cloud.wisp ? 0.21 : 1));
     assert.ok(cloud.haze >= 0 && cloud.haze <= 0.42);
+    if (cloud.wisp) assert.ok(cloud.y >= 40 && cloud.y <= 90);
+  }
+});
+
+test('cirrus artwork interiors reach the normal camera clear sky around the full orbit', () => {
+  const wisps = createCloudField().filter(cloud => cloud.wisp && cloud.opacity > 0.04).map(cloud => {
+    const surface = new THREE.Object3D();
+    surface.position.set(cloud.x, cloud.y, cloud.z);
+    surface.scale.set(cloud.width, cloud.height, 1);
+    surface.lookAt(0, 20, 0);
+    surface.updateMatrixWorld();
+    // Sample the actual inner artwork area, excluding nearly transparent card
+    // borders. Merely intersecting a huge card's bounding sphere is inadequate.
+    const samples: THREE.Vector3[] = [];
+    for (let x = -0.3; x <= 0.3; x += 0.05) for (let y = -0.15; y <= 0.15; y += 0.05) {
+      samples.push(new THREE.Vector3(x, y, 0).applyMatrix4(surface.matrixWorld));
+    }
+    return samples;
+  });
+  for (const aspect of [1280 / 720, 393 / 852]) {
+    const camera = new THREE.PerspectiveCamera(42, aspect, 0.1, 3000);
+    for (let degrees = 0; degrees < 360; degrees += 5) {
+      const angle = degrees * Math.PI / 180;
+      camera.position.set(Math.sin(angle) * 24, 5.2, Math.cos(angle) * 24);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld();
+      const visible = wisps.filter(samples => samples.some(sample => {
+        const projected = sample.clone().project(camera);
+        return Math.abs(projected.x) < 0.9 && projected.y > 0.1 && projected.y < 0.95
+          && projected.z > -1 && projected.z < 1;
+      })).length;
+      assert.ok(visible >= (aspect > 1 ? 2 : 1),
+        `no composed cirrus interior at ${degrees} degrees / ${aspect} aspect`);
+    }
   }
 });
 

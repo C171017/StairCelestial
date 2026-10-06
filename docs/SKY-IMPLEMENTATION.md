@@ -1,4 +1,44 @@
-# Floating porcelain atmosphere — October 4, 2026
+# Integrated cloud, mist and light motion — October 6, 2026
+
+The homepage now enables all three approved effects in a balanced mix through
+`OrbitSky` → `LayeredSky` → `SkyAtmosphericMotion`. Eight sailing-cloud cards
+and eight mist cards move independently of user navigation, with distinct
+near/far speeds and staggered long repeat periods. A source-aligned shaft
+sphere supplies intermittent light accents, strongest at dawn and sunset.
+The established distant banks, marble, portals, real shadows and composition
+remain. The complete atmosphere reads one shared ambient clock; world time
+changes its color and light, never wind speed or direction.
+
+`LayeredSky` owns `useCloudArtwork` once. Fixed and moving clouds borrow the
+same textures; child components only dispose their own geometry/materials.
+The intro waits for the complete atmosphere before declaring the sky ready.
+There are no new bitmap assets, duplicate atlas decoders, volumetric passes
+or per-frame environment-map recaptures. Existing DPR, shadow and reflection
+budgets are retained. See [browser evidence and limits](validation/integrated-motion-2026-10-06/README.md).
+
+## Equal mood length and visible atmosphere — earlier October 6 pass
+
+The current sky uses equal dominant travel for daylight, pink sunset, night
+and golden sunrise, with substantial full-color regions and smooth blends.
+The 16 wisps now move continuously in a common world wind using dual
+premultiplied samples, with short invisible-reset handoffs. Star density is
+5.5× the prior candidate count; shooting-star starts are 13–17 active seconds
+apart throughout sunset and night, rather than stopping at midnight. See
+[actual recording, captures and checks](validation/atmosphere-visibility-2026-10-06/README.md).
+All numerical review scores in earlier records describe the previous pass.
+
+# Selected atmosphere effects — October 5, 2026 (historical)
+
+The active sky now has separate dawn/day/sunset/night palettes, world-space
+sun/moon arcs, a textured moon and halo, sparse subtly twinkling stars, evening
+meteors, and two low horizon-wisp drift bands. The 64 banks and camera-independent
+painter order remain anchored. This is an art-directed shared clock; the owner
+relaxed exact physics/proportionality and requested performance-friendly work.
+See [implementation, actual captures and the three-round review](validation/atmosphere/README.md).
+The final score was 7.8/10, below the requested 8.0 target. The descriptions
+below are historical where they specify disabled effects or fixed wisps.
+
+# Floating porcelain atmosphere — October 4, 2026 (historical)
 
 The active B2 sky now follows a shared, scroll-controlled daylight/sunset/night palette while retaining fixed cloud silhouettes, positions and painter order. Restrained internal flow does not move the alpha outline. Static stars and rare meteors appear in darker conditions; reduced motion disables ambient flow/events. The same clock drives real cast-shadow direction and reflection illumination. See [PORCELAIN-IMPLEMENTATION.md](PORCELAIN-IMPLEMENTATION.md) for current rendering and validation. The fixed-silhouette continuity fix below remains relevant; its statements about unchanging colors and disabled effects are historical.
 

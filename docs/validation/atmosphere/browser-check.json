@@ -1,0 +1,22 @@
+{
+  "normalHomepage": "http://127.0.0.1:3000/",
+  "forward": {
+    "frameMs": "14.36",
+    "hour": "13.950",
+    "orbit": "-0.1536",
+    "travel": "0.6500"
+  },
+  "reverse": {
+    "frameMs": "13.33",
+    "hour": "12.000",
+    "orbit": "-0.6850",
+    "travel": "0.0000"
+  },
+  "browserWarningsErrors": [],
+  "device": "Browser reported Apple M6; compact views are viewport emulation only",
+  "reviewRounds": [
+    7.2,
+    7.5,
+    7.8
+  ]
+}

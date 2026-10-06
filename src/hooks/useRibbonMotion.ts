@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { syncRibbonOrbit } from "@/lib/ribbonOrbit";
 import { bindNativeRibbonScroll } from "@/lib/nativeRibbonScroll";
-import { advanceSanctuaryAtmosphere, createSanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
+import { advanceSanctuaryAtmosphere, atmosphereTravelFromRibbon, createSanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
 import {
   addRibbonInput,
   advanceRibbonMotion,
@@ -41,6 +41,20 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
     const value = query.get("reviewTravel");
     if (value !== null && value.trim() !== "" && Number.isFinite(Number(value))) reviewTravel.current = Number(value);
     reviewStill.current = query.get("reviewStill") === "1";
+    // Development-only comparison controls keep the camera/materials fixed
+    // while reviewing complete atmosphere transitions without another intro.
+    if (reviewTravel.current === null) return;
+    const onReviewKey = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
+      const anchor = ({ "1": 0, "2": 2, "3": 4, "4": 6 } as Record<string, number>)[event.key];
+      if (anchor !== undefined) reviewTravel.current = anchor;
+      else if (event.key === "ArrowRight") reviewTravel.current = (reviewTravel.current ?? 0) + 0.25;
+      else if (event.key === "ArrowLeft") reviewTravel.current = (reviewTravel.current ?? 0) - 0.25;
+      else return;
+      event.preventDefault();
+    };
+    window.addEventListener("keydown", onReviewKey);
+    return () => window.removeEventListener("keydown", onReviewKey);
   }, []);
 
   useEffect(() => {
@@ -152,7 +166,7 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
     };
   }, []);
 
-  useFrame((_, delta) => {
+  useFrame(({ size }, delta) => {
     if (!visible.current || !latest.current.enabled) return;
     advanceRibbonMotion(motion.current, delta, {
       paused: latest.current.paused,
@@ -160,7 +174,10 @@ export function useRibbonMotion(options: RibbonMotionOptions) {
       cruiseSpeed: reviewStill.current ? 0 : undefined,
     });
     syncRibbonOrbit(motion.current, orbit.current);
-    advanceSanctuaryAtmosphere(atmosphere.current, reviewTravel.current ?? motion.current.userPosition, delta, reducedMotion.current);
+    // Compact compositions use a narrower world-space arc, keeping the moon
+    // within the entrance's narrow view. Orbit still freely changes its view.
+    const celestialSpread = Math.min(1, size.width / Math.max(size.height, 1) / 1.6);
+    advanceSanctuaryAtmosphere(atmosphere.current, reviewTravel.current ?? atmosphereTravelFromRibbon(motion.current.userPosition), delta, reducedMotion.current, celestialSpread);
   }, -2);
 
   return { motion, orbit, atmosphere };

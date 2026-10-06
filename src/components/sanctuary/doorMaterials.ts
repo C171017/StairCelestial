@@ -1,29 +1,34 @@
 import * as THREE from "three";
 import palette from "@/lib/doorPalette.json";
 import type { DoorStudy } from "@/lib/doorStudies";
-import { applyCastGlassFinish, applyPorcelainFinish } from "@/lib/porcelainFinish";
+import { applyCastGlassFinish } from "@/lib/porcelainFinish";
+import { applyBrushedMetalFinish, applyFinishEnvironment } from "@/lib/mineralFinish";
 
 /** Instance-owned materials keep each door's entrance and dissolve independent. */
 export function createDoorMaterials(study: DoorStudy) {
   const slabColor = new THREE.Color(palette.doors[study.id].slabColor);
-  const ceramic = new THREE.MeshPhysicalMaterial({
-    name: `PearlCeramic_${study.id}`,
-    color: new THREE.Color("#f0e6d7").lerp(new THREE.Color(palette.doors[study.id].color), 0.08),
-    metalness: 0,
-    roughness: 0.32,
-    clearcoat: 0.3,
-    clearcoatRoughness: 0.22,
-    ior: 1.48,
-    envMapIntensity: 0.9,
-  });
-  applyPorcelainFinish(ceramic);
-  const gold = new THREE.MeshStandardMaterial({
-    name: "ChampagneGold",
-    color: "#c4a46a",
+  const frame = new THREE.MeshPhysicalMaterial({
+    name: `BrushedBlackTitanium_${study.id}`,
+    color: "#646970",
     metalness: 1,
-    roughness: 0.19,
-    envMapIntensity: 1.4,
+    roughness: 0.18,
+    anisotropy: 0.55,
+    envMapIntensity: 1.18,
   });
+  // Black metal has no stone maps or varnish lobe. The crowned profile and
+  // reflected sky describe its form; machining stays below the silhouette.
+  applyBrushedMetalFinish(frame, 0.028);
+  applyFinishEnvironment(frame);
+  const gold = new THREE.MeshPhysicalMaterial({
+    name: "BrushedGoldReveal",
+    color: "#c9ac78",
+    metalness: 1,
+    roughness: 0.23,
+    anisotropy: 0.35,
+    envMapIntensity: 1.28,
+  });
+  applyBrushedMetalFinish(gold, 0.035);
+  applyFinishEnvironment(gold);
   const light = new THREE.MeshStandardMaterial({
     name: "WarmInnerLight",
     color: palette.light,
@@ -70,5 +75,5 @@ export function createDoorMaterials(study: DoorStudy) {
     opacity: 0.92,
     depthWrite: false,
   });
-  return { ceramic, gold, light, glass, glassEdge };
+  return { frame, gold, light, glass, glassEdge };
 }

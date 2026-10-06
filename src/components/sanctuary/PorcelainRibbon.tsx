@@ -1,23 +1,28 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
-import { createRibbonSections } from "@/lib/ribbonGeometry";
-import { applyPorcelainFinish } from "@/lib/porcelainFinish";
+import { createRibbonSections, RIBBON_PITCH } from "@/lib/ribbonGeometry";
+import { applyMineralFinish, applyFinishEnvironment } from "@/lib/mineralFinish";
+import { useStoneTextures } from "./useStoneTextures";
 
-/** An opaque, softly rolled porcelain receiver for actual portal shadows. */
-export function PorcelainRibbon({ radius, width }: { radius: number; width: number }) {
+/** Softly polished white marble with mineral detail beneath a quiet reflection. */
+export function PorcelainRibbon({ radius, width, cycle = 0 }: { radius: number; width: number; cycle?: number }) {
+  const textures = useStoneTextures();
+  const stoneOffset = useMemo(() => new THREE.Vector3(), []);
+  useLayoutEffect(() => { stoneOffset.y = cycle * RIBBON_PITCH; }, [cycle, stoneOffset]);
   const sections = useMemo(() => createRibbonSections(radius, width), [radius, width]);
   const material = useMemo(() => {
     const finish = new THREE.MeshPhysicalMaterial({
-      name: "MilkIvoryPorcelainRibbon", color: "#f0dfbe",
-      roughness: 0.31, metalness: 0, ior: 1.46,
-      clearcoat: 0.34, clearcoatRoughness: 0.24,
-      envMapIntensity: 0.75,
+      name: "SoftPolishedWhiteMarbleRibbon", color: "#eeeee9",
+      roughness: 0.22, metalness: 0, ior: 1.54,
+      clearcoat: 0,
+      envMapIntensity: 0.95,
     });
-    applyPorcelainFinish(finish);
+    applyMineralFinish(finish, textures, { scale: 0.045, contrast: 1.65, relief: 0.00022, polishVariation: 0.065, offset: stoneOffset });
+    applyFinishEnvironment(finish);
     return finish;
-  }, []);
+  }, [textures, stoneOffset]);
   const depth = useMemo(() => {
     const result = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
     result.alphaHash = true;

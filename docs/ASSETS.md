@@ -1,5 +1,16 @@
 # Sanctuary asset provenance
 
+## Ivory stone materials — October 5, 2026
+
+The active ribbon and frames share three 4K JPEG maps from ambientCG Marble
+021: color, roughness, and displacement (used for shallow bump only). The maps
+are CC0, downloaded unchanged, and stored under
+`public/textures/sanctuary/materials/`. [Source, license, hashes, and usage](../public/textures/sanctuary/materials/SOURCES.md).
+
+The [generated material study](../assets/design-directions/texture-refinement/README.md)
+is a review artifact based on an actual browser capture. It is not loaded into
+the scene and is not evidence of pixel-identical runtime rendering.
+
 ## Sculptures
 
 Created in the connected Blender instance for this reconstruction, with the original default scene preserved. Source: `blender/sanctuary-assets.blend`. Reproducible generation and export: `blender/build_sanctuary_assets.py`.

@@ -1,6 +1,44 @@
 # Sanctuary architecture
 
-This document describes the active floating-portal porcelain homepage. [PORCELAIN-IMPLEMENTATION.md](PORCELAIN-IMPLEMENTATION.md) records the October 4 rendering changes and supersedes historical glass/video details below. The old staircase, rectangular portals, planets, and former staircase camera rig are legacy. Six new irregular glass-door studies are mounted on the ribbon.
+October 6 atmosphere correction: four equal two-turn palette regions now use
+full-color cores and smooth overlapping weights in `sanctuaryAtmosphere.ts`.
+The sun/moon/light coordinate remains continuous independently of those
+art-directed palette durations. `cloudAdvection.ts` projects one wind into
+fixed wisp surfaces and supplies bounded dual-sample offsets/weights; resets
+occur only at zero contribution. Stars are denser and meteors span sunset and
+night. Key height is raised, PCSS size is 50 at 2048/20 samples, and unshadowed
+rect-light power is reduced to restore shadows. See [current evidence](validation/atmosphere-visibility-2026-10-06/README.md).
+
+Latest atmosphere pass: [current parameters and evidence](validation/atmosphere/README.md).
+The shared clock now has separate dawn/sunset palettes and moving celestial
+vectors. `CleanSkyPlate` renders the sun/moon/stars on its existing sphere and
+updates the live material uniform table, not the JSX input uniform wrappers.
+Sixteen horizon wisps drift inside fixed surfaces; all banks retain their
+layout and painter order. Evening meteors use an independently paused event
+clock. The central control has atmosphere-tinted asymmetric reflections and
+restrained ±15-degree idle sway; its entrance and audio morph are unchanged.
+
+Latest material-depth follow-up: larger neutral veins and reduced daylight
+diffuse lighting preserve marble readability. `metalGeometry.ts` adds explicit
+anisotropic tangents to owned frame/reveal geometry clones. `beveledPlayShape.ts`
+creates physical chamfers throughout the central tetrahedron/cube morph;
+`CloudPlayShape` uses brushed platinum and polished chamfers with a local studio
+reflection map whose intensity follows the existing atmosphere. Geometry and
+reflection resources are owned and disposed. The same beveled tetrahedron is
+the iris morph target. See [current parameters and evidence](validation/material-depth/README.md).
+The October 5 first-pass summary below is retained as implementation history.
+
+October 5 material update: the active scene now uses softly polished white
+marble, satin blackened-metal outer frames, and restrained brushed-gold reveals.
+`PorcelainRibbon` retains its component name and geometry. `useStoneTextures`
+supplies its three local 4K ambientCG maps; `mineralFinish` projects them in
+object space for color, roughness and shallow relief. The finite ribbon's
+material Y offset advances with its cycle so recycling does not reset the
+stone coordinates. Frames no longer load stone maps; both metals use filtered
+directional roughness. See [TEXTURE-REFINEMENT.md](TEXTURE-REFINEMENT.md) for
+parameters and [actual browser evidence](validation/black-gold-marble/README.md).
+
+This document describes the active floating-portal marble homepage. [PORCELAIN-IMPLEMENTATION.md](PORCELAIN-IMPLEMENTATION.md) records the October 4 geometry, rendering and interaction work; its porcelain material settings are historical. The old staircase, rectangular portals, planets, and former staircase camera rig are legacy. Six irregular glass-door studies are mounted on the ribbon.
 
 ## Entry and component map
 
@@ -8,7 +46,7 @@ This document describes the active floating-portal porcelain homepage. [PORCELAI
 - `src/components/sanctuary/SanctuaryExperience.tsx` owns entrance intent/readiness, selection, the project detail panel, placeholder notices, Escape handling, and error/timeout fallback. It dynamically imports the Canvas with SSR disabled.
 - `SanctuaryScene.tsx` creates the orbit camera, surrounding cloud sky, studio environment, readiness marker, and ribbon world.
 - `OrbitSky.tsx` mounts `LayeredSky.tsx`: `CleanSkyPlate` plus 80 fixed `CloudField` image layers are composed into an opaque background for glass refraction. `cloudField.ts` gives every layer a unique, camera-independent radial draw order. The homepage grades the sky with the atmosphere clock and enables restrained night effects; `/sky-review` retains optional effects, an orbit continuity probe, and video recording.
-- `PorcelainRibbon.tsx` renders the opaque swept porcelain receiver with soft real shadow maps. `GlassRibbon.tsx` and `ribbonShadows.ts` remain unmounted references. `floatingDoor.ts` adds footprint-safe clearance and three-quarter presentation.
+- `PorcelainRibbon.tsx` renders the opaque swept white-marble receiver with soft real shadow maps. `GlassRibbon.tsx` and `ribbonShadows.ts` remain unmounted references. `floatingDoor.ts` adds footprint-safe clearance and three-quarter presentation.
 - `ProjectArtifact.tsx` supplies the door hit target and accessible label. `GlassDoor.tsx` clones each shared GLB hierarchy, owns/disposes cloned materials, and dissolves only the stationary `door_role=slab` subtree. Fixed frames remain stationary. `ProjectSculpture.tsx` mounts the matching preserved project sculpture only for the selected door, wholly behind its slab, with its own reversible reveal easing. Shape identifiers live in `src/lib/doorStudies.ts` independently of project records.
 - `/door-studies` mounts `DoorStudyExperience` and `DoorStudyScene`, reusing the cloud texture, studio lighting, and `GlassDoor`. It presents a responsive irregular scatter and individual views with dissolve and viewing-angle controls. It deliberately bypasses the portfolio entrance for direct review.
 - `SocialArtifacts.tsx` renders the LinkedIn and GitHub tokens and their labels outside the moving ribbon hierarchy.
@@ -54,10 +92,12 @@ Both social URLs are deliberately `null`. Activating a token shows a placeholder
 ## Current assets and rendering
 
 - Six version-8 GLBs, 84,032 total unique triangles and 1,991,408 bytes, are exported from `blender/door-studies-pearl.blend`. The earlier `.blend` remains preserved. Apertures and slab transforms retain their existing contract.
-- `doorMaterials.ts` and `porcelainFinish.ts` separate satin ceramic, recessed champagne metal, and partially silvered cast glass. Glass has shallow normal and thickness variation; this is not full scene ray tracing.
-- `SceneEnvironment.tsx` rotates a 4096-map directional key light and uses PCSS soft shadows. Fade-aware custom depth materials preserve shadow consistency through entrance, focus and dissolve.
-- A 512 cube/PMREM capture samples the actual layered sky plus deliberate reflection cards. The map updates after small solar-phase changes; direct lighting updates each frame. Capture resources are shared and cleaned up; cards are reattached on StrictMode effect replay.
-- The canvas uses 1.5–2 DPR, full-resolution transmission, and a sky compositor following renderer DPR. This is a visual-quality prototype, not a certified M4 or mobile performance tier.
+- `doorMaterials.ts` separates satin blackened metal (`#646970`, metalness 1, roughness 0.18, environment multiplier 1.18), a recessed brushed-gold reveal (`#c9ac78`, metalness 1, roughness 0.23, environment multiplier 1.28), and the existing partially silvered cast glass. `porcelainFinish.ts` retains the glass's shallow normal and thickness variation. Neither the black frame nor the white marble uses clearcoat; the glass finish is unchanged.
+- Marble uses color `#eeeee9`, roughness 0.22, IOR 1.54, and triplanar scale/contrast/relief 0.045/1.65/0.00022. Its roughness-map variation is 0.065, clamped to 0.16–0.38 before Three's geometric roughness adjustment. These are renderer parameters, not physical measurements.
+- Three r175 replaces material environment intensity with scene intensity when `envMap` is null. `applyFinishEnvironment` multiplies the marble and metal IBL shader contributions by their local settings (marble 0.95, frame 1.18, gold 1.28), while retaining the shared changing environment. It does not change the glass shader or bind soon-to-be-disposed PMREM textures to individual materials.
+- `SceneEnvironment.tsx` moves a 2048-map directional key light and uses 20-sample PCSS soft shadows. Fade-aware custom depth materials preserve shadow consistency through entrance, focus and dissolve. Shadow elevation is deliberately raised above the low celestial artwork for stable, visually coherent shadows.
+- A 512 cube/PMREM capture samples the actual layered sky plus five deliberate reflection cards. The fifth is a feathered 24-by-8 rear sky bounce at key azimuth + PI, height 9 and radius 32, with day/dusk/night intensity 1.9/1.5/0.85. It helps reveal the marble's polished face; it exists only in the capture and adds no visible cloud-world object or shadow source. The map updates after small solar-phase changes; direct lighting updates each frame. Capture resources, including the feather texture, are owned and cleaned up; cards are reattached on StrictMode effect replay. These are environment reflections, not full-scene ray tracing or foreground-object reflections.
+- The main canvas uses 1–1.5 DPR, transmission resolution scale 0.85, and a sky compositor following renderer DPR. Expensive reflection captures are limited to one per 160 ms during travel. These are performance-conscious settings, not a certified mobile device tier.
 - Source cloud atlases stay 8K desktop / 4K compact, with WebP fallback. The clean sky and cloud palettes come from `sanctuaryAtmosphere.ts`; stars are behind cloud opacity.
 - The camera is modestly elevated; the central bronze control keeps a lower composed world-height anchor on the transformed ribbon axis.
 

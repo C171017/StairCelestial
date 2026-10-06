@@ -1,6 +1,74 @@
 # Sanctuary implementation and validation
 
-The active reconstruction is on `codex/glass-ribbon`. This checklist replaces the old W1–W6 staircase/door phases; those phases are historical and must not guide the active scene.
+## Equal mood length and visible atmosphere — October 6, 2026
+
+Responded to direct owner feedback that changes were too subtle and shadows
+regressed. Four palettes now each dominate 25% of user travel, with long
+full-color cores and gradual blends. Gold sunrise and pink sunset are more
+distinct. Restored cast-shadow legibility by raising the key, narrowing PCSS
+filtering and reducing unshadowed fill. Increased star density, made meteors
+clearer/more frequent throughout sunset and night, and replaced slow reversing
+wisp oscillation with visible shared-wind travel. The review route records
+actual stationary-camera cloud motion. [121 tests, production checks, captures,
+recording and zero-mismatch orbit proof](validation/atmosphere-visibility-2026-10-06/README.md).
+No new formal numerical review, deployment or commit was performed.
+
+## Selected atmosphere effects — October 5, 2026
+
+Implemented the selected continuous sun/moon paths with fades, distinct
+red/gold dawn and pink sunset, pearl daylight, moonlit stars/halo/twinkle,
+two restrained flowing wisp layers, and shooting stars limited to the evening.
+The owner relaxed exact distance/time and shadow physics; the prior eased
+user-travel clock and idle policy remain. Performance settings now cap DPR at
+1.5, use 0.85 transmission resolution and 2048/20-sample shadows, and throttle
+broad reflection captures to 160 ms. Review feedback also refined metal trim,
+control face illumination and compact placement, with ±15-degree idle sway.
+
+Exactly three independent Astra High review rounds scored **7.2, 7.5, 7.8/10**.
+The requested 8.0 benchmark was not reached; no fourth visual pass was taken.
+115 tests, type/lint checks and static production export pass. Actual desktop
+and compact captures, a zero-mismatch frozen 360° orbit probe, performance
+samples, remaining material/atmosphere limits and reduced-motion/device
+verification limits are [recorded here](validation/atmosphere/README.md).
+No deployment or commit was made.
+
+## Material refinement — October 5, 2026
+
+The active homepage now uses softly polished white marble with restrained
+veins, satin blackened-metal frames and recessed brushed-gold accents. The
+door-study room shares the new frames. The ribbon retains three local CC0
+maps and continuous material coordinates through recycling; frames no longer
+load stone maps. Existing GLBs, tinted glass, fades, audio and interactions
+remain in place. A fifth, feathered rear reflection card and a Three r175 IBL
+multiplier correction shape the new finishes. These remain shared environment
+reflections, not full-scene ray tracing. [Direction and parameters](TEXTURE-REFINEMENT.md)
+and [current actual screenshots and validation](validation/black-gold-marble/README.md).
+
+The current validation record above is authoritative for this build. Device
+optimization and broader cloud/time/celestial refinements remain deferred by
+the owner's visual-quality-first direction.
+
+### Historical ivory-frame trial — earlier October 5, 2026
+
+The preceding trial used honed ivory marble, carved-stone frames and brushed
+champagne insets. Three shared local CC0 maps drove color, roughness and
+shallow surface relief; existing GLBs, glass and lighting were unchanged.
+Material coordinates followed ribbon recycling. Its implementation and
+captures remain labeled as history in [TEXTURE-REFINEMENT.md](TEXTURE-REFINEMENT.md).
+
+Validation: 108 tests pass; TypeScript, ESLint and the production export pass.
+Browser checks covered fresh load, daylight/night, a focused frame, compact
+layout and scrolling, with no captured WebGL errors/warnings. Generated
+preview art is labeled separately from screenshots of the actual scene.
+Device optimization and the new cloud/time/celestial refinements are deferred
+by the owner's visual-ceiling-first direction.
+
+## Historical reconstruction checklist — October 2–4, 2026
+
+The following reconstruction was recorded on `codex/glass-ribbon`; it is a
+historical branch reference, not the current checkout location. This checklist
+replaced the old W1–W6 staircase/door phases. Use the current material record
+above and [architecture](ARCHITECTURE.md) for the active renderer.
 
 ## 1. Foundation and assets — implemented
 

@@ -1,0 +1,35 @@
+{
+  "warningsAndErrors": [],
+  "view": {
+    "canvas": {
+      "atmosphereNight": "0.0000",
+      "atmosphereTravel": "0.0000",
+      "cloudArtwork": "4096",
+      "cloudCount": "80",
+      "cloudFlow": "interior-only",
+      "cloudLandmarkX": "-233.99",
+      "cloudLandmarkZ": "-366.42",
+      "cloudLayout": "fixed",
+      "cloudPaused": "false",
+      "cloudTime": "29.949",
+      "engine": "three.js r175",
+      "environmentMap": "f5284c14-f077-498a-82bd-afee85e2d36a",
+      "orbitTurns": "0.0000",
+      "reflectionPanels": "5",
+      "shadowMapSize": "4096",
+      "skyDrawCalls": "91",
+      "skyEffectsPhase": "29.949",
+      "skyFrameMs": "13.33",
+      "skyGpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+      "skyMode": "layered",
+      "skyRatio": "1.50",
+      "skyReady": "true",
+      "skySceneChildren": "3",
+      "skyTextures": "21",
+      "sunDirection": "-0.468,0.734,0.492"
+    },
+    "height": 932,
+    "overflow": false,
+    "width": 430
+  }
+}

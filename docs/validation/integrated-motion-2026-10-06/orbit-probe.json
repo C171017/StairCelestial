@@ -1,0 +1,207 @@
+{
+  "completedAt": "2026-10-06T20:11:27.458Z",
+  "durationSeconds": 21.297799999997018,
+  "fixedTimeSeconds": 12,
+  "sample": {
+    "width": 166,
+    "height": 192,
+    "blockSize": 5
+  },
+  "fullLoop": {
+    "meanAbsoluteRgbDelta": 0,
+    "changedOver15Percent": 0,
+    "changedAnyPercent": 0,
+    "worst32CssPixelBlockMeanDelta": 0
+  },
+  "reverseMismatches": [],
+  "sameViewAfterDenseSweep": {
+    "meanAbsoluteRgbDelta": 0,
+    "changedOver15Percent": 0,
+    "changedAnyPercent": 0,
+    "worst32CssPixelBlockMeanDelta": 0
+  },
+  "sameViewAfter60Frames": {
+    "meanAbsoluteRgbDelta": 0,
+    "changedOver15Percent": 0,
+    "changedAnyPercent": 0,
+    "worst32CssPixelBlockMeanDelta": 0
+  },
+  "worstForward": [
+    {
+      "fromDegrees": 5,
+      "toDegrees": 6,
+      "meanAbsoluteRgbDelta": 5.050326305220895,
+      "changedOver15Percent": 10.739834337349398,
+      "changedAnyPercent": 92.42281626506023,
+      "worst32CssPixelBlockMeanDelta": 40.733333333333334
+    },
+    {
+      "fromDegrees": 318,
+      "toDegrees": 319,
+      "meanAbsoluteRgbDelta": 5.4318001171352535,
+      "changedOver15Percent": 13.469503012048193,
+      "changedAnyPercent": 96.37612951807229,
+      "worst32CssPixelBlockMeanDelta": 40.733333333333334
+    },
+    {
+      "fromDegrees": 88,
+      "toDegrees": 89,
+      "meanAbsoluteRgbDelta": 4.747835090361466,
+      "changedOver15Percent": 8.807103413654618,
+      "changedAnyPercent": 94.41516064257029,
+      "worst32CssPixelBlockMeanDelta": 39.60000000000001
+    },
+    {
+      "fromDegrees": 332,
+      "toDegrees": 333,
+      "meanAbsoluteRgbDelta": 5.29118557563588,
+      "changedOver15Percent": 13.049071285140561,
+      "changedAnyPercent": 96.07806224899599,
+      "worst32CssPixelBlockMeanDelta": 39.6
+    },
+    {
+      "fromDegrees": 178,
+      "toDegrees": 179,
+      "meanAbsoluteRgbDelta": 5.383199464524794,
+      "changedOver15Percent": 10.902986947791165,
+      "changedAnyPercent": 94.32103413654619,
+      "worst32CssPixelBlockMeanDelta": 38.266666666666666
+    },
+    {
+      "fromDegrees": 278,
+      "toDegrees": 279,
+      "meanAbsoluteRgbDelta": 4.708793507362787,
+      "changedOver15Percent": 8.609437751004016,
+      "changedAnyPercent": 93.65901104417671,
+      "worst32CssPixelBlockMeanDelta": 37.06666666666666
+    },
+    {
+      "fromDegrees": 253,
+      "toDegrees": 254,
+      "meanAbsoluteRgbDelta": 5.275926623159301,
+      "changedOver15Percent": 10.724146586345382,
+      "changedAnyPercent": 92.25652610441767,
+      "worst32CssPixelBlockMeanDelta": 36.96666666666666
+    },
+    {
+      "fromDegrees": 350,
+      "toDegrees": 351,
+      "meanAbsoluteRgbDelta": 5.063064759036102,
+      "changedOver15Percent": 11.169678714859439,
+      "changedAnyPercent": 95.38780120481928,
+      "worst32CssPixelBlockMeanDelta": 36.63999999999999
+    }
+  ],
+  "worstReverse": [
+    {
+      "fromDegrees": 319,
+      "toDegrees": 318,
+      "meanAbsoluteRgbDelta": 5.4318001171352535,
+      "changedOver15Percent": 13.469503012048193,
+      "changedAnyPercent": 96.37612951807229,
+      "worst32CssPixelBlockMeanDelta": 40.733333333333334
+    },
+    {
+      "fromDegrees": 6,
+      "toDegrees": 5,
+      "meanAbsoluteRgbDelta": 5.050326305220895,
+      "changedOver15Percent": 10.739834337349398,
+      "changedAnyPercent": 92.42281626506023,
+      "worst32CssPixelBlockMeanDelta": 40.733333333333334
+    },
+    {
+      "fromDegrees": 89,
+      "toDegrees": 88,
+      "meanAbsoluteRgbDelta": 4.747835090361466,
+      "changedOver15Percent": 8.807103413654618,
+      "changedAnyPercent": 94.41516064257029,
+      "worst32CssPixelBlockMeanDelta": 39.60000000000001
+    },
+    {
+      "fromDegrees": 333,
+      "toDegrees": 332,
+      "meanAbsoluteRgbDelta": 5.29118557563588,
+      "changedOver15Percent": 13.049071285140561,
+      "changedAnyPercent": 96.07806224899599,
+      "worst32CssPixelBlockMeanDelta": 39.6
+    },
+    {
+      "fromDegrees": 179,
+      "toDegrees": 178,
+      "meanAbsoluteRgbDelta": 5.383199464524794,
+      "changedOver15Percent": 10.902986947791165,
+      "changedAnyPercent": 94.32103413654619,
+      "worst32CssPixelBlockMeanDelta": 38.266666666666666
+    },
+    {
+      "fromDegrees": 279,
+      "toDegrees": 278,
+      "meanAbsoluteRgbDelta": 4.708793507362787,
+      "changedOver15Percent": 8.609437751004016,
+      "changedAnyPercent": 93.65901104417671,
+      "worst32CssPixelBlockMeanDelta": 37.06666666666666
+    },
+    {
+      "fromDegrees": 254,
+      "toDegrees": 253,
+      "meanAbsoluteRgbDelta": 5.275926623159301,
+      "changedOver15Percent": 10.724146586345382,
+      "changedAnyPercent": 92.25652610441767,
+      "worst32CssPixelBlockMeanDelta": 36.96666666666666
+    },
+    {
+      "fromDegrees": 351,
+      "toDegrees": 350,
+      "meanAbsoluteRgbDelta": 5.063064759036102,
+      "changedOver15Percent": 11.169678714859439,
+      "changedAnyPercent": 95.38780120481928,
+      "worst32CssPixelBlockMeanDelta": 36.63999999999999
+    }
+  ],
+  "dense": [
+    {
+      "centerDegrees": 19.55,
+      "worst": {
+        "fromDegrees": 19.599999999999998,
+        "toDegrees": 19.61,
+        "meanAbsoluteRgbDelta": 0.13646251673360546,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 27.657505020080322,
+        "worst32CssPixelBlockMeanDelta": 0.8266666666666665
+      }
+    },
+    {
+      "centerDegrees": 72.55,
+      "worst": {
+        "fromDegrees": 72.55,
+        "toDegrees": 72.56,
+        "meanAbsoluteRgbDelta": 0.1349460341365497,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 27.174322289156628,
+        "worst32CssPixelBlockMeanDelta": 0.9333333333333333
+      }
+    },
+    {
+      "centerDegrees": 195.475,
+      "worst": {
+        "fromDegrees": 195.465,
+        "toDegrees": 195.475,
+        "meanAbsoluteRgbDelta": 0.1413570950468585,
+        "changedOver15Percent": 0,
+        "changedAnyPercent": 28.335215863453815,
+        "worst32CssPixelBlockMeanDelta": 0.9333333333333332
+      }
+    },
+    {
+      "centerDegrees": 340.65,
+      "worst": {
+        "fromDegrees": 340.5799999999999,
+        "toDegrees": 340.59,
+        "meanAbsoluteRgbDelta": 0.14415997322623914,
+        "changedOver15Percent": 0.003137550200803213,
+        "changedAnyPercent": 28.683483935742974,
+        "worst32CssPixelBlockMeanDelta": 1.0533333333333332
+      }
+    }
+  ]
+}

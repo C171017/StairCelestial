@@ -6,6 +6,7 @@ import type { RefObject } from "react";
 import * as THREE from "three";
 import { LayeredSky } from "@/components/sanctuary/LayeredSky";
 import { createSanctuaryAtmosphere, sampleSanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
+import type { SkyStudy } from "@/components/sanctuary/SkyAtmosphericMotion";
 
 type CapturedFrame = {
   pixels: Uint8ClampedArray;
@@ -119,6 +120,16 @@ export default function SkyReview() {
   const [busy,setBusy]=useState(false);
   const [moment,setMoment]=useState<number|null>(null);
   const [travel,setTravel]=useState(0);
+  const [study,setStudy]=useState<SkyStudy>("none");
+  const [recording,setRecording]=useState<{url:string;name:string}|null>(null);
+  useEffect(()=>()=>{if(recording)URL.revokeObjectURL(recording.url);},[recording]);
+  useEffect(()=>{
+    const query=new URLSearchParams(window.location.search);
+    const choice=query.get("study");
+    if(choice==="mist"||choice==="light"||choice==="rays"||choice==="clouds"||choice==="combined"||choice==="all"){setStudy(choice);setPaused(false);}
+    const value=query.get("travel");
+    if(value!==null&&Number.isFinite(Number(value)))setTravel(Number(value));
+  },[]);
   const atmosphere=useRef(createSanctuaryAtmosphere());
   useEffect(()=>{sampleSanctuaryAtmosphere(travel,atmosphere.current);},[travel]);
   const exporter=useRef<((progress:(value:string)=>void)=>Promise<void>)|null>(null);
@@ -230,17 +241,68 @@ export default function SkyReview() {
       animation=requestAnimationFrame(advance);
     }catch(error){restore();setStatus(`Recording failed: ${error instanceof Error?error.message:String(error)}`);}
   }
+  async function recordCloudFlow() {
+    const canvas=document.querySelector("canvas");
+    if(!canvas||!capture.current||!exporter.current){setStatus("Sky is still loading; try again shortly.");return;}
+    if(typeof MediaRecorder==="undefined"||!MediaRecorder.isTypeSupported("video/webm")){setStatus("Recording is unavailable in this browser.");return;}
+    const original={paused,moment,probeAzimuth:probeAzimuth.current};
+    const angle=probeAzimuth.current??azimuth;
+    let stream:MediaStream|null=null;
+    let recorder:MediaRecorder|null=null;
+    let animation:number|null=null;
+    let finished=false;
+    const restore=()=>{
+      if(finished)return;
+      finished=true;
+      if(animation!==null)cancelAnimationFrame(animation);
+      if(recorder&&recorder.state!=="inactive")recorder.stop();
+      stream?.getTracks().forEach(track=>track.stop());
+      probeAzimuth.current=original.probeAzimuth;
+      setPaused(original.paused);setMoment(original.moment);setBusy(false);
+    };
+    setBusy(true);setPaused(false);setMoment(null);pointer.current=null;
+    probeAzimuth.current=angle;
+    setStatus("Recording twelve seconds of flowing clouds with the camera and sky mood fixed…");
+    try{
+      await capture.current(angle*180/Math.PI,3);
+      stream=canvas.captureStream(30);
+      recorder=new MediaRecorder(stream,{mimeType:"video/webm",videoBitsPerSecond:16000000});
+      const chunks:Blob[]=[];
+      recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data);};
+      recorder.onstop=()=>{
+        if(finished)return;
+        const url=URL.createObjectURL(new Blob(chunks,{type:"video/webm"}));
+        const name=study==="none"?"sky-cloud-flow-review.webm":`sky-motion-${study}-gentle.webm`;
+        setRecording({url,name});
+        const link=document.createElement("a");link.href=url;link.download=name;link.click();
+        restore();setStatus("Stationary-camera recording ready to download.");
+      };
+      recorder.onerror=()=>{restore();setStatus("Cloud flow recording failed.");};
+      recorder.start();
+      const start=performance.now();
+      const advance=(now:number)=>{
+        if(finished)return;
+        if(now-start<12000){animation=requestAnimationFrame(advance);return;}
+        if(recorder&&recorder.state!=="inactive")recorder.stop();
+      };
+      animation=requestAnimationFrame(advance);
+    }catch(error){restore();setStatus(`Cloud flow recording failed: ${error instanceof Error?error.message:String(error)}`);}
+  }
   return <main style={{width:"100vw",height:"100dvh"}} onWheel={e=>{if(!busy)setAzimuth(a=>a+e.deltaY*0.0015);}}
     onPointerDown={e=>{if(!busy)pointer.current=e.clientX;}} onPointerMove={e=>{if(!busy&&pointer.current!==null){setAzimuth(a=>a+(e.clientX-pointer.current!)*0.005);pointer.current=e.clientX;}}}
     onPointerUp={()=>{pointer.current=null;}} onPointerCancel={()=>{pointer.current=null;}} onPointerLeave={()=>{pointer.current=null;}}>
     <Canvas dpr={[1,2]} camera={{position:[0,2.8,24],fov:42,far:3000}} gl={{antialias:false}}
       onCreated={({gl})=>{gl.toneMapping=THREE.NoToneMapping;}}>
-      <View azimuth={azimuth} probeAzimuth={probeAzimuth}/><Suspense fallback={null}><LayeredSky paused={paused} timeOverride={moment} atmosphere={atmosphere} exporter={exporter}/></Suspense>
+      <View azimuth={azimuth} probeAzimuth={probeAzimuth}/><Suspense fallback={null}><LayeredSky paused={paused} timeOverride={moment} atmosphere={atmosphere} exporter={exporter} study={study}/></Suspense>
       <FrameCapture capture={capture} probeAzimuth={probeAzimuth}/>
     </Canvas>
     <div style={{position:"absolute",bottom:20,left:20,right:20,width:"fit-content",maxWidth:"calc(100% - 40px)",display:"flex",flexWrap:"wrap",gap:12,color:"#17394b",background:"#ffffffdd",padding:12,borderRadius:12}} onPointerDown={e=>e.stopPropagation()} onWheel={e=>e.stopPropagation()}>
       <button disabled={busy} onClick={()=>{setMoment(null);setPaused(v=>!v);}}>{paused?"Resume effects":"Pause effects"}</button>
       <button disabled={busy} onClick={()=>setAzimuth(0)}>Entrance view</button>
+      <label>Effect study <select disabled={busy} aria-label="Effect study" value={study} onChange={e=>setStudy(e.target.value as SkyStudy)}>
+        <option value="none">Original sky</option><option value="all">All effects — balanced</option><option value="clouds">Sailing cloud banks</option><option value="mist">Flowing mist ribbons</option>
+        <option value="rays">Shifting light shafts</option><option value="combined">Clouds + mist</option><option value="light">Earlier subtle cloud light</option>
+      </select></label>
       <label>View ° <input disabled={busy} aria-label="View azimuth in degrees" type="number" step="0.01" value={azimuth*180/Math.PI} style={{width:90}} onChange={e=>setAzimuth(Number(e.target.value)*Math.PI/180)}/></label>
       <label>Effect time <input disabled={busy} aria-label="Effect time in seconds" type="number" min="0" max="36000" value={moment??''} style={{width:66}} onChange={e=>{const value=Number(e.target.value);setMoment(Number.isFinite(value)?Math.min(36000,Math.max(0,value)):0);setPaused(true);}}/></label>
       <label>Sky travel <input disabled={busy} aria-label="Sky travel in turns" type="number" step="0.1" value={travel} style={{width:66}} onChange={e=>{const value=Number(e.target.value);if(Number.isFinite(value))setTravel(value);}}/></label>
@@ -248,6 +310,8 @@ export default function SkyReview() {
       {report&&<button disabled={busy} onClick={()=>saveReport(report)}>Save probe report</button>}
       <button disabled={busy} onClick={async()=>{setPaused(true);setBusy(true);try{if(!exporter.current)throw new Error('Sky is still loading');await exporter.current(setStatus);setStatus('Master saved');}catch{setStatus('Export failed — try again after the sky loads.');}finally{setBusy(false);}}}>Save master</button>
       <button disabled={busy} onClick={recordOrbit}>Record orbit</button>
+      <button disabled={busy} onClick={recordCloudFlow}>Record cloud flow</button>
+      {recording&&<a href={recording.url} download={recording.name}>Download recording</a>}
       {status&&<span role="status">{status}</span>}
       <span>Scroll or drag to orbit</span>
       {report&&<details style={{flexBasis:"100%",maxHeight:"40vh",overflow:"auto"}}><summary>Probe results</summary><pre aria-label="Continuity probe results" style={{fontSize:11,whiteSpace:"pre-wrap"}}>{JSON.stringify({...report,forward:undefined,reverse:undefined,dense:report.dense.map(({centerDegrees,worst})=>({centerDegrees,worst}))},null,2)}</pre></details>}

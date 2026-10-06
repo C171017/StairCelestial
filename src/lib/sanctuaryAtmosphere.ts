@@ -4,10 +4,18 @@ export interface SanctuaryAtmosphere {
   userTravel: number;
   /** Unwrapped clock angle: noon at zero, midnight at PI. */
   solarPhase: number;
+  worldHour: number;
   daylight: number;
+  dawn: number;
+  sunset: number;
   dusk: number;
   night: number;
   starVisibility: number;
+  meteorVisibility: number;
+  sunVisibility: number;
+  moonVisibility: number;
+  sunDirection: [number, number, number];
+  moonDirection: [number, number, number];
   keyDirection: [number, number, number];
   skyZenith: AtmosphereColor;
   skyHorizon: AtmosphereColor;
@@ -28,6 +36,11 @@ export interface SanctuaryAtmosphere {
 // One complete clock cycle is eight user-driven ribbon turns. The finite door
 // pool and automatic idle cruise have no part in this coordinate.
 export const ATMOSPHERE_CYCLE_TURNS = 8;
+/** Downward wheel / upward finger travel is negative in ribbon coordinates,
+ * but advances the day: noon -> pink sunset -> night -> golden sunrise. */
+export function atmosphereTravelFromRibbon(userPosition: number) {
+  return -userPosition;
+}
 const TAU = Math.PI * 2;
 const colorKeys = ["skyZenith", "skyHorizon", "skyLower", "cloudHighlight", "cloudShadow", "cloudHaze", "keyColor", "fillColor", "ambientColor", "reflectionTint"] as const;
 type ColorKey = typeof colorKeys[number];
@@ -38,20 +51,25 @@ function linear(hex: string): AtmosphereColor {
     return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
   }) as AtmosphereColor;
 }
-const palettes: Record<"day" | "dusk" | "night", Record<ColorKey, AtmosphereColor>> = {
+const palettes: Record<"day" | "dawn" | "sunset" | "night", Record<ColorKey, AtmosphereColor>> = {
   day: {
-    skyZenith: linear("#8eafda"), skyHorizon: linear("#e4e8eb"), skyLower: linear("#a5b8d0"),
-    cloudHighlight: linear("#f5f5f1"), cloudShadow: linear("#8499b4"), cloudHaze: linear("#b4c6d8"),
-    keyColor: linear("#fff0da"), fillColor: linear("#b9d2f0"), ambientColor: linear("#d6e1f1"), reflectionTint: linear("#f0f3fb"),
+    skyZenith: linear("#b1c7de"), skyHorizon: linear("#edf1f3"), skyLower: linear("#bdcedd"),
+    cloudHighlight: linear("#fafaf8"), cloudShadow: linear("#9badc4"), cloudHaze: linear("#d3dfe9"),
+    keyColor: linear("#f7f5ed"), fillColor: linear("#c8dcf0"), ambientColor: linear("#dce5f1"), reflectionTint: linear("#f0f3fb"),
   },
-  dusk: {
-    skyZenith: linear("#747cae"), skyHorizon: linear("#e9b19c"), skyLower: linear("#70779c"),
-    cloudHighlight: linear("#ecc5b3"), cloudShadow: linear("#626e98"), cloudHaze: linear("#a18b9d"),
-    keyColor: linear("#ffba83"), fillColor: linear("#979ccf"), ambientColor: linear("#b9a8c8"), reflectionTint: linear("#cfb5c8"),
+  dawn: {
+    skyZenith: linear("#839dbb"), skyHorizon: linear("#f5b569"), skyLower: linear("#c8a084"),
+    cloudHighlight: linear("#ffe1a3"), cloudShadow: linear("#81889e"), cloudHaze: linear("#ddb48d"),
+    keyColor: linear("#ffd08a"), fillColor: linear("#bbc8dd"), ambientColor: linear("#dec9b4"), reflectionTint: linear("#f1d2a7"),
+  },
+  sunset: {
+    skyZenith: linear("#827ca9"), skyHorizon: linear("#f2aec8"), skyLower: linear("#aa89ab"),
+    cloudHighlight: linear("#ffcae0"), cloudShadow: linear("#817494"), cloudHaze: linear("#d2a7c2"),
+    keyColor: linear("#ffcab0"), fillColor: linear("#b5b1dc"), ambientColor: linear("#cbb8d1"), reflectionTint: linear("#e4c1d2"),
   },
   night: {
-    skyZenith: linear("#101c3c"), skyHorizon: linear("#344668"), skyLower: linear("#1d2c4c"),
-    cloudHighlight: linear("#8798b5"), cloudShadow: linear("#263959"), cloudHaze: linear("#3f5372"),
+    skyZenith: linear("#142542"), skyHorizon: linear("#425574"), skyLower: linear("#263b59"),
+    cloudHighlight: linear("#a1b5d2"), cloudShadow: linear("#2a405f"), cloudHaze: linear("#526986"),
     keyColor: linear("#d9e4ff"), fillColor: linear("#b4bfdb"), ambientColor: linear("#c4d0e6"), reflectionTint: linear("#b8c5e1"),
   },
 };
@@ -61,37 +79,72 @@ function smoothstep(low: number, high: number, value: number) {
 }
 
 /** Writes a complete snapshot without allocations in the frame loop. */
-export function sampleSanctuaryAtmosphere(userTravel: number, target: SanctuaryAtmosphere) {
+export function sampleSanctuaryAtmosphere(userTravel: number, target: SanctuaryAtmosphere, celestialSpread = 1) {
   if (!Number.isFinite(userTravel)) return target;
   target.userTravel = userTravel;
   target.solarPhase = userTravel / ATMOSPHERE_CYCLE_TURNS * TAU;
   // Reduce only the trigonometric input, never the unwrapped travel/clock.
   const phase = target.solarPhase % TAU;
+  target.worldHour = ((12 + userTravel / ATMOSPHERE_CYCLE_TURNS * 24) % 24 + 24) % 24;
   const elevation = Math.cos(phase);
-  const night = 1 - smoothstep(-0.58, -0.08, elevation);
-  const daylight = smoothstep(-0.12, 0.65, elevation) * (1 - night);
-  const dusk = 1 - daylight - night;
+  // Four equal two-turn moods, not two long day/night plateaus punctuated by
+  // brief twilight flashes. Each has a 1.12-turn full-color core, joined by
+  // 0.88-turn eased overlaps. Their integrated weights are exactly equal.
+  const quarter = ((userTravel / (ATMOSPHERE_CYCLE_TURNS / 4)) % 4 + 4) % 4;
+  const from = Math.floor(quarter), to = (from + 1) % 4;
+  const blend = smoothstep(0.28, 0.72, quarter - from);
+  const daylight = (from === 0 ? 1 - blend : 0) + (to === 0 ? blend : 0);
+  const sunset = (from === 1 ? 1 - blend : 0) + (to === 1 ? blend : 0);
+  const night = (from === 2 ? 1 - blend : 0) + (to === 2 ? blend : 0);
+  const dawn = (from === 3 ? 1 - blend : 0) + (to === 3 ? blend : 0);
+  const dusk = dawn + sunset;
   target.daylight = daylight;
   target.dusk = dusk;
+  target.dawn = dawn;
+  target.sunset = sunset;
   target.night = night;
-  target.starVisibility = smoothstep(0.18, 0.88, night);
+  target.starVisibility = night + 0.45 * sunset + 0.035 * dawn;
+  // The updated brief includes the whole night. Dusk trails are readable
+  // against pink clouds, and taper away during the approach to golden dawn.
+  target.meteorVisibility = 0.78 * sunset + night;
+  target.sunVisibility = smoothstep(-0.10, 0.025, elevation)
+    * (1 - 0.99 * smoothstep(0.12, 0.65, elevation));
+  target.moonVisibility = smoothstep(-0.04, 0.28, -elevation) * (0.4 + 0.6 * night);
   for (const key of colorKeys) {
     for (let channel = 0; channel < 3; channel++) {
       target[key][channel] = palettes.day[key][channel] * daylight
-        + palettes.dusk[key][channel] * dusk + palettes.night[key][channel] * night;
+        + palettes.dawn[key][channel] * dawn + palettes.sunset[key][channel] * sunset
+        + palettes.night[key][channel] * night;
     }
   }
-  // The art-directed sun/moon travels clockwise in world X/Z. A low sunset
-  // casts long shadows; the night key rises again to keep porcelain readable.
-  const azimuth = -0.76 + phase;
-  const height = 0.4 + elevation * elevation * 0.68;
-  const length = Math.hypot(1, height);
-  target.keyDirection[0] = Math.sin(azimuth) / length;
+  // Art-directed low arcs sit within the downward-looking camera's sky band.
+  // They stay in world space: orbiting can naturally take either out of view.
+  // Their shared azimuth lights the objects; raised key elevation avoids very
+  // long fragile shadow maps. This is visual continuity, not an ephemeris.
+  const spread = Math.max(0.25, Math.min(1, celestialSpread));
+  const x = (Math.sin(phase) * 0.5 + elevation * 0.22) * spread;
+  const y = elevation * 0.12;
+  const celestialLength = Math.hypot(x, y, 1);
+  target.sunDirection[0] = x / celestialLength;
+  target.sunDirection[1] = y / celestialLength;
+  target.sunDirection[2] = -1 / celestialLength;
+  // Offset the moon's arc so midnight clears the upper ribbon in the entrance
+  // view, while keeping its path and illumination world-fixed during orbit.
+  const moonX = (-Math.sin(phase) * 0.5 - elevation * 0.48) * spread;
+  const moonLength = Math.hypot(moonX, y, 1);
+  target.moonDirection[0] = moonX / moonLength;
+  target.moonDirection[1] = -y / moonLength;
+  target.moonDirection[2] = -1 / moonLength;
+  const moonHandover = smoothstep(-0.04, 0.35, -elevation);
+  const keyX = x * (1 - moonHandover) + moonX * moonHandover;
+  const height = 0.85 + elevation * elevation * 0.45;
+  const length = Math.hypot(keyX, height, 1);
+  target.keyDirection[0] = keyX / length;
   target.keyDirection[1] = height / length;
-  target.keyDirection[2] = Math.cos(azimuth) / length;
+  target.keyDirection[2] = -1 / length;
   // Night's key is often behind the foreground. A luminous moon rim needs a
   // broad, neutral sky fill so ivory stays porcelain rather than charcoal.
-  target.keyIntensity = 3.6 * daylight + 2.8 * dusk + 2.3 * night;
+  target.keyIntensity = 3.2 * daylight + 2.35 * dusk + 2.0 * night;
   target.fillIntensity = 0.62 * daylight + 0.46 * dusk + 0.95 * night;
   target.ambientIntensity = 0.2 * daylight + 0.17 * dusk + 0.26 * night;
   target.environmentIntensity = 0.85 * daylight + 0.68 * dusk + 0.85 * night;
@@ -100,7 +153,9 @@ export function sampleSanctuaryAtmosphere(userTravel: number, target: SanctuaryA
 
 export function createSanctuaryAtmosphere(): SanctuaryAtmosphere {
   const target: SanctuaryAtmosphere = {
-    userTravel: 0, solarPhase: 0, daylight: 1, dusk: 0, night: 0, starVisibility: 0,
+    userTravel: 0, solarPhase: 0, worldHour: 12, daylight: 1, dawn: 0, sunset: 0, dusk: 0, night: 0, starVisibility: 0,
+    meteorVisibility: 0, sunVisibility: 0, moonVisibility: 0,
+    sunDirection: [0, 1, 0], moonDirection: [0, -1, 0],
     keyDirection: [0, 1, 0],
     skyZenith: [0, 0, 0], skyHorizon: [0, 0, 0], skyLower: [0, 0, 0],
     cloudHighlight: [0, 0, 0], cloudShadow: [0, 0, 0], cloudHaze: [0, 0, 0],
@@ -111,8 +166,8 @@ export function createSanctuaryAtmosphere(): SanctuaryAtmosphere {
 }
 
 /** Short reversible easing; discarded suspended time cannot jump the clock. */
-export function advanceSanctuaryAtmosphere(target: SanctuaryAtmosphere, userTravel: number, delta: number, reducedMotion = false) {
+export function advanceSanctuaryAtmosphere(target: SanctuaryAtmosphere, userTravel: number, delta: number, reducedMotion = false, celestialSpread = 1) {
   if (!Number.isFinite(delta) || delta <= 0 || !Number.isFinite(userTravel)) return target;
   const blend = reducedMotion ? 1 : -Math.expm1(-5 * Math.min(delta, 0.1));
-  return sampleSanctuaryAtmosphere(target.userTravel + (userTravel - target.userTravel) * blend, target);
+  return sampleSanctuaryAtmosphere(target.userTravel + (userTravel - target.userTravel) * blend, target, celestialSpread);
 }

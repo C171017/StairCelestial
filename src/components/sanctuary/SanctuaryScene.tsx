@@ -138,7 +138,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
     transform.current.quaternion.premultiply(viewRotation.setFromAxisAngle(up, focus.current.viewYaw));
   }, -0.5);
   return <group ref={transform}><group ref={scrollGroup} position={[0, -(motion.current.position - cycle) * RIBBON_PITCH, 0]}>
-    <PorcelainRibbon radius={radius} width={width} />
+    <PorcelainRibbon radius={radius} width={width} cycle={cycle} />
     {doors.map(({ occurrence, placement, studyIndex, support, presentationSamples }) => {
       const index = projectIndexForDoor(doorStudies[studyIndex].id);
       const selected = selection?.occurrence === occurrence;
@@ -173,7 +173,7 @@ function Content(props: Props) {
   return <>
     <OrbitCamera orbit={orbit} />
     <StudioLight atmosphere={atmosphere} reflectionScene={reflectionScene} />
-    <PlayControl3D theme="cloud" anchorHeight={2.8} ribbonMotion={motion} ribbonFrame={ribbonFrame} />
+    <PlayControl3D theme="cloud" anchorHeight={2.8} ribbonMotion={motion} ribbonFrame={ribbonFrame} atmosphere={atmosphere} />
     <Suspense fallback={null}>
       {/* Finish the immutable sky before allowing the entrance to reveal it. */}
       <OrbitSky onReady={handleSkyReady} atmosphere={atmosphere} reflectionScene={reflectionScene} />
@@ -196,7 +196,7 @@ export function SanctuaryScene(props: Props) {
   }, []);
   // Mobile's canvas is pinned; scroll cannot change its dimensions.
   // ResizeObserver still handles orientation and actual size changes.
-  return <Canvas camera={{ position: [0, ORBIT_HEIGHT, ORBIT_RADIUS], fov: 42, near: 0.1, far: 2400 }} dpr={[1.5, 2]} shadows
+  return <Canvas camera={{ position: [0, ORBIT_HEIGHT, ORBIT_RADIUS], fov: 42, near: 0.1, far: 2400 }} dpr={[1, 1.5]} shadows
     resize={{ scroll: !nativeViewport }}
     gl={{ antialias: true, alpha: false, stencil: true, powerPreference: "high-performance" }}
     onCreated={({ camera, gl }) => {
@@ -204,7 +204,7 @@ export function SanctuaryScene(props: Props) {
       gl.toneMapping = THREE.ACESFilmicToneMapping;
       gl.toneMappingExposure = 1.0;
       // Preserve the full sky detail in the tinted cast-glass portals.
-      gl.transmissionResolutionScale = 1;
+      gl.transmissionResolutionScale = 0.85;
       gl.setClearColor("#dceaf0");
     }}><Content {...props} /></Canvas>;
 }

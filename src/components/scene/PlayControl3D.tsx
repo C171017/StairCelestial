@@ -32,6 +32,7 @@ import {
   setPointerCursor,
 } from "@/lib/interactiveHoverZoom";
 import { CloudPlayShape } from "./CloudPlayShape";
+import type { SanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
 import { CONTROL_ENTRANCE_SECONDS, CONTROL_SHAPE_FORMED_SECONDS, sampleControlEntrance } from "@/lib/controlEntrance";
 import { getCloudControlFinalScale, spiralControlAnchor } from "@/lib/spiralControlAnchor";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
@@ -106,11 +107,12 @@ type FlyPose = {
   billboard: number;
 };
 
-export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, anchorHeight }: {
+export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, anchorHeight, atmosphere }: {
   theme?: "original" | "cloud";
   ribbonMotion?: RefObject<RibbonMotionSnapshot>;
   ribbonFrame?: RefObject<THREE.Group | null>;
   anchorHeight?: number;
+  atmosphere?: RefObject<SanctuaryAtmosphere>;
 }) {
   const cloud = theme === "cloud";
   const groupRef = useRef<THREE.Group>(null);
@@ -336,7 +338,10 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, a
     );
     // The cloud control lives on the ribbon's axis, with a physical world size.
     // Its mobile mesh already has the shared 2x size multiplier.
-    if (cloud) dockScaleRef.current = getCloudControlFinalScale(size.width);
+    // On narrow screens leave a clear pocket between the sculpture, the leaf
+    // portal and the returning ribbon. The entrance and desktop scale stay
+    // unchanged; only the settled mobile sculpture is slightly smaller.
+    if (cloud) dockScaleRef.current = getCloudControlFinalScale(size.width) * (size.width < 650 ? 0.88 : 1);
     mobileShapeScaleRef.current = getPlayControlMobileSizeScale(
       controlViewport.width,
       controlViewport.height,
@@ -546,7 +551,8 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, a
     if (cloud) {
       const frame = ribbonFrame?.current;
       frame?.updateWorldMatrix(true, false);
-      spiralControlAnchor(frame?.matrixWorld, anchorHeight ?? camera.position.y, axisAnchor);
+      const compactClearance = size.width < 650 ? 0.65 : 0;
+      spiralControlAnchor(frame?.matrixWorld, (anchorHeight ?? camera.position.y) - compactClearance, axisAnchor);
       worldPos.lerp(axisAnchor, 1 - pose.billboard);
     }
     group.position.copy(worldPos);
@@ -620,7 +626,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, a
 
         {cloud &&
           <CloudPlayShape playing={soundEnabled} active={introPlayPhase === "active"}
-            entrance={entranceRef} ribbonMotion={ribbonMotion}
+            entrance={entranceRef} ribbonMotion={ribbonMotion} atmosphere={atmosphere}
             scale={getPlayControlMobileSizeScale(size.width, size.height)} />
         }
         <group visible={!cloud}>

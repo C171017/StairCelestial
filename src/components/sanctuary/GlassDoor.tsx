@@ -8,8 +8,9 @@ import { doorModelUrl, type DoorStudy } from "@/lib/doorStudies";
 import { setLocalMaterialOpacity } from "@/lib/materialReveal";
 import { createDoorShadowMaterial } from "@/lib/doorShadowMaterial";
 import { createDoorMaterials } from "./doorMaterials";
+import { addMetalTangents } from "@/lib/metalGeometry";
 
-/** A stationary colored glass slab that dissolves inside its ceramic surround. */
+/** A stationary colored glass slab that dissolves inside its black-metal surround. */
 export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled = true, openingProgress, presentationVisibility, visibilityProgress }: {
   study: DoorStudy; amount?: number; dimmed?: boolean;
   onSelect?: () => void; enabled?: boolean;
@@ -18,12 +19,13 @@ export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled
   visibilityProgress?: RefObject<number>;
 }) {
   const { scene } = useGLTF(doorModelUrl(study));
-  const { model, slab, materials, shadowMaterials } = useMemo(() => {
+  const { model, slab, materials, shadowMaterials, metalGeometries } = useMemo(() => {
     const model = scene.clone(true);
     let slab: THREE.Object3D | undefined;
     const materials: { material: THREE.Material; dissolves: boolean; opacity: number }[] = [];
     const finishes = createDoorMaterials(study);
     const shadowMaterials: THREE.MeshDepthMaterial[] = [];
+    const metalGeometries: THREE.BufferGeometry[] = [];
     materials.push(...Object.values(finishes).map(material => ({
       material, dissolves: material === finishes.glass || material === finishes.glassEdge, opacity: material.opacity,
     })));
@@ -31,14 +33,18 @@ export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled
       if (object.userData.door_role === "slab") slab = object;
       const mesh = object as THREE.Mesh;
       if (!mesh.isMesh) return;
-      if (object.name.startsWith("Fixed_GlassFrame")) mesh.material = finishes.ceramic;
+      if (object.name.startsWith("Fixed_GlassFrame")) mesh.material = finishes.frame;
       else if (object.name.startsWith("Fixed_InnerLight")) mesh.material = finishes.light;
       else if (object.name.startsWith("Slab_PolishedEdge")) mesh.material = finishes.glassEdge;
       else if (object.name.startsWith("Slab_Glass")) mesh.material = finishes.glass;
       else mesh.material = finishes.gold;
       const surface = mesh.material as THREE.Material;
-      mesh.receiveShadow = surface === finishes.ceramic || surface === finishes.gold;
-      mesh.castShadow = surface === finishes.ceramic || surface === finishes.gold || surface === finishes.glass;
+      if (surface === finishes.frame || surface === finishes.gold) {
+        mesh.geometry = addMetalTangents(mesh.geometry.clone(), true);
+        metalGeometries.push(mesh.geometry);
+      }
+      mesh.receiveShadow = surface === finishes.frame || surface === finishes.gold;
+      mesh.castShadow = surface === finishes.frame || surface === finishes.gold || surface === finishes.glass;
       if (mesh.castShadow) {
         const shadow = createDoorShadowMaterial(surface, surface === finishes.glass ? 0.24 : 1);
         mesh.customDepthMaterial = shadow.material;
@@ -48,7 +54,7 @@ export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled
         shadowMaterials.push(shadow.material);
       }
     });
-    return { model, slab, materials, shadowMaterials };
+    return { model, slab, materials, shadowMaterials, metalGeometries };
   }, [scene, study]);
   const visibility = useRef(presentationVisibility?.current ?? 1);
   const travel = useRef(0);
@@ -63,7 +69,8 @@ export function GlassDoor({ study, amount = 0, dimmed = false, onSelect, enabled
   useEffect(() => () => {
     materials.forEach(({ material }) => material.dispose());
     shadowMaterials.forEach(material => material.dispose());
-  }, [materials, shadowMaterials]);
+    metalGeometries.forEach(geometry => geometry.dispose());
+  }, [materials, shadowMaterials, metalGeometries]);
   useFrame((_, dt) => {
     const delta = Math.min(dt, 0.05);
     travel.current = reduced.current ? amount : THREE.MathUtils.damp(travel.current, amount, 7, delta);

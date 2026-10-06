@@ -27,7 +27,7 @@ export function cloudLayerOrders(positions: readonly CloudPosition[]): number[] 
   return orders;
 }
 
-/** The original cloud composition at time zero, fixed for the scene's lifetime. */
+/** Anchored banks and low-horizon cirrus, fixed for the scene's lifetime. */
 export function createCloudField(): readonly CloudDefinition[] {
   const definitions = Array.from({ length: 80 }, (_, index) => {
     const wisp = index >= 64;
@@ -38,7 +38,10 @@ export function createCloudField(): readonly CloudDefinition[] {
       + (cloudHash(index + 70) - 0.5) * spacing * 0.5;
     const z = (Math.floor(n / grid) + 0.5) * spacing - CLOUD_FIELD_SIZE / 2
       + (cloudHash(index + 140) - 0.5) * spacing * 0.5;
-    const y = wisp ? 125 + cloudHash(index + 17) * 90 : -120 - cloudHash(index + 17) * 55;
+    // The normal camera looks slightly down: an overhead cirrus layer misses
+    // its clear upper sky. Keep the light wisps near the distant horizon so
+    // their drift remains visible in the composed view around the full orbit.
+    const y = wisp ? 40 + cloudHash(index + 17) * 50 : -120 - cloudHash(index + 17) * 55;
     const width = wisp ? 570 + cloudHash(index) * 180 : 300 + cloudHash(index) * 150;
     const distance = Math.hypot(x, z);
     return {
@@ -46,7 +49,7 @@ export function createCloudField(): readonly CloudDefinition[] {
       height: wisp ? width * 0.42 : width * (0.5 + cloudHash(index + 123) * 0.18),
       wisp,
       tile: Math.floor(cloudHash(index + 99) * 4),
-      opacity: cloudVisibility(distance) * (wisp ? 0.38 : 1),
+      opacity: cloudVisibility(distance) * (wisp ? distance < 500 ? 0.16 : 0.21 : 1),
       haze: Math.min(0.42, Math.max(0, (distance - 250) / 1400)),
     };
   });

@@ -42,7 +42,7 @@ export function DoorStudyExperience() {
   }
   const study = selected === null ? null : doorStudies[selected];
   return <main className="door-study-room">
-    <div className="door-study-canvas" aria-label="Six colored glass slabs in pearl ceramic and champagne gold surrounds">
+    <div className="door-study-canvas" aria-label="Six colored glass slabs in satin black metal surrounds with brushed gold reveals">
       <StudyBoundary onError={onError}><Scene selected={selected} amount={amount} angle={angle} onSelect={selectSlab} onReady={onReady} /></StudyBoundary>
     </div>
     <header className="study-heading">
@@ -52,7 +52,7 @@ export function DoorStudyExperience() {
     {!ready && !failed && <div className="study-loading" role="status">Gathering the glass…</div>}
     <footer className="study-controls">
       <div className="study-selection" aria-live="polite">
-        <span>{study ? `${study.number} / ${study.name} · ${palette.doors[study.id].name}` : "01—06 / Pearl ceramic & champagne gold"}</span>
+        <span>{study ? `${study.number} / ${study.name} · ${palette.doors[study.id].name}` : "01—06 / Black metal & brushed gold"}</span>
         <p>{study ? study.note : "Select a slab to study its shape."}</p>
       </div>
       <nav className="study-picker" aria-label="Choose a door study">

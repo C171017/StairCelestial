@@ -1,0 +1,26 @@
+.stage{position:relative;width:100%;height:100dvh;min-height:570px;overflow:hidden;background:#abc0d4;color:#fff;font-family:Arial,Helvetica,sans-serif}
+.scene{position:absolute;inset:0}
+.header{position:absolute;top:0;left:0;right:0;padding:32px 38px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;pointer-events:none;text-shadow:0 1px 18px #22334a66}
+.eyebrow{font-size:10px;letter-spacing:.24em;margin:0 0 10px;font-weight:600}
+.header h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(28px,3.3vw,48px);font-weight:400;letter-spacing:-.045em;line-height:1.12;margin:0}
+.intro{font-size:13px;margin:12px 0 0;opacity:.85}
+.actions{display:flex;gap:8px;pointer-events:auto}
+.actions button{font-size:12px;border:1px solid #ffffff55;background:#18314724;color:#fff;border-radius:30px;padding:10px 15px;backdrop-filter:blur(14px);cursor:pointer}
+.actions button[aria-pressed=true]{background:#fff;color:#263a47}
+.panel{position:absolute;bottom:22px;left:28px;right:28px;background:linear-gradient(135deg,#142431e8,#253a4be3);border:1px solid #ffffff33;border-radius:19px;padding:16px 18px 11px;box-shadow:0 10px 50px #152a3933;backdrop-filter:blur(20px)}
+.timeRow{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:15px}
+.status{font-size:11px;letter-spacing:.025em;display:flex;align-items:center;gap:8px;color:#e6eff7}
+.status i{width:5px;height:5px;background:#c4e4d8;border-radius:50%;box-shadow:0 0 7px #c4e4d866}.status i.stopped{background:#acaead;box-shadow:none}
+.moods{display:flex;gap:3px;flex-wrap:wrap}
+.moods button{border:0;background:transparent;color:#d6e0e9;cursor:pointer;font-size:11px;padding:7px 12px;border-radius:25px}
+.moods button[aria-pressed=true]{background:#eef0e5;color:#273742}
+.choices{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.choice{display:flex;gap:11px;align-items:flex-start;text-align:left;cursor:pointer;padding:14px 12px;border-radius:10px;border:1px solid #ffffff1f;background:#ffffff05;color:#fff;transition:background .2s,border-color .2s}
+.choice:hover{background:#ffffff12}.choice[aria-pressed=true]{background:#e9eee61f;border-color:#e4eadaaa}
+.number{font-family:Georgia,serif;font-size:14px;color:#cfdccd;line-height:20px}
+.choice strong{font-size:13px;font-weight:500;display:block;line-height:20px}
+.choice small{display:block;font-size:10px;line-height:1.45;color:#b9c7d1;margin-top:5px;max-width:220px}
+.footnote{font-size:10px;line-height:1.5;color:#bcc8d0;margin:11px 0 0;display:flex;justify-content:space-between;gap:10px}
+.footnote span{color:#8fa4b2;white-space:nowrap}.stage button:focus-visible{outline:2px solid white;outline-offset:3px}
+@media(max-width:700px){.header{padding:24px 20px;display:block}.header h1{font-size:33px}.intro{font-size:12px}.actions{margin-top:17px}.actions button{font-size:11px;padding:8px 12px}.panel{bottom:14px;left:12px;right:12px;padding:12px}.timeRow{display:block;margin-bottom:10px}.status{margin-bottom:10px}.moods{justify-content:space-between;gap:0}.moods button{font-size:10px;padding:6px 7px}.choices{grid-template-columns:repeat(2,1fr);gap:6px}.choice{padding:10px 8px;gap:8px}.choice strong{font-size:12px}.choice small{font-size:9px}.footnote{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.choice{transition:none}}

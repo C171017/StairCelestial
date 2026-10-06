@@ -1,4 +1,14 @@
-# Floating porcelain review — 2026-10-04
+# Atmosphere review — October 5, 2026
+
+The latest selected atmosphere implementation received exactly three formal
+independent GPT-6 Astra High critiques: **7.2 → 7.5 → 7.8/10**. The owner's
+8.0 award-level/professional benchmark was not reached. The final critic found
+the overall composition and celestial restraint strong, but the central metal
+control remains too matte and dawn/cloud lighting falls short of the richer
+reference. See [category scores, final actual captures and evidence limits](validation/atmosphere/README.md).
+This subjective review is not an award or a physical-device performance claim.
+
+# Floating porcelain review — 2026-10-04 (historical)
 
 The current homepage is B2: hovering ceramic/champagne portals above an opaque milk-ivory ribbon, with real cast shadows, improved frame profiles, partial silvered-glass reflections, and one reversible scroll-driven day/sunset/night clock. See [implementation details and browser evidence](PORCELAIN-IMPLEMENTATION.md).
 

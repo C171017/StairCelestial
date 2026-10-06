@@ -1,0 +1,17 @@
+{
+  "normalHomepage": "http://127.0.0.1:3000/",
+  "warningsErrors": [],
+  "checked": [
+    "four equal palette regions",
+    "golden sunrise and pink sunset",
+    "visible cast shadows",
+    "denser night stars",
+    "full-night meteors",
+    "five-second cloud displacement",
+    "twelve-second actual recording",
+    "desktop and compact views",
+    "frozen-phase full orbit"
+  ],
+  "physicalPhone": false,
+  "osReducedMotionActivation": false
+}

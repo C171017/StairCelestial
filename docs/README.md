@@ -1,6 +1,17 @@
 # Portfolio documentation
 
-The active homepage is the Sanctuary glass-ribbon experience. Read:
+The active homepage is the Sanctuary floating-portal experience. Read:
+
+- **[Integrated cloud, mist and light motion](validation/integrated-motion-2026-10-06/README.md) — latest October 6 implementation: all three approved effects are active on the homepage, with balanced strengths, separate wind/time clocks and shared artwork.**
+
+- **[Equal moods and visible effects](validation/atmosphere-visibility-2026-10-06/README.md) — latest October 6 correction: 25% journey per mood, golden sunrise/pink sunset, restored shadows, denser stars, full-night meteors, visible shared-wind clouds, and actual motion recording.**
+
+- [Previous atmosphere implementation and review](validation/atmosphere/README.md) — October 5 baseline and three Astra High scores (7.2 → 7.5 → 7.8; target 8.0 not reached). These scores do not grade the October 6 correction.
+- [ATMOSPHERE-REFINEMENT.md](ATMOSPHERE-REFINEMENT.md) — selected art direction and historical brainstorming; exact proportionality was relaxed by the owner.
+
+- **[MATERIAL-BUILD-HANDOFF.md](MATERIAL-BUILD-HANDOFF.md) — start here for the next build: selected white marble spiral and deep black/gold frames; current state, source map, references, and validation.**
+
+- [TEXTURE-REFINEMENT.md](TEXTURE-REFINEMENT.md) — October 5 material pass, visual-ceiling direction, and deferred cloud/24-hour world refinements.
 
 1. [PORCELAIN-IMPLEMENTATION.md](PORCELAIN-IMPLEMENTATION.md) — active floating B2 renderer, atmospheric clock, shadows, and validation.
 2. [PROJECT.md](PROJECT.md) — current user direction, scope, content, and constraints.

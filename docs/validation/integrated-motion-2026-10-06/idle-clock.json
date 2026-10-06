@@ -1,0 +1,15 @@
+{
+  "start": {
+    "frame": "14.67",
+    "hour": "0.000",
+    "motion": "all",
+    "seconds": "125.473",
+    "textures": "21"
+  },
+  "end": {
+    "frame": "30.86",
+    "hour": "0.000",
+    "motion": "all",
+    "seconds": "249.659"
+  }
+}

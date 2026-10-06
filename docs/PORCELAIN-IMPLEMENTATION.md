@@ -1,6 +1,15 @@
 # B2 floating porcelain implementation
 
-October 4, 2026. This records the current source implementation of the selected [B2 floating pearl-sky direction](../assets/design-directions/b2-floating-pearl-sky.png). Visual quality is the priority for this pass; performance optimization is deferred. No physical-device performance claim is made.
+The October 5 [material refinement](TEXTURE-REFINEMENT.md) now implements
+softly polished white marble, satin blackened-metal frames and restrained
+brushed-gold reveals. It supersedes the porcelain finish parameters below
+and adds a fifth feathered reflection card plus the Three r175 local IBL
+multiplier correction. Existing glass, geometry, floating placement, fades
+and interactions remain in place. See [current website evidence and validation](validation/black-gold-marble/README.md).
+
+## Historical implementation — October 4, 2026
+
+This records the October 4 source implementation of the selected [B2 floating pearl-sky direction](../assets/design-directions/b2-floating-pearl-sky.png). Material descriptions and four-card capture details below are historical; current values are in the material refinement document above. Visual quality was the priority for this pass; performance optimization was deferred. No physical-device performance claim is made.
 
 The selected direction replaces the earlier proposal to attach each frame through a fitted foot. Portals now hover deliberately above a milk-ivory porcelain ribbon, with real cast shadows explaining the air gap. The glass-ribbon component remains in the repository for reference but is no longer mounted on the homepage.
 

@@ -1,0 +1,6 @@
+Use case: precise-object-edit.
+Edit target: supplied full-scene image, the user's selected muted bronze frame direction.
+Make exactly one small material adjustment: darken the broad BRONZE OUTER FRAMES of all four organic glass portals slightly, toward deeper smoked bronze / warm dark umber, around one small tonal step darker (roughly 15–20 percent in perceived brightness). Retain their finely brushed metal texture, soft bronze highlights, and exact shapes and thickness. Do not make them black, flat brown paint, rusty, excessively shiny, or yellow gold.
+Keep the narrow inner champagne-gold reveal a little lighter than the bronze, as it is now, so the opening remains crisp. The darker main frame should still show warm reflections and readable bevels.
+EVERYTHING ELSE MUST REMAIN AS CLOSE TO IDENTICAL AS POSSIBLE: the existing white marble ribbon's color, polish and vein pattern; every colored glass pane and reflection; the central champagne tetrahedron; cloud shapes, exposure, lighting, shadows; the camera, framing, composition and object positions. Do not change the stair finish yet. Preserve the same portrait image bounds. No text, labels, borders, extra objects, bloom or other embellishment.
+This is a faithful minimal revision of the chosen material preview, not a redesign.
