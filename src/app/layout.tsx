@@ -13,12 +13,12 @@ export const metadata: Metadata = {
   description: "A world of curiosities. Projects and experiments along an infinite glass ribbon above the clouds.",
   icons: {
     icon: [
-      { url: "/favicon.ico?v=2", sizes: "32x32" },
-      { url: "/favicon-light.png", type: "image/png", sizes: "32x32", media: "(prefers-color-scheme: light)" },
-      { url: "/favicon-dark.png", type: "image/png", sizes: "32x32", media: "(prefers-color-scheme: dark)" },
-      { url: "/icon.svg?v=2", type: "image/svg+xml", sizes: "any" },
+      { url: "/favicon.ico?v=3", sizes: "32x32" },
+      { url: "/favicon-light.png?v=3", type: "image/png", sizes: "32x32", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-dark.png?v=3", type: "image/png", sizes: "32x32", media: "(prefers-color-scheme: dark)" },
+      { url: "/icon.svg?v=3", type: "image/svg+xml", sizes: "any" },
     ],
-    apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
+    apple: { url: "/apple-touch-icon.png?v=3", sizes: "180x180" },
   },
 };
 

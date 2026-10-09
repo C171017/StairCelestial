@@ -1,18 +1,16 @@
 import { readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 
-// The SVG is the source of truth. Browser favicons stay transparent;
-// only the home-screen icon uses a solid tile.
+// The SVG is the source of truth. Every exported icon keeps its transparent
+// exterior and open center; the operating system owns home-screen presentation.
 const iconUrl = new URL("../public/icon.svg", import.meta.url);
 const svg = (await readFile(iconUrl, "utf8"))
   .replace(/<style>[\s\S]*?<\/style>/, "");
-const homeIcon = svg
-  .replaceAll("currentColor", "#e7e3d8")
-  .replace('viewBox="0 0 64 64">', 'viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#080d10"/>');
+const homeIcon = svg.replaceAll("currentColor", "#242b30");
 await sharp(Buffer.from(homeIcon)).resize(180, 180).png().toFile(
   new URL("../public/apple-touch-icon.png", import.meta.url).pathname,
 );
-for (const [theme, color] of [["light", "#292d30"], ["dark", "#e7e3d8"]]) {
+for (const [theme, color] of [["light", "#242b30"], ["dark", "#eeeae0"]]) {
   await sharp(Buffer.from(svg.replaceAll("currentColor", color)))
     .resize(32, 32).png().toFile(
       new URL(`../public/favicon-${theme}.png`, import.meta.url).pathname,
