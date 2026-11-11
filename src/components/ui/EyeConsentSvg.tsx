@@ -2,22 +2,8 @@
 
 import type { RefObject } from "react";
 
-export type EyeConsentRefs = {
-  eyeAperture: RefObject<SVGPathElement | null>;
-  eyeInterior: RefObject<SVGGElement | null>;
-  upperLid: RefObject<SVGPathElement | null>;
-  lowerLid: RefObject<SVGPathElement | null>;
-  scleraExtras: RefObject<SVGGElement | null>;
-  iris: RefObject<SVGCircleElement | null>;
-  pupil: RefObject<SVGCircleElement | null>;
-  playRing: RefObject<SVGCircleElement | null>;
-  playIcon: RefObject<SVGPolygonElement | null>;
-  pauseIcon: RefObject<SVGGElement | null>;
-  iconGroup: RefObject<SVGGElement | null>;
-};
-
 type EyeConsentSvgProps = {
-  refs: EyeConsentRefs;
+  svgRef: RefObject<SVGSVGElement | null>;
 };
 
 const CX = 100;
@@ -26,28 +12,54 @@ const IRIS_R = 29;
 const PUPIL_R = 12;
 const IRIS_RAY_COUNT = 40;
 
+const closedAperture = "M 12 103 C 48 99 143 96 190 96 C 145 104 51 107 12 103 Z";
+const closedUpperLid = "M 12 103 C 48 99 143 96 190 96";
+const closedLowerLid = "M 12 103 C 51 107 145 104 190 96";
+
+// Each pair has matching SVG commands so the details morph with the aperture.
 export const EYE_LID_PATHS = {
-  apertureClosed: "M 12 103 C 48 99 143 96 190 96 C 145 104 51 107 12 103 Z",
-  apertureWaiting: "M 12 103 C 45 73 135 58 190 96 C 157 125 58 137 12 103 Z",
-  apertureOpen: "M 11 103 C 43 55 127 31 190 94 C 158 145 57 157 11 103 Z",
-  upperClosed: "M 12 103 C 48 99 143 96 190 96",
-  lowerClosed: "M 12 103 C 51 107 145 104 190 96",
-  upperWaiting: "M 12 103 C 45 73 135 58 190 96",
-  lowerWaiting: "M 12 103 C 58 137 157 125 190 96",
-  upperOpen: "M 11 103 C 43 55 127 31 190 94",
-  lowerOpen: "M 11 103 C 57 157 158 145 190 94",
+  aperture: {
+    closed: closedAperture,
+    open: "M 11 103 C 43 55 127 31 190 94 C 158 145 57 157 11 103 Z",
+  },
+  upperLid: { closed: closedUpperLid, open: "M 11 103 C 43 55 127 31 190 94" },
+  lowerLid: { closed: closedLowerLid, open: "M 11 103 C 57 157 158 145 190 94" },
+  lidFill: {
+    closed: closedAperture,
+    open: "M 10 103 C 44 53 128 31 191 94 C 156 121 58 130 10 103 Z",
+  },
+  lidShadow: {
+    closed: closedAperture,
+    open: "M 9 103 C 42 70 133 55 191 94 C 156 151 54 162 9 103 Z",
+  },
+  upperHighlight: { closed: closedUpperLid, open: "M 12 101 C 43 58 127 31 189 93" },
+  upperContour: { closed: closedUpperLid, open: "M 13 101 C 44 56 127 32 188 93" },
+  lowerContour: { closed: closedLowerLid, open: "M 13 104 C 58 153 157 144 189 94" },
+  upperFold: {
+    closed: "M 27 102 C 63 101 131 98 171 97",
+    open: "M 27 102 C 63 83 131 77 171 96",
+  },
+  lowerFold: {
+    closed: "M 27 105 C 67 105 132 102 171 99",
+    open: "M 27 110 C 67 129 132 124 171 99",
+  },
 };
 
-export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
+function lidPath(name: keyof typeof EYE_LID_PATHS) {
+  return { "data-eye-lid": name, d: EYE_LID_PATHS[name].closed };
+}
+
+export function EyeConsentSvg({ svgRef }: EyeConsentSvgProps) {
   return (
     <svg
+      ref={svgRef}
       viewBox="0 0 200 200"
       className="size-full"
       aria-hidden
     >
       <defs>
         <clipPath id="eye-consent-aperture">
-          <path ref={refs.eyeAperture} d={EYE_LID_PATHS.apertureClosed} />
+          <path {...lidPath("aperture")} />
         </clipPath>
         <radialGradient id="eye-consent-iris" cx="47%" cy="45%" r="70%">
           <stop offset="0%" stopColor="#f3ecd4" stopOpacity="0.72" />
@@ -93,20 +105,19 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         </filter>
       </defs>
 
-      <g>
-      <g ref={refs.scleraExtras} opacity={0}>
+      <g data-eye-artwork data-eye-lid-details opacity={0}>
         <path
-          d="M 10 103 C 44 53 128 31 191 94 C 156 121 58 130 10 103 Z"
+          {...lidPath("lidFill")}
           fill="#030508"
           opacity={0.82}
         />
         <path
-          d="M 9 103 C 42 70 133 55 191 94 C 156 151 54 162 9 103 Z"
+          {...lidPath("lidShadow")}
           fill="url(#eye-consent-aperture-shadow)"
           opacity={0.9}
         />
         <path
-          d="M 12 101 C 43 58 127 31 189 93"
+          {...lidPath("upperHighlight")}
           fill="none"
           stroke="rgba(245, 239, 214, 0.28)"
           strokeWidth={5}
@@ -114,7 +125,7 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
           opacity={0.5}
         />
         <path
-          d="M 13 101 C 44 56 127 32 188 93"
+          {...lidPath("upperContour")}
           fill="none"
           stroke="url(#eye-consent-upper-lid)"
           strokeWidth={3.2}
@@ -122,7 +133,7 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
           opacity={0.88}
         />
         <path
-          d="M 13 104 C 58 153 157 144 189 94"
+          {...lidPath("lowerContour")}
           fill="none"
           stroke="url(#eye-consent-lower-lid)"
           strokeWidth={2.4}
@@ -130,14 +141,14 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
           opacity={0.8}
         />
         <path
-          d="M 27 102 C 63 83 131 77 171 96"
+          {...lidPath("upperFold")}
           fill="none"
           stroke="rgba(184, 194, 179, 0.08)"
           strokeWidth={0.8}
           strokeLinecap="round"
         />
         <path
-          d="M 27 110 C 67 129 132 124 171 99"
+          {...lidPath("lowerFold")}
           fill="none"
           stroke="rgba(233, 223, 195, 0.15)"
           strokeWidth={0.8}
@@ -145,14 +156,13 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         />
       </g>
 
-      <g ref={refs.eyeInterior} clipPath="url(#eye-consent-aperture)">
+      <g data-eye-artwork clipPath="url(#eye-consent-aperture)">
         <path
-          d={EYE_LID_PATHS.apertureOpen}
+          d={EYE_LID_PATHS.aperture.open}
           fill="url(#eye-consent-aperture-shadow)"
           opacity={0.92}
         />
         <circle
-          ref={refs.iris}
           cx={CX}
           cy={CY}
           r={IRIS_R}
@@ -202,7 +212,6 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         />
 
         <circle
-          ref={refs.pupil}
           cx={CX}
           cy={CY}
           r={PUPIL_R}
@@ -211,7 +220,6 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
       </g>
 
       <circle
-        ref={refs.playRing}
         cx={CX}
         cy={CY}
         r={23}
@@ -221,7 +229,7 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         opacity={0}
       />
 
-      <g ref={refs.iconGroup} opacity={0}>
+      <g opacity={0}>
         <circle
           cx={CX}
           cy={CY}
@@ -231,14 +239,13 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
           strokeWidth={0.7}
         />
         <polygon
-          ref={refs.playIcon}
           points={`${CX - 5},${CY - 7} ${CX - 5},${CY + 7} ${CX + 8},${CY}`}
           fill="rgba(222, 225, 205, 0.64)"
           stroke="rgba(246, 239, 212, 0.2)"
           strokeWidth={0.45}
           opacity={0}
         />
-        <g ref={refs.pauseIcon} opacity={0}>
+        <g opacity={0}>
           <rect
             x={CX - 7}
             y={CY - 7}
@@ -253,8 +260,8 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
       </g>
 
       <path
-        ref={refs.upperLid}
-        d={EYE_LID_PATHS.upperClosed}
+        {...lidPath("upperLid")}
+        data-eye-artwork
         fill="none"
         stroke="url(#eye-consent-upper-lid)"
         strokeWidth={1.65}
@@ -262,15 +269,14 @@ export function EyeConsentSvg({ refs }: EyeConsentSvgProps) {
         opacity={0.92}
       />
       <path
-        ref={refs.lowerLid}
-        d={EYE_LID_PATHS.lowerClosed}
+        {...lidPath("lowerLid")}
+        data-eye-artwork
         fill="none"
         stroke="url(#eye-consent-lower-lid)"
         strokeWidth={1.2}
         strokeLinecap="round"
         opacity={0.88}
       />
-      </g>
     </svg>
   );
 }

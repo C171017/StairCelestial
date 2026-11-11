@@ -24,17 +24,7 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
   const clearBackdrop = theme === "cloud" ? "rgba(237, 243, 245, 0)" : "rgba(3, 5, 8, 0)";
   const overlayRef = useRef<HTMLDivElement>(null);
   const controlRef = useRef<HTMLDivElement>(null);
-  const eyeApertureRef = useRef<SVGPathElement>(null);
-  const eyeInteriorRef = useRef<SVGGElement>(null);
-  const upperLidRef = useRef<SVGPathElement>(null);
-  const lowerLidRef = useRef<SVGPathElement>(null);
-  const scleraExtrasRef = useRef<SVGGElement>(null);
-  const irisRef = useRef<SVGCircleElement>(null);
-  const pupilRef = useRef<SVGCircleElement>(null);
-  const playRingRef = useRef<SVGCircleElement>(null);
-  const playIconRef = useRef<SVGPolygonElement>(null);
-  const pauseIconRef = useRef<SVGGElement>(null);
-  const iconGroupRef = useRef<SVGGElement>(null);
+  const eyeSvgRef = useRef<SVGSVGElement>(null);
   const [reducedMotion] = useState(prefersReducedMotion);
   const introPlayPhase = usePortfolioStore((s) => s.introPlayPhase);
   const sceneBootstrapped = usePortfolioStore((s) => s.sceneBootstrapped);
@@ -70,12 +60,8 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
     if (loadingFailed) return;
     const overlay = overlayRef.current;
     const control = controlRef.current;
-    const aperture = eyeApertureRef.current;
-    const eyeInterior = eyeInteriorRef.current;
-    const upper = upperLidRef.current;
-    const lower = lowerLidRef.current;
-    const sclera = scleraExtrasRef.current;
-    if (!overlay || !control || !aperture || !eyeInterior || !upper || !lower || !sclera) return;
+    const eye = eyeSvgRef.current;
+    if (!overlay || !control || !eye) return;
 
     const store = usePortfolioStore.getState();
     // Strict Mode and Fast Refresh must preserve an already completed handoff.
@@ -87,8 +73,14 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
     }
 
     const t = AUDIO_CONSENT_TIMING;
-    const eyeArtwork = [upper, lower, sclera, eyeInterior];
+    const eyeArtwork = eye.querySelectorAll<SVGElement>("[data-eye-artwork]");
+    const lidDetails = eye.querySelector<SVGGElement>("[data-eye-lid-details]");
+    const lidPaths = Object.entries(EYE_LID_PATHS).map(([name, paths]) => ({
+      element: eye.querySelector<SVGPathElement>(`[data-eye-lid="${name}"]`),
+      paths,
+    }));
     const revealState = { stars: 0, shooting: 0 };
+    let eyeIsOpen = false;
     let openingTimeline: gsap.core.Timeline | null = null;
     let blinkTimeline: gsap.core.Timeline | null = null;
     let blinkTimer: ReturnType<typeof setTimeout> | null = null;
@@ -96,13 +88,25 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
     gsap.set(overlay, { backgroundColor: backdrop, opacity: 1 });
     overlay.style.pointerEvents = "auto";
     gsap.set(control, { opacity: 1, scale: 1, transformOrigin: "center center" });
-    gsap.set(aperture, { attr: { d: EYE_LID_PATHS.apertureClosed } });
-    gsap.set(upper, { attr: { d: EYE_LID_PATHS.upperClosed }, opacity: 1, y: 0 });
-    gsap.set(lower, { attr: { d: EYE_LID_PATHS.lowerClosed }, opacity: 1, y: 0 });
-    gsap.set(sclera, { opacity: 0 });
-    gsap.set(eyeInterior, { opacity: 1 });
+    for (const { element, paths } of lidPaths) {
+      gsap.set(element, { attr: { d: paths.closed } });
+    }
+    gsap.set(eyeArtwork, { opacity: 1 });
+    gsap.set(lidDetails, { opacity: 0 });
     store.setIntroReveal({ introMainOpacity: 0, introShootingStarIntensity: 0, introStarsOpacity: 0 });
 
+    const tweenLids = (
+      timeline: gsap.core.Timeline,
+      pose: "open" | "closed",
+      duration: number,
+      ease: string,
+      at: number,
+    ) => {
+      for (const { element, paths } of lidPaths) {
+        timeline.to(element, { attr: { d: paths[pose] }, duration, ease }, at);
+      }
+      timeline.to(lidDetails, { opacity: pose === "open" ? 1 : 0, duration, ease }, at);
+    };
     const revealBackground = () => {
       gsap.to(revealState, {
         stars: 1, shooting: 1,
@@ -137,20 +141,10 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
         return;
       }
       openingTimeline = gsap.timeline();
-      openingTimeline.to(aperture, {
-        attr: { d: EYE_LID_PATHS.apertureOpen }, duration: t.lidOpen, ease: "power2.inOut",
-      }, 0);
-      openingTimeline.to(upper, {
-        attr: { d: EYE_LID_PATHS.upperOpen }, duration: t.lidOpen, ease: "power2.inOut",
-      }, 0);
-      openingTimeline.to(lower, {
-        attr: { d: EYE_LID_PATHS.lowerOpen }, duration: t.lidOpen, ease: "power2.inOut",
-      }, 0);
-      openingTimeline.to(sclera, {
-        opacity: 1, duration: t.lidOpen * 0.6, ease: "power2.out",
-      }, t.lidOpen * 0.22);
-      openingTimeline.call(revealBackground, [], t.lidOpen);
-      const vanishStart = t.lidOpen + t.openEyeHold;
+      const openingDuration = eyeIsOpen ? 0 : t.lidOpen;
+      if (!eyeIsOpen) tweenLids(openingTimeline, "open", openingDuration, "power2.inOut", 0);
+      openingTimeline.call(revealBackground, [], openingDuration);
+      const vanishStart = openingDuration + t.openEyeHold;
       const dissolveDuration = theme === "cloud" ? CONTROL_EYE_DISSOLVE_SECONDS : t.eyeVanishAfterOpen;
       openingTimeline.to(eyeArtwork, {
         opacity: 0, duration: dissolveDuration, ease: "sine.inOut",
@@ -165,24 +159,15 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
     const blink = (initial: boolean) => {
       if (!readiness.beginBlink()) return;
       blinkTimeline = gsap.timeline({ onComplete: () => {
+        eyeIsOpen = true;
         readiness.finishBlink();
         if (!usePortfolioStore.getState().sceneBootstrapped) scheduleBlink();
       } });
       if (!initial) {
-        blinkTimeline.to(aperture, { attr: { d: EYE_LID_PATHS.apertureClosed }, duration: 0.11 }, 0);
-        blinkTimeline.to(upper, { attr: { d: EYE_LID_PATHS.upperClosed }, duration: 0.11 }, 0);
-        blinkTimeline.to(lower, { attr: { d: EYE_LID_PATHS.lowerClosed }, duration: 0.11 }, 0);
+        eyeIsOpen = false;
+        tweenLids(blinkTimeline, "closed", 0.11, "power1.out", 0);
       }
-      const reopenAt = initial ? 0 : 0.155;
-      blinkTimeline.to(aperture, {
-        attr: { d: EYE_LID_PATHS.apertureWaiting }, duration: 0.28, ease: "sine.inOut",
-      }, reopenAt);
-      blinkTimeline.to(upper, {
-        attr: { d: EYE_LID_PATHS.upperWaiting }, duration: 0.28, ease: "sine.inOut",
-      }, reopenAt);
-      blinkTimeline.to(lower, {
-        attr: { d: EYE_LID_PATHS.lowerWaiting }, duration: 0.28, ease: "sine.inOut",
-      }, reopenAt);
+      tweenLids(blinkTimeline, "open", 0.28, "sine.inOut", initial ? 0 : 0.155);
     };
     // Subscribe directly so scene readiness never tears down a loading blink.
     unsubscribe = usePortfolioStore.subscribe(state => readiness.setReady(state.sceneBootstrapped));
@@ -200,12 +185,6 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
   }, [backdrop, clearBackdrop, loadingFailed, reducedMotion, theme]);
 
   if (introPlayPhase === "active") return null;
-  const eyeRefs = {
-    eyeAperture: eyeApertureRef, eyeInterior: eyeInteriorRef,
-    upperLid: upperLidRef, lowerLid: lowerLidRef, scleraExtras: scleraExtrasRef,
-    iris: irisRef, pupil: pupilRef, playRing: playRingRef,
-    playIcon: playIconRef, pauseIcon: pauseIconRef, iconGroup: iconGroupRef,
-  };
   return (
     <div ref={overlayRef} className="fixed inset-0 z-50 grid h-dvh w-dvw place-items-center"
       data-eye-theme={theme} data-eye-loading={!sceneBootstrapped && !loadingFailed}
@@ -213,7 +192,7 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
       aria-modal={introPlayPhase === "hidden" && !loadingFailed} aria-busy={!sceneBootstrapped && !loadingFailed}>
       <div ref={controlRef} className={`${EYE_CONTROL_SIZE_CLASS} flex items-center justify-center pointer-events-none`}
         style={{ filter: theme === "cloud" ? "invert(1) hue-rotate(180deg) saturate(.35)" : undefined }} aria-hidden>
-        <EyeConsentSvg refs={eyeRefs} />
+        <EyeConsentSvg svgRef={eyeSvgRef} />
       </div>
       <span className="sr-only" role="status">{loadingFailed ? "The scene is taking longer to load. Retry or explore a project below." : introPlayPhase === "hidden" ? "Preparing the scene." : "The scene is ready. The central control enables sound."}</span>
     </div>

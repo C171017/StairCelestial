@@ -22,8 +22,8 @@ Preserve the complete authored presentation on capable devices. Remove unnecessa
 
 The eye communicates preparation; it is not an arbitrary delay or a simulated percentage bar.
 
-1. **Immediate eye:** show the lightweight eye as early as practical, independently of the 3D bundle. While essential content prepares, use restrained partial blinks. With reduced motion, use a calm static state.
-2. **Readiness-driven opening:** fully open once essential visible assets, the control, core sky, and shaders are usable. Do not wait for every optional enhancement, and do not add a mandatory extra blink cycle after readiness.
+1. **Immediate eye:** show the lightweight eye as early as practical, independently of the 3D bundle. While essential content prepares, blink from the same detailed open pose used for the handoff. With reduced motion, use a calm static state.
+2. **Readiness-driven handoff:** once essential visible assets, the control, core sky, and shaders are usable, let the current blink finish and begin the transition from the open eye. Do not wait for optional enhancements or another blink cycle.
 3. **Control handoff:** use the eye-to-central-control transition to prepare secondary effects without interrupting the handoff or changing the audio interaction.
 4. **Travel and background reveal:** use the central object's movement and gradual background appearance as further preparation time. Newly ready enhancements must blend into the existing scene without flashes, missing objects, replacement skies, or sudden lighting changes.
 5. **Usable scene:** allow normal interaction when the entrance finishes. Failures must provide readable project access and a recovery path rather than an indefinite animation.
