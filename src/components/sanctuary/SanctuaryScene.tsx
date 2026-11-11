@@ -29,6 +29,11 @@ import { AdaptiveQuality } from "./AdaptiveQuality";
 
 const FOCUS_POSITION = { x: 0, y: 2.3, z: 4.2 };
 const FOCUS_CAMERA = new THREE.Vector3(0, ORBIT_HEIGHT, ORBIT_RADIUS);
+const RIBBON_RADIUS = 5.7;
+const RIBBON_WIDTH = 2.25;
+// Tall viewports see further along the helix at the same foreground scale.
+const RIBBON_TURNS = 9;
+const FOCUS_SCALE = 1.7;
 
 const doorModelUrls = doorStudies.map(doorModelUrl);
 
@@ -76,16 +81,13 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
   const apertures = useMemo(() => doorModels.map(model => getDoorAperture(model.scene)), [doorModels]);
   const { size } = useThree();
   const compact = size.width < 650;
-  const radius = compact ? 2.6 : 5.7;
-  const width = compact ? 1.45 : 2.25;
-  const focusScale = compact ? 1.55 : 1.7;
   const focusObstacle = useMemo(() => {
-    const sections = createRibbonSections(radius, width);
+    const sections = createRibbonSections(RIBBON_RADIUS, RIBBON_WIDTH, RIBBON_TURNS);
     const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
     // Section bounds prune sightline tests without scanning the whole helix.
     const group = new THREE.Group().add(...sections.map(section => new THREE.Mesh(section, material)));
     return { group, sections, material };
-  }, [radius, width]);
+  }, []);
   useEffect(() => () => {
     focusObstacle.sections.forEach(section => section.dispose()); focusObstacle.material.dispose();
   }, [focusObstacle]);
@@ -107,21 +109,21 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
     update(); query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
-  const slots = useMemo(() => Array.from({ length: FLOATING_DOOR_COUNT }, (_, i) => i - 6), []);
+  const slots = useMemo(() => Array.from({ length: FLOATING_DOOR_COUNT }, (_, i) => i - 9), []);
   const doors = useMemo(() => slots.map(slot => {
     const occurrence = slot + cycle * 3;
     const placement = doorPlacement(occurrence, arrangementSeed);
     const studyIndex = doorShapeIndex(occurrence, doorStudies.length, arrangementSeed);
-    const support = floatDoorSupport(fitDoorSupport({ ...placement, turn: placement.turn - cycle }, bases[studyIndex], radius, width, compact));
+    const support = floatDoorSupport(fitDoorSupport({ ...placement, turn: placement.turn - cycle }, bases[studyIndex], RIBBON_RADIUS, RIBBON_WIDTH, false));
     const presentationSamples = doorPresentationSamples(support, apertures[studyIndex]);
     return { slot, occurrence, placement, studyIndex, support, presentationSamples };
-  }), [slots, cycle, arrangementSeed, bases, apertures, radius, width, compact]);
+  }), [slots, cycle, arrangementSeed, bases, apertures]);
   const selectedOccurrence = selection?.occurrence;
   const selectedDoor = doors.find(door => door.occurrence === selectedOccurrence);
   const focusSide = useMemo(() => selectedDoor ? chooseRibbonFocusSide(
     focusObstacle.group, selectedDoor.support, apertures[selectedDoor.studyIndex],
-    { focusScale, focusPosition: FOCUS_POSITION, cameraPosition: FOCUS_CAMERA },
-  ).side : 1, [selectedDoor, focusObstacle, apertures, focusScale]);
+    { focusScale: FOCUS_SCALE, focusPosition: FOCUS_POSITION, cameraPosition: FOCUS_CAMERA },
+  ).side : 1, [selectedDoor, focusObstacle, apertures]);
   useFrame((_, delta) => {
     if (!transform.current || !scrollGroup.current) return;
     const position = motion.current.position;
@@ -134,7 +136,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
       anchor.y += 1.45 * selectedDoor.support.scale;
     }
     advanceRibbonFocus(focus.current, selectedDoor ? anchor : null, delta, {
-      focusScale, reducedMotion: reduced.current,
+      focusScale: FOCUS_SCALE, reducedMotion: reduced.current,
       // Frame the selected door; the audio control follows the transformed spiral axis.
       focusPosition: FOCUS_POSITION,
       doorYaw: (selectedDoor?.support.yaw ?? 0) + (focusSide === -1 ? Math.PI : 0),
@@ -147,7 +149,7 @@ function RibbonWorld({ active, selection, onSelect, motion, orbit, ribbonFrame }
     transform.current.quaternion.premultiply(viewRotation.setFromAxisAngle(up, focus.current.viewYaw));
   }, -0.5);
   return <group ref={transform}><group ref={scrollGroup} position={[0, -(motion.current.position - cycle) * RIBBON_PITCH, 0]}>
-    <PorcelainRibbon radius={radius} width={width} cycle={cycle} />
+    <PorcelainRibbon sections={focusObstacle.sections} cycle={cycle} />
     {doors.map(({ occurrence, placement, studyIndex, support, presentationSamples }) => {
       const index = projectIndexForDoor(doorStudies[studyIndex].id);
       const selected = selection?.occurrence === occurrence;

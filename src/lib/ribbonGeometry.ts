@@ -9,8 +9,8 @@ export function ribbonPoint(turn: number, radius: number, target = new THREE.Vec
 }
 
 /** A closed, rounded cross-section swept along a continuous helix. */
-export function createRibbonGeometry(radius: number, width: number) {
-  const segments = 1152;
+export function createRibbonGeometry(radius: number, width: number, turns = 6) {
+  const segments = turns * 192;
   const cross: [number, number][] = [];
   const halfWidth = width / 2;
   const halfHeight = 0.105;
@@ -28,7 +28,7 @@ export function createRibbonGeometry(radius: number, width: number) {
   const indices: number[] = [];
   const uv: number[] = [];
   for (let i = 0; i <= segments; i++) {
-    const turn = -3 + (i / segments) * 6;
+    const turn = (i / segments - 0.5) * turns;
     const a = turn * Math.PI * 2 + RIBBON_PHASE;
     const center = ribbonPoint(turn, radius);
     for (const [x, y] of cross) {
@@ -54,12 +54,12 @@ export function createRibbonGeometry(radius: number, width: number) {
 }
 
 /** Local bounds let glass sort by the visible arc instead of the whole helix. */
-export function createRibbonSections(radius: number, width: number) {
-  const source = createRibbonGeometry(radius, width);
+export function createRibbonSections(radius: number, width: number, turns = 6) {
+  const source = createRibbonGeometry(radius, width, turns);
   const ringsPerSection = 16;
   const verticesPerRing = 20;
   const indicesPerSection = ringsPerSection * verticesPerRing * 6;
-  const sections = Array.from({ length: 72 }, (_, index) => {
+  const sections = Array.from({ length: source.getIndex()!.count / indicesPerSection }, (_, index) => {
     const geometry = new THREE.BufferGeometry();
     const firstVertex = index * ringsPerSection * verticesPerRing;
     const endVertex = firstVertex + (ringsPerSection + 1) * verticesPerRing;

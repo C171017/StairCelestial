@@ -1,9 +1,5 @@
 import { Matrix4, Vector3 } from "three";
 
-export function getCloudControlFinalScale(viewportWidth: number) {
-  return (viewportWidth < 650 ? 8.1 : 17.5) * 0.7;
-}
-
 /** Intersect the spiral's transformed local Y axis with camera-height world Y.
  * Translation, tilt, orbit, focus scale and scrolling all use the same rule. */
 export function spiralControlAnchor(

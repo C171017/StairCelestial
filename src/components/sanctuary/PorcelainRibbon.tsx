@@ -2,16 +2,15 @@
 
 import { useEffect, useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
-import { createRibbonSections, RIBBON_PITCH } from "@/lib/ribbonGeometry";
+import { RIBBON_PITCH } from "@/lib/ribbonGeometry";
 import { applyMineralFinish, applyFinishEnvironment } from "@/lib/mineralFinish";
 import { useStoneTextures } from "./useStoneTextures";
 
 /** Softly polished white marble with mineral detail beneath a quiet reflection. */
-export function PorcelainRibbon({ radius, width, cycle = 0 }: { radius: number; width: number; cycle?: number }) {
+export function PorcelainRibbon({ sections, cycle }: { sections: THREE.BufferGeometry[]; cycle: number }) {
   const textures = useStoneTextures();
   const stoneOffset = useMemo(() => new THREE.Vector3(), []);
   useLayoutEffect(() => { stoneOffset.y = cycle * RIBBON_PITCH; }, [cycle, stoneOffset]);
-  const sections = useMemo(() => createRibbonSections(radius, width), [radius, width]);
   const material = useMemo(() => {
     const finish = new THREE.MeshPhysicalMaterial({
       name: "SoftPolishedWhiteMarbleRibbon", color: "#eeeee9",
@@ -35,7 +34,6 @@ export function PorcelainRibbon({ radius, width, cycle = 0 }: { radius: number; 
     result.customProgramCacheKey = () => "porcelain-ribbon-shadow-coverage";
     return { material: result, coverage };
   }, []);
-  useEffect(() => () => sections.forEach(section => section.dispose()), [sections]);
   useEffect(() => () => { material.dispose(); depth.material.dispose(); }, [material, depth]);
   return <group name="porcelain-ribbon">{sections.map((geometry, index) =>
     <mesh key={index} geometry={geometry} material={material} castShadow receiveShadow

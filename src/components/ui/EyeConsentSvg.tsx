@@ -12,36 +12,38 @@ const IRIS_R = 29;
 const PUPIL_R = 12;
 const IRIS_RAY_COUNT = 40;
 
-const closedAperture = "M 12 103 C 48 99 143 96 190 96 C 145 104 51 107 12 103 Z";
-const closedUpperLid = "M 12 103 C 48 99 143 96 190 96";
-const closedLowerLid = "M 12 103 C 51 107 145 104 190 96";
+// The lids meet below the iris center: the upper lid travels much farther.
+// Matching curves fully seal the aperture without pinching the eye's corners.
+const closedAperture = "M 11 103 C 57 125 158 118 190 94 C 158 118 57 125 11 103 Z";
+const closedUpperLid = "M 11 103 C 57 125 158 118 190 94";
+const closedLowerLid = closedUpperLid;
 
 // Each pair has matching SVG commands so the details morph with the aperture.
 export const EYE_LID_PATHS = {
   aperture: {
     closed: closedAperture,
-    open: "M 11 103 C 43 55 127 31 190 94 C 158 145 57 157 11 103 Z",
+    open: "M 11 103 C 43 66 127 48 190 94 C 158 131 57 140 11 103 Z",
   },
-  upperLid: { closed: closedUpperLid, open: "M 11 103 C 43 55 127 31 190 94" },
-  lowerLid: { closed: closedLowerLid, open: "M 11 103 C 57 157 158 145 190 94" },
+  upperLid: { closed: closedUpperLid, open: "M 11 103 C 43 66 127 48 190 94" },
+  lowerLid: { closed: closedLowerLid, open: "M 11 103 C 57 140 158 131 190 94" },
   lidFill: {
     closed: closedAperture,
-    open: "M 10 103 C 44 53 128 31 191 94 C 156 121 58 130 10 103 Z",
+    open: "M 11 103 C 43 66 127 48 190 94 C 156 115 58 122 11 103 Z",
   },
   lidShadow: {
     closed: closedAperture,
-    open: "M 9 103 C 42 70 133 55 191 94 C 156 151 54 162 9 103 Z",
+    open: "M 11 103 C 42 77 133 66 190 94 C 156 135 54 143 11 103 Z",
   },
-  upperHighlight: { closed: closedUpperLid, open: "M 12 101 C 43 58 127 31 189 93" },
-  upperContour: { closed: closedUpperLid, open: "M 13 101 C 44 56 127 32 188 93" },
-  lowerContour: { closed: closedLowerLid, open: "M 13 104 C 58 153 157 144 189 94" },
+  upperHighlight: { closed: closedUpperLid, open: "M 11 103 C 43 68 127 48 190 94" },
+  upperContour: { closed: closedUpperLid, open: "M 11 103 C 44 67 127 49 190 94" },
+  lowerContour: { closed: closedLowerLid, open: "M 11 103 C 58 138 157 130 190 94" },
   upperFold: {
-    closed: "M 27 102 C 63 101 131 98 171 97",
-    open: "M 27 102 C 63 83 131 77 171 96",
+    closed: "M 27 105 C 63 115 131 113 171 100",
+    open: "M 27 102 C 63 87 131 83 171 96",
   },
   lowerFold: {
-    closed: "M 27 105 C 67 105 132 102 171 99",
-    open: "M 27 110 C 67 129 132 124 171 99",
+    closed: "M 27 109 C 67 123 132 118 171 103",
+    open: "M 27 108 C 67 123 132 119 171 99",
   },
 };
 

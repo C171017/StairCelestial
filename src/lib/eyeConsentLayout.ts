@@ -7,7 +7,7 @@ export const EYE_CONTROL_VIEWPORT_FRACTION = 0.9;
 export const EYE_CONTROL_MARGIN_PX = 32;
 
 /**
- * Runtime code sets --eye-control-side from window.visualViewport. The fallback
+ * Runtime code sets --eye-control-side from the artwork viewport. The fallback
  * keeps the control correctly sized before the first layout effect runs.
  */
 export const EYE_CONTROL_SIZE_CLASS =

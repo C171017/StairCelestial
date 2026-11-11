@@ -12,6 +12,11 @@ export function syncRibbonOrbit(motion: RibbonMotionSnapshot, orbit: RibbonMotio
 export const ORBIT_RADIUS = 24;
 export const ORBIT_HEIGHT = 5.2;
 
+/** Frame the whole sculpture collection against the shorter viewport side. */
+export function getRibbonCameraZoom(viewportWidth: number, viewportHeight: number, canvasHeight: number) {
+  return Math.min(viewportWidth, viewportHeight) / canvasHeight;
+}
+
 /** Wrap only the trigonometric input, never the accumulated navigation state. */
 export function ribbonOrbitAngle(turns: number) {
   return -(turns % 1) * Math.PI * 2;

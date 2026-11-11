@@ -4,7 +4,7 @@
 import gsap from "gsap";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
-import { getDynamicViewportSize, getEyeControlSidePx } from "@/lib/eyeControlMetrics";
+import { getArtworkViewportSize, getEyeControlSidePx } from "@/lib/eyeControlMetrics";
 import { CONTROL_EYE_DISSOLVE_SECONDS } from "@/lib/controlEntrance";
 import { EYE_CONTROL_SIZE_CLASS } from "@/lib/eyeConsentLayout";
 import { createIntroEyeReadiness } from "@/lib/introEyeReadiness";
@@ -33,14 +33,18 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
     const root = document.documentElement;
     const viewport = window.visualViewport;
     const syncControlSide = () => {
-      const { width, height } = getDynamicViewportSize(window.innerWidth, window.innerHeight);
+      const { width, height } = getArtworkViewportSize(window.innerWidth, window.innerHeight);
       root.style.setProperty("--eye-control-side", `${getEyeControlSidePx(width, height)}px`);
     };
     syncControlSide();
+    const surface = document.getElementById("portfolio-scroll-surface");
+    const observer = new ResizeObserver(syncControlSide);
+    if (surface) observer.observe(surface);
     window.addEventListener("resize", syncControlSide);
     viewport?.addEventListener("resize", syncControlSide);
     viewport?.addEventListener("scroll", syncControlSide);
     return () => {
+      observer.disconnect();
       window.removeEventListener("resize", syncControlSide);
       viewport?.removeEventListener("resize", syncControlSide);
       viewport?.removeEventListener("scroll", syncControlSide);
@@ -97,15 +101,17 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
 
     const tweenLids = (
       timeline: gsap.core.Timeline,
-      pose: "open" | "closed",
+      openness: number,
       duration: number,
       ease: string,
       at: number,
     ) => {
       for (const { element, paths } of lidPaths) {
-        timeline.to(element, { attr: { d: paths[pose] }, duration, ease }, at);
+        const d = gsap.utils.interpolate(paths.closed, paths.open, openness);
+        timeline.to(element, { attr: { d }, duration, ease }, at);
       }
-      timeline.to(lidDetails, { opacity: pose === "open" ? 1 : 0, duration, ease }, at);
+      // Keep the lid seam visible at contact instead of dissolving the whole eye.
+      timeline.to(lidDetails, { opacity: 1, duration, ease }, at);
     };
     const revealBackground = () => {
       gsap.to(revealState, {
@@ -142,7 +148,7 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
       }
       openingTimeline = gsap.timeline();
       const openingDuration = eyeIsOpen ? 0 : t.lidOpen;
-      if (!eyeIsOpen) tweenLids(openingTimeline, "open", openingDuration, "power2.inOut", 0);
+      if (!eyeIsOpen) tweenLids(openingTimeline, 1, openingDuration, "power2.inOut", 0);
       openingTimeline.call(revealBackground, [], openingDuration);
       const vanishStart = openingDuration + t.openEyeHold;
       const dissolveDuration = theme === "cloud" ? CONTROL_EYE_DISSOLVE_SECONDS : t.eyeVanishAfterOpen;
@@ -153,8 +159,13 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
       openingTimeline.set(control, { opacity: 0 }, vanishStart + dissolveDuration);
     };
     const readiness = createIntroEyeReadiness(open);
+    let lastBlinkWasFollowup = false;
     const scheduleBlink = () => {
-      blinkTimer = setTimeout(() => blink(false), 1100);
+      // Irregular rests, with an occasional quick second blink (never a chain).
+      const followup = !lastBlinkWasFollowup && Math.random() < 0.16;
+      lastBlinkWasFollowup = followup;
+      const pause = followup ? gsap.utils.random(180, 310) : gsap.utils.random(1800, 4100);
+      blinkTimer = setTimeout(() => blink(false), pause);
     };
     const blink = (initial: boolean) => {
       if (!readiness.beginBlink()) return;
@@ -163,11 +174,17 @@ export function AudioConsentGate({ theme = "original", loadingFailed = false }: 
         readiness.finishBlink();
         if (!usePortfolioStore.getState().sceneBootstrapped) scheduleBlink();
       } });
+      const closeDuration = gsap.utils.random(0.085, 0.12);
+      const contactHold = gsap.utils.random(0.018, 0.035);
+      const reopenStart = initial ? 0 : closeDuration + contactHold;
+      const reopenDuration = initial ? 0.3 : gsap.utils.random(0.17, 0.23);
       if (!initial) {
         eyeIsOpen = false;
-        tweenLids(blinkTimeline, "closed", 0.11, "power1.out", 0);
+        tweenLids(blinkTimeline, 0, closeDuration, "power2.inOut", 0);
       }
-      tweenLids(blinkTimeline, "open", 0.28, "sine.inOut", initial ? 0 : 0.155);
+      // Release briskly, then let the lid gently settle into its resting shape.
+      tweenLids(blinkTimeline, 0.96, reopenDuration, "power2.out", reopenStart);
+      tweenLids(blinkTimeline, 1, gsap.utils.random(0.12, 0.18), "sine.out", reopenStart + reopenDuration);
     };
     // Subscribe directly so scene readiness never tears down a loading blink.
     unsubscribe = usePortfolioStore.subscribe(state => readiness.setReady(state.sceneBootstrapped));

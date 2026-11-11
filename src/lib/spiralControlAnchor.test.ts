@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as THREE from "three";
-import { spiralControlAnchor, getCloudControlFinalScale } from "./spiralControlAnchor";
+import { spiralControlAnchor } from "./spiralControlAnchor";
 import { createRibbonFocus, advanceRibbonFocus } from "./ribbonFocus";
-import { ribbonOrbitPosition } from "./ribbonOrbit";
+import { getRibbonCameraZoom, ribbonOrbitPosition } from "./ribbonOrbit";
 
 test("the control stays on the transformed spiral axis at camera height throughout focus and return", () => {
   const point = new THREE.Vector3();
@@ -61,7 +61,29 @@ test("a focused spiral moves the control off the viewport center naturally", () 
   assert.equal(control.z, 3);
 });
 
-test("final control size is reduced by 30 percent at both responsive sizes", () => {
-  assert.equal(getCloudControlFinalScale(390), 8.1 * 0.7);
-  assert.equal(getCloudControlFinalScale(1280), 17.5 * 0.7);
+test("the ribbon camera preserves projected proportions across live resize and rotation", () => {
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 650);
+  camera.position.copy(ribbonOrbitPosition(0));
+  camera.lookAt(0, 0, 0);
+  camera.updateMatrixWorld();
+  const points = [new THREE.Vector3(0.8, 2.8, 0), new THREE.Vector3(5.7, 0, 0)];
+  const projectedWidth = (point: THREE.Vector3) => point.clone().project(camera).x;
+  const sizes = [
+    [1440, 900, 0], [2560, 1080, 0], [1920, 1080, 0],
+    [649, 900, 0], [650, 900, 0], [767, 900, 0], [768, 900, 0],
+    [744, 1133, 200], [1133, 744, 200], [1024, 1366, 200], [1366, 1024, 200],
+    [390, 844, 200], [844, 390, 200], [320, 568, 200], [900, 250, 0],
+  ];
+  const reference = points.map(projectedWidth);
+  for (const [width, height, overdraw] of sizes) {
+    const canvasHeight = height + overdraw;
+    camera.aspect = width / canvasHeight;
+    camera.zoom = getRibbonCameraZoom(width, height, canvasHeight);
+    camera.updateProjectionMatrix();
+    const shortSide = Math.min(width, height);
+    points.forEach((point, index) => {
+      const fraction = projectedWidth(point) * width / shortSide;
+      assert.ok(Math.abs(fraction - reference[index]) < 1e-10, `${width}x${height}`);
+    });
+  }
 });

@@ -8,7 +8,7 @@ import { useSiteAudio } from "@/hooks/useSiteAudio";
 import type { RibbonMotionSnapshot } from "@/lib/ribbonMotion";
 import { AUDIO_CONSENT_TIMING } from "@/lib/audioConsentTiming";
 import {
-  getDynamicViewportSize,
+  getArtworkViewportSize,
   getPlayControlMobileSizeScale,
   getPlayCubeEdgeLength,
   getPlayDockScale,
@@ -34,7 +34,7 @@ import {
 import { CloudPlayShape } from "./CloudPlayShape";
 import type { SanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
 import { CONTROL_ENTRANCE_SECONDS, CONTROL_SHAPE_FORMED_SECONDS, sampleControlEntrance } from "@/lib/controlEntrance";
-import { getCloudControlFinalScale, spiralControlAnchor } from "@/lib/spiralControlAnchor";
+import { spiralControlAnchor } from "@/lib/spiralControlAnchor";
 import { getViewportAnchorPosition } from "@/lib/viewportAnchor";
 
 function prefersReducedMotion(): boolean {
@@ -50,6 +50,7 @@ const _faceAc = new THREE.Vector3();
 const _faceNormal = new THREE.Vector3();
 const _faceTarget = new THREE.Vector3(0, 0, -1);
 const PLAY_FACE_ICON_ROTATION = -Math.PI / 2 + 0.22;
+const CLOUD_CONTROL_FINAL_SCALE = 12.25;
 
 /**
  * Rotate geometry so one equilateral face lies in XY (normal -Z).
@@ -318,8 +319,9 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, a
   );
 
   const syncScaleFromViewport = useCallback(() => {
+    if (!size.width || !size.height) return;
     const cam = camera as THREE.PerspectiveCamera;
-    const controlViewport = getDynamicViewportSize(size.width, size.height);
+    const controlViewport = getArtworkViewportSize(size.width, size.height);
     introScaleRef.current = getPlayIntroScale(
       cam,
       PLAY_INTRO_VIEW_DISTANCE,
@@ -328,39 +330,33 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, a
       controlViewport.width,
       controlViewport.height,
     );
-    dockScaleRef.current = getPlayDockScale(
-      cam,
-      PLAY_DOCK_VIEW_DISTANCE,
-      size.width,
-      size.height,
-      controlViewport.width,
-      controlViewport.height,
-    );
-    // The cloud control lives on the ribbon's axis, with a physical world size.
-    // Its mobile mesh already has the shared 2x size multiplier.
-    // On narrow screens leave a clear pocket between the sculpture, the leaf
-    // portal and the returning ribbon. The entrance and desktop scale stay
-    // unchanged; only the settled mobile sculpture is slightly smaller.
-    if (cloud) dockScaleRef.current = getCloudControlFinalScale(size.width) * (size.width < 650 ? 0.88 : 1);
-    mobileShapeScaleRef.current = getPlayControlMobileSizeScale(
-      controlViewport.width,
-      controlViewport.height,
-    );
-    applyMobileShapeScale();
+    if (!cloud) {
+      dockScaleRef.current = getPlayDockScale(
+        cam,
+        PLAY_DOCK_VIEW_DISTANCE,
+        size.width,
+        size.height,
+        controlViewport.width,
+        controlViewport.height,
+      );
+      mobileShapeScaleRef.current = getPlayControlMobileSizeScale(
+        controlViewport.width,
+        controlViewport.height,
+      );
+      applyMobileShapeScale();
+    }
     const phase = usePortfolioStore.getState().introPlayPhase;
     if (phase === "hidden" || phase === "awaitClick") {
       flyPoseRef.current.scale = introScaleRef.current;
-    } else if (cloud && phase === "active") {
-      flyPoseRef.current.scale = dockScaleRef.current;
     }
   }, [applyMobileShapeScale, camera, cloud, size.height, size.width]);
 
   useLayoutEffect(() => {
     syncScaleFromViewport();
-  }, [syncScaleFromViewport, introPlayPhase, size.width, size.height]);
+  }, [syncScaleFromViewport, introPlayPhase]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (cloud) return;
 
     const viewport = window.visualViewport;
     const handleViewportChange = () => {
@@ -376,7 +372,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, a
       viewport?.removeEventListener("resize", handleViewportChange);
       viewport?.removeEventListener("scroll", handleViewportChange);
     };
-  }, [syncScaleFromViewport]);
+  }, [cloud, syncScaleFromViewport]);
 
   const runFlyTween = useCallback((duration: number) => {
     const pose = flyPoseRef.current;
@@ -534,7 +530,10 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, a
         ? Math.max(0, (performance.now() - awaitStartMsRef.current) / 1000) : 0;
       const entrance = sampleControlEntrance(elapsed, reducedMotionRef.current);
       entranceRef.current = entrance;
-      pose.scale = THREE.MathUtils.lerp(introScaleRef.current, dockScaleRef.current, entrance.travel);
+      // The intro matches the SVG after camera zoom. The settled control shares
+      // the ribbon and portals' world scale and responsive projection.
+      const introScale = introScaleRef.current / (camera as THREE.PerspectiveCamera).zoom;
+      pose.scale = THREE.MathUtils.lerp(introScale, CLOUD_CONTROL_FINAL_SCALE, entrance.travel);
       pose.billboard = 1 - entrance.travel;
 
     }
@@ -551,8 +550,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, a
     if (cloud) {
       const frame = ribbonFrame?.current;
       frame?.updateWorldMatrix(true, false);
-      const compactClearance = size.width < 650 ? 0.65 : 0;
-      spiralControlAnchor(frame?.matrixWorld, (anchorHeight ?? camera.position.y) - compactClearance, axisAnchor);
+      spiralControlAnchor(frame?.matrixWorld, anchorHeight ?? camera.position.y, axisAnchor);
       worldPos.lerp(axisAnchor, 1 - pose.billboard);
     }
     group.position.copy(worldPos);
@@ -626,8 +624,7 @@ export function PlayControl3D({ theme = "original", ribbonMotion, ribbonFrame, a
 
         {cloud &&
           <CloudPlayShape playing={soundEnabled} active={introPlayPhase === "active"}
-            entrance={entranceRef} ribbonMotion={ribbonMotion} atmosphere={atmosphere}
-            scale={getPlayControlMobileSizeScale(size.width, size.height)} />
+            entrance={entranceRef} ribbonMotion={ribbonMotion} atmosphere={atmosphere} />
         }
         <group visible={!cloud}>
         <mesh

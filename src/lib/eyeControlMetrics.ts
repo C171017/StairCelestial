@@ -48,16 +48,16 @@ export function getPlayCubeEdgeLength(): number {
   return svgRadiusToLocal(EYE_INNER_RING_RADIUS_PX * 0.92);
 }
 
-export function getDynamicViewportSize(
+export function getArtworkViewportSize(
   fallbackWidth: number,
   fallbackHeight: number,
 ): { width: number; height: number } {
-  // The mobile artwork has a stable, oversized viewport behind the browser
-  // bars. Size both the SVG and its 3D handoff against that same surface, not
-  // visualViewport, which changes with the bars (and while pinch-zooming).
-  if (typeof document !== "undefined" && document.documentElement.classList.contains("native-ribbon-scroll")) {
-    const surface = document.getElementById("portfolio-scroll-surface");
-    if (surface) return { width: surface.clientWidth, height: surface.clientHeight };
+  // Use the artwork's layout viewport for the eye and its 3D handoff.
+  // The extra canvas painted behind mobile browser chrome is outside that viewport.
+  const surface = typeof document === "undefined" ? null : document.getElementById("portfolio-scroll-surface");
+  if (surface) {
+    const overdraw = parseFloat(getComputedStyle(surface).getPropertyValue("--ribbon-overdraw")) || 0;
+    return { width: surface.clientWidth, height: surface.clientHeight - 2 * overdraw };
   }
   if (typeof window === "undefined" || !window.visualViewport) {
     return { width: fallbackWidth, height: fallbackHeight };
@@ -109,7 +109,7 @@ export function getPlayIntroScale(
   return worldRadiusNeeded / PLAY_IRIS_LOCAL_RADIUS;
 }
 
-/** Shorter viewport side below this → play tetrahedron / cube render at 2× local scale. */
+/** The original stairway uses a larger icon on compact viewports. */
 export const PLAY_CONTROL_MOBILE_MIN_SIDE_PX = 768;
 export const PLAY_CONTROL_MOBILE_SIZE_SCALE = 2;
 

@@ -241,3 +241,9 @@ The owner chose B2 floating portals and prioritized visual quality over performa
 Accepted user scroll travel drives a reversible eight-turn atmospheric cycle through daylight, sunset, night, and daylight again. Sky, cloud colors, lights, reflections, and shadows follow one clock. Idle cruise does not advance time of day. Compact layouts fade obstructed portals fully out to preserve clear hovering silhouettes. Existing project reveal, selection, and return interactions remain.
 
 Validation: 108 tests, ESLint, TypeScript, and production export pass. Desktop and compact browser checks covered entry, project focus/return, three lighting states, and genuine scroll reversal. Independent Astra High rates actual final desktop views 7.5 daylight, 7.8 sunset, and 6.8 night; material separation at night remains the principal aesthetic limitation. Full details and screenshots: [PORCELAIN-IMPLEMENTATION.md](PORCELAIN-IMPLEMENTATION.md). No deployment or physical-device performance claim.
+
+## Responsive Sanctuary framing and loading blink — November 11, 2026
+
+The camera now frames the same ribbon, portals, and audio sculpture in proportion to the shorter side of the artwork viewport. The longer helix and larger portal pool fill tall screens, and the loading eye and 3D iris use the same artwork dimensions. The eye now closes along a visible lid seam and reopens with a quicker release and a softer settle.
+
+Automated validation: tests, lint, and production export passed. The camera projection test covers narrow, wide, and rotated viewports, including the extra canvas area behind mobile browser controls. In a desktop browser, the static export reached the ready state and rendered the ribbon and portals after entry without browser errors.

@@ -10,11 +10,11 @@ import { createPlayShapeGeometry } from "@/lib/playShapeGeometry";
 import type { SanctuaryAtmosphere } from "@/lib/sanctuaryAtmosphere";
 import { createIntroIrisGeometry } from "@/lib/introIrisGeometry";
 import { createIntroIrisMaterial } from "@/lib/introIrisMaterial";
+import { PLAY_IRIS_LOCAL_RADIUS } from "@/lib/eyeControlMetrics";
 
 
-export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance, atmosphere }: {
+export function CloudPlayShape({ playing, active, ribbonMotion, entrance, atmosphere }: {
   playing: boolean;
-  scale: number;
   active: boolean;
   ribbonMotion?: RefObject<RibbonMotionSnapshot>;
   entrance: RefObject<ControlEntrance>;
@@ -54,12 +54,7 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance,
   }), []);
   const spinAxis = useMemo(() => new THREE.Vector3(0.25, 1, 0.12).normalize(), []);
   const shape = useMemo(createPlayShapeGeometry, []);
-  const iris = useMemo(() => {
-    const target = createPlayShapeGeometry();
-    const geometry = createIntroIrisGeometry(target.geometry, 0.29 / scale);
-    target.geometry.dispose();
-    return geometry;
-  }, [scale]);
+  const iris = useMemo(() => createIntroIrisGeometry(shape.geometry, PLAY_IRIS_LOCAL_RADIUS), [shape]);
   const progress = useRef(0);
   const reducedMotion = useRef(false);
   useEffect(() => {
@@ -92,7 +87,6 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance,
       spinAngle.current += Math.min(dt, 0.05) * driftSpeed.current;
     }
     if (spinGroup.current) {
-      spinGroup.current.scale.setScalar(scale);
       const idleSway = Math.sin(spinAngle.current) * 0.26;
       spinGroup.current.quaternion.setFromAxisAngle(spinAxis, reducedMotion.current ? 0 : entrance.current.turn + idleSway);
     }
@@ -113,7 +107,7 @@ export function CloudPlayShape({ playing, scale, active, ribbonMotion, entrance,
     progress.current = Math.abs(target - next) < 0.001 ? target : next;
     shape.update(progress.current);
   });
-  return <group ref={spinGroup} scale={scale}>
+  return <group ref={spinGroup}>
     <mesh ref={introMesh} args={[iris]} material={intro.material} />
     <mesh ref={bodyMesh} geometry={shape.geometry} material={bodyMaterial} visible={false} />
   </group>;

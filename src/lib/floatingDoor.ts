@@ -26,7 +26,7 @@ export function floatDoorSupport(support: DoorSupport): DoorSupport {
 }
 
 /** Shared visual bounds for the finite portal pool. */
-export const FLOATING_DOOR_COUNT = 15;
+export const FLOATING_DOOR_COUNT = 21;
 
 export function readReviewSeed() {
   if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
