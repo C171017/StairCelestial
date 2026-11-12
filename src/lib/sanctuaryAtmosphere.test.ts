@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { advanceSanctuaryAtmosphere, atmosphereTravelFromRibbon, ATMOSPHERE_CYCLE_TURNS, createSanctuaryAtmosphere, sampleSanctuaryAtmosphere } from "./sanctuaryAtmosphere";
-import { addRibbonInput, advanceRibbonMotion, createRibbonMotion } from "./ribbonMotion";
+import { addRibbonInput, advanceRibbonMotion, createRibbonMotion, RIBBON_TURN_PIXELS } from "./ribbonMotion";
 import { RIBBON_PITCH } from "./ribbonGeometry";
 
 const sample = (travel: number) => sampleSanctuaryAtmosphere(travel, createSanctuaryAtmosphere());
@@ -17,14 +17,14 @@ test("lowering the stairs advances white, pink, night, gold, white; raising them
   assert.equal(sample(atmosphereTravelFromRibbon(motion.userPosition)).daylight, 1);
   for (const key of ["sunset", "night", "dawn", "daylight"] as const) {
     const previousY = -motion.position * RIBBON_PITCH;
-    for (let gesture = 0; gesture < 9; gesture++) scroll(-900);
-    assert.ok(scroll(-900)[key] > 0.999999, `downward structures should reach ${key}`);
+    for (let gesture = 0; gesture < 9; gesture++) scroll(-RIBBON_TURN_PIXELS / 2);
+    assert.ok(scroll(-RIBBON_TURN_PIXELS / 2)[key] > 0.999999, `downward structures should reach ${key}`);
     assert.ok(-motion.position * RIBBON_PITCH < previousY, "stairs and doors moved downward");
   }
   for (const key of ["dawn", "night", "sunset", "daylight"] as const) {
     const previousY = -motion.position * RIBBON_PITCH;
-    for (let gesture = 0; gesture < 9; gesture++) scroll(900);
-    assert.ok(scroll(900)[key] > 0.999999, `upward structures should return to ${key}`);
+    for (let gesture = 0; gesture < 9; gesture++) scroll(RIBBON_TURN_PIXELS / 2);
+    assert.ok(scroll(RIBBON_TURN_PIXELS / 2)[key] > 0.999999, `upward structures should return to ${key}`);
     assert.ok(-motion.position * RIBBON_PITCH > previousY, "stairs and doors moved upward");
   }
 });
@@ -151,7 +151,7 @@ test("idle cruise never advances the atmosphere; explicit input survives while g
   assert.equal(motion.userPosition, 0);
   addRibbonInput(motion, -720);
   for (let frame = 0; frame < 1200; frame++) advanceRibbonMotion(motion, 1 / 120);
-  assert.ok(Math.abs(motion.userPosition - 0.4) < 1e-5);
+  assert.ok(Math.abs(motion.userPosition - 720 / RIBBON_TURN_PIXELS) < 1e-5);
   addRibbonInput(motion, 720);
   for (let frame = 0; frame < 1200; frame++) advanceRibbonMotion(motion, 1 / 120);
   assert.ok(Math.abs(motion.userPosition) < 1e-5);

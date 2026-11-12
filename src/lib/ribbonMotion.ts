@@ -13,9 +13,9 @@ export interface RibbonMotionState extends RibbonMotionSnapshot {
   direction: number;
 }
 
-export const RIBBON_TURN_PIXELS = 1800;
+export const RIBBON_TURN_PIXELS = 1500;
 export const RIBBON_CRUISE_SPEED = 0.025;
-export const RIBBON_MAX_SPEED = 0.5;
+export const RIBBON_MAX_SPEED = 0.65;
 
 export function positiveModulo(value: number, period: number): number {
   return ((value % period) + period) % period;
@@ -51,9 +51,13 @@ export function addRibbonInput(
   // Reverse idle travel and wheel/swipe travel in the same coordinate system.
   const travel = -pixels / RIBBON_TURN_PIXELS;
   motion.direction = Math.sign(travel);
+  // A new direction cancels queued travel, not velocity. The integrator still
+  // brakes smoothly, without making the gesture fight the previous scroll.
+  if (motion.pendingInput * travel < 0) motion.pendingInput = 0;
   // Prevent a long sequence of wheel events from queuing seconds of travel.
+  // Keep reduced-motion travel at its original 1 turn per 3000 input pixels.
   motion.pendingInput = clamp(
-    motion.pendingInput + travel * (reducedMotion ? 0.6 : 1),
+    motion.pendingInput + travel * (reducedMotion ? 0.5 : 1),
     -0.65,
     0.65,
   );
@@ -89,14 +93,17 @@ export function advanceRibbonMotion(
   for (let i = 0; i < steps; i += 1) {
     const previousInputVelocity = motion.inputVelocity;
     const previousCruiseVelocity = motion.cruiseVelocity;
-    const inputTarget = paused ? 0 : clamp(motion.pendingInput * 3, -maxInputSpeed, maxInputSpeed);
+    // Keep the initial response brisk, then spend the last bit of queued travel
+    // on a longer glide. Braking for reversal and selection stays independent.
+    const travelResponse = reducedMotion ? 3 : 2 + Math.min(Math.abs(motion.pendingInput) / 0.18, 1);
+    const inputTarget = paused ? 0 : clamp(motion.pendingInput * travelResponse, -maxInputSpeed, maxInputSpeed);
     const cruiseTarget = paused || reducedMotion ? 0 : motion.direction * cruiseSpeed;
 
     motion.inputVelocity = approachVelocity(
       motion.inputVelocity,
       inputTarget,
-      reducedMotion ? 18 : paused ? 12 : 18,
-      paused ? 1.8 : reducedMotion ? 0.9 : 1.35,
+      reducedMotion ? 18 : paused ? 12 : 20,
+      paused ? 1.8 : reducedMotion ? 0.9 : 1.8,
       dt,
     );
     motion.cruiseVelocity = approachVelocity(motion.cruiseVelocity, cruiseTarget, paused ? 3.8 : 4.75, paused ? 0.12 : 0.15, dt);

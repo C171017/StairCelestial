@@ -7,8 +7,9 @@ import {
   positiveModulo,
   relativeCycle,
   RIBBON_MAX_SPEED,
+  RIBBON_TURN_PIXELS,
 } from "./ribbonMotion";
-import { ORBIT_RADIUS, ribbonOrbitPosition, syncRibbonOrbit } from "./ribbonOrbit";
+import { ORBIT_RADIUS, RIBBON_ORBIT_RATIO, ribbonOrbitPosition, syncRibbonOrbit } from "./ribbonOrbit";
 
 test("idle orbit remains proportional through navigation, reversal, pause and resume", () => {
   const motion = createRibbonMotion();
@@ -32,7 +33,7 @@ test("scrolling turns the sky half as far as the previous half-turn ratio", () =
     addRibbonInput(motion, pixels);
     for (let i = 0; i < 1200; i++) advanceRibbonMotion(motion, 1 / 120, { cruiseSpeed: 0 });
     syncRibbonOrbit(motion, orbit);
-    assert.ok(Math.abs(orbit.position + pixels / 7200) < 1e-5);
+    assert.ok(Math.abs(orbit.position + pixels / RIBBON_TURN_PIXELS * RIBBON_ORBIT_RATIO) < 1e-5);
   }
 });
 
@@ -54,14 +55,14 @@ test("sustained input travels beyond a full orbit and reverses without an angle 
     if (i % 20 === 0) addRibbonInput(motion, 120);
     advanceRibbonMotion(motion, 1 / 60);
     syncRibbonOrbit(motion, orbit);
-    assert.ok(Math.abs(orbit.velocity) <= 0.125);
+    assert.ok(Math.abs(orbit.velocity) <= RIBBON_MAX_SPEED * RIBBON_ORBIT_RATIO);
   }
   assert.ok(orbit.position < -1);
   const before = ribbonOrbitPosition(orbit.position);
   addRibbonInput(motion, -1800);
   advanceRibbonMotion(motion, 1 / 60);
   syncRibbonOrbit(motion, orbit);
-  assert.ok(before.distanceTo(ribbonOrbitPosition(orbit.position)) < 0.32);
+  assert.ok(before.distanceTo(ribbonOrbitPosition(orbit.position)) < 0.42);
 });
 
 test("infinite copies wrap symmetrically in both scroll directions", () => {
@@ -90,6 +91,40 @@ test("large and reversing inputs respect the velocity limit", () => {
     assert.ok(Math.abs(state.velocity) <= RIBBON_MAX_SPEED + 1e-10);
   }
   assert.equal(state.direction, 1);
+});
+
+test("a short reverse gesture brakes a fast scroll without waiting for its backlog", () => {
+  const state = createRibbonMotion();
+  addRibbonInput(state, 1800);
+  for (let i = 0; i < 24; i++) advanceRibbonMotion(state, 1 / 60, { cruiseSpeed: 0 });
+  assert.ok(state.velocity < -0.5);
+  const before = { ...state };
+  addRibbonInput(state, -90);
+  assert.equal(state.velocity, before.velocity, "input must not snap the velocity");
+  assert.equal(state.position, before.position, "input must not jump the scene");
+  let previousVelocity = state.velocity;
+  for (let i = 0; i < 30; i++) {
+    advanceRibbonMotion(state, 1 / 60, { cruiseSpeed: 0 });
+    assert.ok(Math.abs(state.velocity - previousVelocity) <= 0.031, "reversal must ease through zero");
+    previousVelocity = state.velocity;
+  }
+  assert.ok(state.velocity > 0, "the new direction should take over within half a second");
+});
+
+test("a flick carries through a smooth glide and settles without bouncing", () => {
+  const state = createRibbonMotion();
+  addRibbonInput(state, 240);
+  for (let i = 0; i < 6; i++) advanceRibbonMotion(state, 1 / 60, { cruiseSpeed: 0 });
+  const initialTravel = state.position;
+  for (let i = 0; i < 594; i++) {
+    const before = state.position;
+    advanceRibbonMotion(state, 1 / 60, { cruiseSpeed: 0 });
+    assert.ok(state.position <= before, "the glide must not bounce back");
+    if (i === 83) assert.ok(Math.abs(state.velocity) > 0.008, "a flick should still visibly glide after 1.5 seconds");
+  }
+  assert.ok(Math.abs(state.position) > Math.abs(initialTravel) * 4, "most travel should follow the initial flick");
+  assert.ok(Math.abs(state.position + 0.16) < 1e-5);
+  assert.equal(state.velocity, 0);
 });
 
 test("reduced motion remains stationary without explicit input", () => {
